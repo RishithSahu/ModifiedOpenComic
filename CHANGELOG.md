@@ -27,8 +27,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - AniList search: abortable requests, in-session search cache for faster UI updates, improved error handling for search result rendering, and enhanced search result interactivity.
 - Fixed a recursion bug in the AniList GraphQL helper that could prevent search results from rendering.
 
-
-
 ## v1.7.0 (01-03-2026)
 
 ##### 🚀 New Features
@@ -396,7 +394,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Option to move zoom and scroll whit mouse [`e8cc79c`](https://github.com/ollm/OpenComic/commit/e8cc79cbddd23ff7d47b7046190cecbad199d3c2)
 - Improved touch screen navigation (swipe gesture, 2 finger zoom and reset zoom with 2 finger click) [`f848463`](https://github.com/ollm/OpenComic/commit/f84846399f1521c736b9b6e048f204513ac304da)
 - Improved detection of image edges when zoom is applied [`e7ec771`](https://github.com/ollm/OpenComic/commit/e7ec77104360b1e2ac2aa96d97b6c1d2cc2d6d01)
-- Frameless window (Full only in Windows and macOS)	[`9c7346c`](https://github.com/ollm/OpenComic/commit/9c7346cb37fe3c7aed9200d49e27ed4c5bdbfc96)
+- Frameless window (Full only in Windows and macOS) [`9c7346c`](https://github.com/ollm/OpenComic/commit/9c7346cb37fe3c7aed9200d49e27ed4c5bdbfc96)
 - Translate page names in PDFs [`8855fbe`](https://github.com/ollm/OpenComic/commit/8855fbefd498352cc86e014677b19c160fcc8da5)
 
 ##### 🐛 Bug Fixes
