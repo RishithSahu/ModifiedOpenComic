@@ -1,0 +1,617 @@
+<div class="settings-body body-medium">
+	<h1 class="display-medium">{{language.global.settings}}</h1>
+
+	<div class="tabs big-tabs">
+		<div>
+			<div class="title-medium gamepad-item gamepad-to-highlight{{#compare settingsTab '==' 'general'}} active{{/compare}}" data-name="general" data-on-end-animation="gamepad.updateBrowsableItems(gamepad.currentKey())">
+				<span class="material-icon">tune</span>{{language.settings.general}}
+			</div>
+
+			<div class="title-medium gamepad-item{{#compare settingsTab '==' 'shortcuts'}} active{{/compare}}" data-name="shortcuts" data-on-end-animation="gamepad.updateBrowsableItems(gamepad.currentKey())">
+				<span class="material-icon">keyboard</span>{{language.settings.shortcuts.main}}
+			</div>
+		</div>
+	</div>
+
+	<div class="tabs-content">
+		<div class="tabs-general{{#compare settingsTab '==' 'general'}} active{{/compare}}">
+
+			<h2 class="headline-small">{{language.settings.masterFolders.main}}</h2>
+
+			<div class="settings-master-folders">
+				
+				<div class="menu-simple-text menu-grey settings-master-folders-empty"{{#if masterFolders}} style="display: none;"{{/if}}>
+					<span>{{language.settings.masterFolders.noFolders}}</span>
+				</div>
+
+				<div class="settings-master-folders-list"{{#unless masterFolders}} style="display: none;"{{/unless}}>
+				</div>
+
+				<div class="simple-button filled-tonal gamepad-item" onclick="settings.addMasterFolder();">
+					<div class="touch-effect"><i class="icon-24 material-icon">add</i>{{language.menu.file.addFolder}}</div>
+				</div>
+				<cb></cb>
+			</div>
+
+			<h2 class="headline-small">{{language.settings.servers.main}}</h2>
+
+			<div class="settings-servers">
+				
+				<div class="menu-simple-text menu-grey settings-servers-empty"{{#if servers}} style="display: none;"{{/if}}>
+					<span>{{language.settings.servers.noServers}}</span>
+				</div>
+
+				<div class="settings-servers-list"{{#unless servers}} style="display: none;"{{/unless}}>
+				</div>
+
+				<div class="simple-button filled-tonal gamepad-item" onclick="settings.addServer();">
+					<div class="touch-effect"><i class="icon-24 material-icon">add</i>{{language.settings.servers.add}}</div>
+				</div>
+				<cb></cb>
+			</div>
+
+			<h2 class="headline-small">{{language.settings.reading.main}}</h2>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.globalZoomSlide}}</span>
+				<div class="switch{{#if config.readingGlobalZoomSlide}} a{{/if}}" on="settings.set('readingGlobalZoomSlide', true)" off="settings.set('readingGlobalZoomSlide', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.globalZoom}}</span>
+				<div class="switch{{#if config.readingGlobalZoom}} a{{/if}}" on="settings.setGlobalZoom(true)" off="settings.setGlobalZoom(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.moveZoomWithMouse}}</span>
+				<div class="switch{{#if config.readingMoveZoomWithMouse}} a{{/if}}" on="settings.setMoveZoomWithMouse(true)" off="settings.setMoveZoomWithMouse(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.scrollWithMouse}}</span>
+				<div class="switch{{#if config.readingScrollWithMouse}} a{{/if}}" on="settings.setScrollWithMouse(true)" off="settings.setScrollWithMouse(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.goNextPrevChapterWithScroll}}</span>
+				<div class="switch{{#if config.readingGoNextPrevChapterWithScroll}} a{{/if}}" on="settings.set('readingGoNextPrevChapterWithScroll', true)" off="settings.set('readingGoNextPrevChapterWithScroll', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.turnPagesWithMouseWheel}}</span>
+				<div class="switch{{#if turnPagesWithMouseWheelShortcut}} a{{/if}}" on="settings.setTurnPagesWithMouseWheelShortcut(true)" off="settings.setTurnPagesWithMouseWheelShortcut(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.startReadingInFullScreen}}</span>
+				<div class="switch{{#if config.readingStartReadingInFullScreen}} a{{/if}}" on="settings.setStartReadingInFullScreen(true)" off="settings.setStartReadingInFullScreen(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.trackingAtTheEnd}}</span>
+				<div class="switch{{#if config.readingTrackingAtTheEnd}} a{{/if}}" on="settings.setTrackingAtTheEnd(true)" off="settings.setTrackingAtTheEnd(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.trackingAutoPrompt}}</span>
+				<div class="switch{{#if config.readingTrackingAutoPrompt}} a{{/if}}" on="settings.set('readingTrackingAutoPrompt', true)" off="settings.set('readingTrackingAutoPrompt', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.trackingAutoPromptFavorites}}</span>
+				<div class="switch{{#if config.readingTrackingAutoPromptFavorites}} a{{/if}}" on="settings.set('readingTrackingAutoPromptFavorites', true)" off="settings.set('readingTrackingAutoPromptFavorites', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.reading.discordRcp}}</span>
+				<div class="switch{{#if config.readingDiscordRcp}} a{{/if}}" on="settings.set('readingDiscordRcp', true)" off="settings.set('readingDiscordRcp', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)" style="margin-top: 10px;">
+				<div class="simple-slider-text">{{language.settings.reading.maxMargin}}<div><i class="material-icon slider-reset" onclick="events.resetRange(this)" data-default="800" style="right: 70px;">undo</i><span>{{config.readingMaxMargin}}</span>px</div></div>
+				<div class="range">
+					<div class="range-position">
+						<span class="range-line" style="width: 100%"></span>
+						<span class="range-steps"></span>
+						<div>
+							<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+						</div>
+					</div>
+					<input type="range" max="3000" min="50" step="50" value="{{config.readingMaxMargin}}" onrange="settings.setMaxMargin(\{{value}}, \{{toEnd}})">
+				</div>
+			</div>
+
+			<h2 class="headline-small">{{language.settings.imageInterpolation.main}}</h2>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.imageInterpolation.downscaling}}</div>
+					<span class="body-medium">{{language.settings.imageInterpolation.downscalingDescription}}</span>
+				</span>
+
+				<div class="select settings-image-interpolation-method-downscaling body-large gamepad-item have-select-wa" onclick="settings.getImageInterpolationMethods(); events.showSelect(this, 'settings-image-interpolation', true, 1);" style="height: 60px; width: 400px; padding-right: 0px;">
+					<div>
+						<div class="select-border">
+							<div class="bottom"><div></div></div>
+						</div>
+						<div class="text" style="opacity: 1;">{{readingImageInterpolationMethodDownscaling}}</div>
+						<div class="placeholder">{{language.settings.imageInterpolation.interpolationMethod}}</div>
+						<i class="material-icon">arrow_drop_down</i>
+					</div>
+				</div>
+
+			</div>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.imageInterpolation.upscaling}}</div>
+					<span class="body-medium">{{language.settings.imageInterpolation.upscalingDescription}}</span>
+				</span>
+
+				<div class="select settings-image-interpolation-method-upscaling body-large gamepad-item have-select-wa" onclick="settings.getImageInterpolationMethods(true); events.showSelect(this, 'settings-image-interpolation', true, 1);" style="height: 60px; width: 400px; padding-right: 0px;">
+					<div>
+						<div class="select-border">
+							<div class="bottom"><div></div></div>
+						</div>
+						<div class="text" style="opacity: 1;">{{readingImageInterpolationMethodUpscaling}}</div>
+						<div class="placeholder">{{language.settings.imageInterpolation.interpolationMethod}}</div>
+						<i class="material-icon">arrow_drop_down</i>
+					</div>
+				</div>
+
+			</div>
+
+
+			<h2 class="headline-small">{{language.settings.colorProfile.main}}</h2>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.colorProfile.force}}</div>
+					<span class="body-medium">{{language.settings.colorProfile.forceDescription}}</span>
+				</span>
+
+				<div class="select settings-color-profile body-large gamepad-item have-select-wa" onclick="settings.getColorProfiles(); events.showSelect(this, 'settings-color-profiles', true, 1);" style="height: 60px; width: 400px; padding-right: 0px;">
+					<div>
+						<div class="select-border">
+							<div class="bottom"><div></div></div>
+						</div>
+						<div class="text" style="opacity: 1;">{{readingColorProfile}}</div>
+						<div class="placeholder">{{language.settings.colorProfile.main}}</div>
+						<i class="material-icon">arrow_drop_down</i>
+					</div>
+				</div>
+
+			</div>
+
+			<h2 class="headline-small">{{language.settings.navigation.main}}</h2>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.navigation.ignoreSingleFoldersLibrary}}</span>
+				<div class="switch{{#if config.ignoreSingleFoldersLibrary}} a{{/if}}" on="settings.setIgnoreSingleFoldersLibrary(true)" off="settings.setIgnoreSingleFoldersLibrary(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.navigation.showFullPathLibrary}}</span>
+				<div class="switch{{#if config.showFullPathLibrary}} a{{/if}}" on="settings.setShowFullPathLibrary(true)" off="settings.setShowFullPathLibrary(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.navigation.showFullPathOpened}}</span>
+				<div class="switch{{#if config.showFullPathOpened}} a{{/if}}" on="settings.setShowFullPathOpened(true)" off="settings.setShowFullPathOpened(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.navigation.showLibraryPath}}</span>
+				<div class="switch{{#if config.showLibraryPath}} a{{/if}}" on="settings.set('showLibraryPath', true)" off="settings.set('showLibraryPath', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.navigation.showFileExtension}}</span>
+				<div class="switch{{#if config.showFileExtension}} a{{/if}}" on="settings.set('showFileExtension', true)" off="settings.set('showFileExtension', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.navigation.openFilesInNewTab}}</span>
+				<div class="switch{{#if config.openFilesInNewTab}} a{{/if}}" on="settings.set('openFilesInNewTab', true)" off="settings.set('openFilesInNewTab', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item settings-open-files-in-new-tab{{#if config.openFilesInNewTab}} disable-pointer{{/if}}">
+				<span>{{language.settings.navigation.openFilesInNewWindow}}</span>
+				<div class="switch{{#if config.openFilesInNewWindow}} a{{/if}}" on="settings.set('openFilesInNewWindow', true)" off="settings.set('openFilesInNewWindow', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.navigation.ignoreFilesRegex.title}}</div>
+					<span class="body-medium">{{{language.settings.navigation.ignoreFilesRegex.description}}}</span>
+				</span>
+				<div class="simple-button filled-tonal gamepad-item" onclick="settings.addIgnoreFilesRegex();">
+					<div class="touch-effect"><i class="icon-24 material-icon">add</i>{{language.settings.navigation.ignoreFilesRegex.addRegex}}</div>
+				</div>
+			</div>
+
+			<div class="settings-ignore-files">
+				
+				<div class="menu-simple-text menu-grey settings-ignore-files-empty"{{#if config.ignoreFilesRegex}} style="display: none;"{{/if}}>
+					<span>{{language.settings.navigation.ignoreFilesRegex.noRegex}}</span>
+				</div>
+
+				<div class="settings-ignore-files-list"{{#unless config.ignoreFilesRegex}} style="display: none;"{{/unless}}>
+				</div>
+
+				<cb></cb>
+
+			</div>
+
+			<h2 class="headline-small">{{language.settings.navigation.folders}}</h2>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.navigation.openingBehaviorFolder}}</div>
+					<span class="body-medium">{{language.settings.navigation.openingBehaviorFolderDescription}}</span>
+				</span>
+
+				<div class="select settings-opening-behavior-folder body-large gamepad-item have-select-wa" onclick="settings.getOpeningBehavior(true); events.showSelect(this, 'menu-simple-element', true, 1);" style="height: 60px; width: 400px; padding-right: 0px;">
+					<div>
+						<div class="select-border">
+							<div class="bottom"><div></div></div>
+						</div>
+						<div class="text" style="opacity: 1;">{{openingBehaviorFolder}}</div>
+						<div class="placeholder">{{language.settings.navigation.openingBehaviorFolder}}</div>
+						<i class="material-icon">arrow_drop_down</i>
+					</div>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.navigation.useTheFirstImageAsPoster}}</span>
+				<div class="switch{{#if config.useTheFirstImageAsPosterInFolders}} a{{/if}}" on="settings.set('useTheFirstImageAsPosterInFolders', true)" off="settings.set('useTheFirstImageAsPosterInFolders', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<h2 class="headline-small">{{language.settings.navigation.files}}</h2>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.navigation.openingBehaviorFile}}</div>
+					<span class="body-medium">{{language.settings.navigation.openingBehaviorFileDescription}}</span>
+				</span>
+
+				<div class="select settings-opening-behavior-file body-large gamepad-item have-select-wa" onclick="settings.getOpeningBehavior(false); events.showSelect(this, 'menu-simple-element', true, 1);" style="height: 60px; width: 400px; padding-right: 0px;">
+					<div>
+						<div class="select-border">
+							<div class="bottom"><div></div></div>
+						</div>
+						<div class="text" style="opacity: 1;">{{openingBehaviorFile}}</div>
+						<div class="placeholder">{{language.settings.navigation.openingBehaviorFile}}</div>
+						<i class="material-icon">arrow_drop_down</i>
+					</div>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.navigation.useTheFirstImageAsPoster}}</span>
+				<div class="switch{{#if config.useTheFirstImageAsPosterInFiles}} a{{/if}}" on="settings.set('useTheFirstImageAsPosterInFiles', true)" off="settings.set('useTheFirstImageAsPosterInFiles', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<h2 class="headline-small">{{language.global.recents}}</h2>
+
+			<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)" style="margin-top: 10px;">
+				<div class="simple-slider-text">{{language.settings.navigation.recentlyOpenedItems}}<div><i class="material-icon slider-reset" onclick="events.resetRange(this)" data-default="100">undo</i><span>{{config.recentlyOpenedItems}}</span></div></div>
+				<div class="range">
+					<div class="range-position">
+						<span class="range-line" style="width: 100%"></span>
+						<span class="range-steps"></span>
+						<div>
+							<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+						</div>
+					</div>
+					<input type="range" max="200" min="0" step="1" value="{{config.recentlyOpenedItems}}" onrange="settings.set('recentlyOpenedItems', \{{value}})">
+				</div>
+			</div>
+
+
+			<h2 class="headline-small">{{language.settings.saveImages.main}}</h2>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.saveImages.filenameTemplate}}</div>
+					<span class="body-medium">{{{language.settings.saveImages.filenameTemplateDescription}}} <code class="can-be-select">[parentFolder]</code>, <code class="can-be-select">[folder]</code>, <code class="can-be-select">[image]</code> {{language.global.and}} <code class="can-be-select">[page]</code></span>
+				</span>
+				<div class="input" style="width: 376px; height: 56px; margin-top: 8px;">
+					<div>
+						<div class="inputBorder">
+							<div class="left"></div>
+							<div class="right"></div>
+							<div class="top">
+								<div></div>
+								<span></span> 
+							</div>
+							<div class="bottom"></div>
+						</div>
+						<div class="placeholder">{{language.settings.saveImages.filenameTemplate}}</div>
+						<input type="text" value="{{config.saveImageTemplate}}" class="input-file-name" onchange="settings.set('saveImageTemplate', this.value)">
+					</div>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.saveImages.autoSave}}</span>
+				<div class="switch{{#if config.saveImageToFolder}} a{{/if}}" on="settings.set('saveImageToFolder', true)" off="settings.set('saveImageToFolder', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="settings-save-image-folder{{#unless config.saveImageToFolder}} disable-pointer{{/unless}}">
+				<div class="path-selector">
+					<span class="label-large">{{saveImageFolder}}</span>
+					<div class="simple-button simple-button-square filled-tonal gamepad-item" onclick="settings.changeSaveImageFolder();">
+						<div class="touch-effect"><i class="icon-24 material-icon">folder_open</i>{{language.buttons.change}}</div>
+					</div>
+				</div>
+			</div>
+
+			<h2 class="headline-small">{{language.settings.startupBehavior.main}}</h2>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.startupBehavior.startInFullScreen}}</span>
+				<div class="switch{{#if config.startInFullScreen}} a{{/if}}" on="settings.setStartInFullScreen(true)" off="settings.setStartInFullScreen(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.startupBehavior.restoreTabsFromLastSession}}</span>
+				<div class="switch{{#if config.restoreTabsFromLastSession}} a{{/if}}" on="settings.set('restoreTabsFromLastSession', true)" off="settings.set('restoreTabsFromLastSession', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.startupBehavior.startInContinueReading}}</span>
+				<div class="switch{{#if config.startInContinueReading}} a{{/if}}" on="settings.setStartInContinueReading(true)" off="settings.setStartInContinueReading(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item settings-start-only-from-library{{#unless config.startInContinueReading}} disable-pointer{{/unless}}">
+				<span>{{language.settings.startupBehavior.startOnlyFromLibrary}}</span>
+				<div class="switch{{#if config.startOnlyFromLibrary}} a{{/if}}" on="settings.setStartOnlyFromLibrary(true)" off="settings.setStartOnlyFromLibrary(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.startupBehavior.startOnStartup}} (Windows {{language.global.and}} macOS)</span>
+				<div class="switch{{#if config.startOnStartup}} a{{/if}}" on="settings.setStartOnStartup(true)" off="settings.setStartOnStartup(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<h2 class="headline-small">{{language.dialog.opds.downloadTitle}}</h2>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.dialog.opds.autoSave}}</span>
+				<div class="switch{{#if config.downloadOpdsToFolder}} a{{/if}}" on="settings.set('downloadOpdsToFolder', true)" off="settings.set('downloadOpdsToFolder', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+			<div class="settings-download-opds-folder{{#unless config.downloadOpdsToFolder}} disable-pointer{{/unless}}">
+				<div class="path-selector">
+					<span class="label-large">{{downloadOpdsFolder}}</span>
+					<div class="simple-button simple-button-square filled-tonal gamepad-item" onclick="settings.changeDownloadOpdsFolder();">
+						<div class="touch-effect"><i class="icon-24 material-icon">folder_open</i>{{language.buttons.change}}</div>
+					</div>
+				</div>
+			</div>
+
+			<h2 class="headline-small">{{language.global.theme}}</h2>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.theme.systemNightMode}}</span>
+				<div class="switch{{#if config.systemNightMode}} a{{/if}}" on="settings.set('systemNightMode', true)" off="settings.set('systemNightMode', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			{{#unless macosMAS}}
+
+			<h2 class="headline-small">{{language.settings.releases.main}}</h2>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.releases.checkReleases}}</span>
+				<div class="switch{{#if config.checkReleases}} a{{/if}}" on="settings.setCheckReleases(true)" off="settings.setCheckReleases(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			<div class="menu-simple-text gamepad-item settings-check-prereleases{{#unless config.checkReleases}} disable-pointer{{/unless}}">
+				<span>{{language.settings.releases.checkPreReleases}}</span>
+				<div class="switch{{#if config.checkPreReleases}} a{{/if}}" on="settings.setCheckPreReleases(true)" off="settings.setCheckPreReleases(false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+
+			{{/unless}}
+
+			<h2 class="headline-small">{{language.settings.storage.main}}</h2>
+
+			<div class="menu-simple-text gamepad-item">
+				<span>{{language.settings.storage.useCustomCacheAndTmpFolder}}</span>
+				<div class="switch{{#if config.useCustomCacheAndTmpFolder}} a{{/if}}" on="settings.set('useCustomCacheAndTmpFolder', true)" off="settings.set('useCustomCacheAndTmpFolder', false)">
+					<div></div>
+					<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+				</div>
+			</div>
+			<div class="settings-custom-cache-and-tmp-folder{{#unless config.useCustomCacheAndTmpFolder}} disable-pointer{{/unless}}">
+				<div class="path-selector">
+					<span class="label-large">{{customCacheAndTmpFolder}}</span>
+					<div class="simple-button simple-button-square filled-tonal gamepad-item" onclick="settings.changeCustomCacheAndTmpFolder();">
+						<div class="touch-effect"><i class="icon-24 material-icon">folder_open</i>{{language.buttons.change}}</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)" style="margin-top: 10px;">
+				<div class="simple-slider-text">{{language.settings.storage.cacheMaxSize}}<div><i class="material-icon slider-reset" onclick="events.resetRange(this)" data-default="256" style="right: 70px;">undo</i><span>{{config.cacheMaxSize}}</span>MB</div></div>
+				<span class="simple-slider-supporting-text body-medium">{{language.settings.storage.cacheMaxSizeDescription}}</span>
+				<div class="range">
+					<div class="range-position">
+						<span class="range-line" style="width: 100%"></span>
+						<span class="range-steps"></span>
+						<div>
+							<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+						</div>
+					</div>
+					<input type="range" max="1024" min="32" step="32" value="{{config.cacheMaxSize}}" onrange="settings.setCacheMaxSize(\{{value}}, \{{toEnd}})">
+				</div>
+			</div>
+
+
+			<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)" style="margin-top: 10px;">
+				<div class="simple-slider-text">{{language.settings.storage.cacheMaxOld}}<div><i class="material-icon slider-reset" onclick="events.resetRange(this)" data-default="60" style="right: 76px;">undo</i><span>{{config.cacheMaxOld}}</span> {{language.global.days}}</div></div>
+				<span class="simple-slider-supporting-text body-medium">{{language.settings.storage.cacheMaxOldDescription}}</span>
+				<div class="range">
+					<div class="range-position">
+						<span class="range-line" style="width: 100%"></span>
+						<span class="range-steps"></span>
+						<div>
+							<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+						</div>
+					</div>
+					<input type="range" max="365" min="2" step="1" value="{{config.cacheMaxOld}}" onrange="settings.setCacheMaxOld(\{{value}}, \{{toEnd}})">
+				</div>
+			</div>
+
+			<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)" style="margin-top: 10px;">
+				<div class="simple-slider-text">{{language.settings.storage.temporaryFilesMaxSize}}<div><i class="material-icon slider-reset" onclick="events.resetRange(this)" data-default="4" style="right: 70px;">undo</i><span>{{config.tmpMaxSize}}</span>GB</div></div>
+				<span class="simple-slider-supporting-text body-medium">{{language.settings.storage.temporaryFilesMaxSizeDescription}}</span>
+				<div class="range">
+					<div class="range-position">
+						<span class="range-line" style="width: 100%"></span>
+						<span class="range-steps"></span>
+						<div>
+							<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+						</div>
+					</div>
+					<input type="range" max="30" min="0" step="1" value="{{config.tmpMaxSize}}" onrange="settings.set('tmpMaxSize', \{{value}}, \{{toEnd}})">
+				</div>
+			</div>
+
+			<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)" style="margin-top: 10px;">
+				<div class="simple-slider-text">{{language.settings.storage.temporaryFilesMaxOld}}<div><i class="material-icon slider-reset" onclick="events.resetRange(this)" data-default="30" style="right: 76px;">undo</i><span>{{config.tmpMaxOld}}</span> {{language.global.days}}</div></div>
+				<span class="simple-slider-supporting-text body-medium">{{language.settings.storage.temporaryFilesMaxOldDescription}}</span>
+				<div class="range">
+					<div class="range-position">
+						<span class="range-line" style="width: 100%"></span>
+						<span class="range-steps"></span>
+						<div>
+							<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+						</div>
+					</div>
+					<input type="range" max="365" min="2" step="1" value="{{config.tmpMaxOld}}" onrange="settings.set('tmpMaxOld', \{{value}}, \{{toEnd}})">
+				</div>
+			</div>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.storage.cache}}</div>
+					<span class="body-medium">{{language.settings.storage.cacheDescription}}</span>
+				</span>
+				<div class="simple-button filled-tonal gamepad-item" onclick="settings.clearCache();" style="float: right;">
+					<div class="touch-effect"><i class="icon-24 material-icon">mop</i>{{language.settings.storage.clearCache}}<span class="cacheSize"></span></div>
+				</div>
+
+			</div>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>{{language.settings.storage.temporaryFiles}}</div>
+					<span class="body-medium">{{language.settings.storage.temporaryFilesDescription}}</span>
+				</span>
+				<div class="simple-button filled-tonal gamepad-item" onclick="settings.removeTemporaryFiles();" style="float: right;">
+					<div class="touch-effect"><i class="icon-24 material-icon">delete</i>{{language.settings.storage.removeTemporaryFiles}}<span class="temporaryFilesSize"></span></div>
+				</div>
+			</div>
+
+		</div>
+
+		<div class="tabs-shortcuts{{#compare settingsTab '==' 'shortcuts'}} active{{/compare}}">
+			<div class="settings-shortcuts-table">
+
+			</div>
+			<div class="settings-tap-zones-table">
+
+			</div>
+		</div>
+	</div>
+</div>

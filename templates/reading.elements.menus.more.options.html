@@ -1,0 +1,42 @@
+<div class="menu-simple-content">
+	<div>
+		<div class="menu-simple-text">
+			{{language.reading.moreOptions.hideBarHeader}}
+			<div class="switch{{#if hideContent.barHeader}} a{{/if}}" on="reading.hideBarHeader(true)" off="reading.hideBarHeader(false)">
+				<div></div>
+				<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+			</div>
+		</div>
+		<div class="menu-simple-text">
+			{{language.reading.moreOptions.hideContentLeft}}
+			<div class="switch{{#if hideContent.contentLeft}} a{{/if}}" on="reading.hideContentLeft(true)" off="reading.hideContentLeft(false)">
+				<div></div>
+				<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+			</div>
+		</div>
+
+		<div class="menu-simple-text">
+			{{language.reading.moreOptions.showPageNumber}}
+			<div class="switch{{#if hideContent.showPageNumber}} a{{/if}}" on="reading.showPageNumber(true);" off="reading.showPageNumber(false);">
+				<div></div>
+				<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+			</div>
+		</div>
+
+		<div class="menu-simple-text">
+			{{language.menu.view.toggleFullScreen}}
+			<div class="switch{{#if hideContent.isFullScreen}} a{{/if}}" on="fullScreen(true); reading.loadReadingMoreOptions();" off="fullScreen(false); reading.loadReadingMoreOptions();">
+				<div></div>
+				<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+			</div>
+		</div>
+
+		<div class="menu-simple-separator-8"></div>
+
+		<div class="menu-simple-element gamepad-item" onclick="electronRemote.app.quit();">
+			<i class="material-icon menu-simple-icon-first">exit_to_app</i>
+			{{language.global.contextMenu.closeApp}}
+		</div>
+
+	</div>
+</div>

@@ -1,0 +1,26 @@
+{{#each trackingResults}}
+<div
+  class="menu-simple-element menu-simple-element-poster"
+  onclick="tracking.setTrackingId('{{@root.trackingSiteKey}}', '{{id}}')"
+>
+  <div
+    class="menu-simple-element-image"
+    style="background-image: url({{image}})"
+  ></div>
+  <span>
+    <div class="body-medium">{{title}}</div>
+    <span class="body-medium">{{authors}}</span>
+  </span>
+  <div
+    class="menu-tracking-open"
+    onclick="tracking.openTrackingPage(event,'{{@root.trackingSiteKey}}','{{id}}');"
+    title="Open on site"
+  >
+    🌐
+  </div>
+</div>
+{{else}}
+<div class="menu-simple-text menu-tracking-sites-empty tracking-search-empty">
+  {{language.dialog.tracking.emptySearch}}
+</div>
+{{/each}}

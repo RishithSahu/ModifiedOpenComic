@@ -1,0 +1,325 @@
+<div class="menu" id="reading-magnifying-glass">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 256px;">
+		<div class="menu-simple-content">
+			<div>
+				<div class="menu-simple-text gamepad-item">
+					{{language.reading.magnifyingGlass.activate}}
+					<div class="switch{{#if config.readingMagnifyingGlass}} a{{/if}}" on="reading.activeMagnifyingGlass(true, false, true)" off="reading.activeMagnifyingGlass(false, false, true)">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+				<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)">
+					<div class="simple-slider-text">{{language.reading.magnifyingGlass.zoom}}<div><span>{{normalizeNumber config.readingMagnifyingGlassZoom "0.1"}}</span>x</div></div>
+					<div class="range">
+						<div class="range-position">
+							<span class="range-line" style="width: 100%"></span>
+							<span class="range-steps"></span>
+							<div>
+								<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+							</div>
+						</div>
+						<input type="range" max="6" min="1.5" step="0.1" value="{{config.readingMagnifyingGlassZoom}}" onrange="reading.changeMagnifyingGlass(1, \{{value}}, \{{toEnd}})">
+					</div>
+				</div>
+				<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)">
+					<div class="simple-slider-text">{{language.reading.magnifyingGlass.size}}<div><span>{{config.readingMagnifyingGlassSize}}</span>px</div></div>
+					<div class="range">
+						<div class="range-position">
+							<span class="range-line" style="width: 100%"></span>
+							<span class="range-steps"></span>
+							<div>
+								<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+							</div>
+						</div>
+						<input type="range" max="500" min="100" step="2" value="{{config.readingMagnifyingGlassSize}}" onrange="reading.changeMagnifyingGlass(2, \{{value}}, \{{toEnd}})">
+					</div>
+				</div>
+				<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)">
+					<div class="simple-slider-text">{{language.reading.magnifyingGlass.ratio}}<div><span>{{normalizeNumber config.readingMagnifyingGlassRatio "0.01"}}</span>:1</div></div>
+					<div class="range">
+						<div class="range-position">
+							<span class="range-line" style="width: 100%"></span>
+							<span class="range-steps"></span>
+							<div>
+								<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+							</div>
+						</div>
+						<input type="range" max="2" min="0.5" step="0.01" value="{{config.readingMagnifyingGlassRatio}}" onrange="reading.changeMagnifyingGlass(3, \{{value}}, \{{toEnd}})">
+					</div>
+				</div>
+				<div class="simple-slider gamepad-item" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)">
+					<div class="simple-slider-text">{{language.reading.magnifyingGlass.radius}}<div><span>{{config.readingMagnifyingGlassRadius}}</span>px</div></div>
+					<div class="range">
+						<div class="range-position">
+							<span class="range-line" style="width: 100%"></span>
+							<span class="range-steps"></span>
+							<div>
+								<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+							</div>
+						</div>
+						<input type="range" max="250" min="0" step="1" value="{{config.readingMagnifyingGlassRadius}}" onrange="reading.changeMagnifyingGlass(4, \{{value}}, \{{toEnd}})">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="menu-close" onclick="reading.magnifyingGlassControl(2); events.desactiveMenu('#reading-magnifying-glass', '.bar-right-buttons .button-magnifying-glass');"></div>
+	<div class="menu-clip-path-shadow elevation-2"></div>
+</div>
+<div class="menu" id="reading-filters-presets">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 552px; z-index: 14;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true);" style="z-index: 13;"></div>
+</div>
+<div class="menu" id="reading-ebook-theme">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 552px; z-index: 14;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true);" style="z-index: 13;"></div>
+</div>
+<div class="menu" id="reading-ebook-font-family">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 552px; z-index: 14;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true); reading.ebook.updateIfPendingChange();" style="z-index: 13;"></div>
+</div>
+<div class="menu" id="reading-sound-effect-page">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 452px; z-index: 125;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true);" style="z-index: 124;"></div>
+</div>
+<div class="menu" id="reading-ai-upscale-models">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 552px; z-index: 14;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true);" style="z-index: 13;"></div>
+</div>
+<div class="menu" id="reading-ai-descreen-models">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 552px; z-index: 14;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true);" style="z-index: 13;"></div>
+</div>
+<div class="menu" id="reading-ai-artifact-removal-models">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 552px; z-index: 14;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true);" style="z-index: 13;"></div>
+</div>
+<div class="menu reading-elements-menus" id="reading-pages">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 600px;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="reading.magnifyingGlassControl(2); if(handlebarsContext.editReadingShortcutPagesConfig){reading.changePagesView(0)} events.desactiveMenu('#reading-pages', '.bar-right-buttons .button-ebook-layout, .bar-right-buttons .button-page-layout, .bar-right-buttons .button-filters, .bar-right-buttons .button-ai');"></div>
+	<div class="menu-clip-path-shadow elevation-2"></div>
+</div>
+<div class="menu" id="reading-music">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 256px;"></div>
+	<div class="menu-close" onclick="reading.magnifyingGlassControl(2); events.desactiveMenu('#reading-music', '.bar-right-buttons .button-reading-music');"></div>
+</div>
+<div class="menu" id="collections-bookmark">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 512px;"></div>
+	<div class="menu-close" onclick="reading.magnifyingGlassControl(2); events.desactiveMenu('#collections-bookmark', '.bar-right-buttons .button-collections-bookmark');"></div>
+</div>
+<div class="menu" id="tracking-sites">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 256px;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="reading.magnifyingGlassControl(2); events.desactiveMenu('#tracking-sites', '.bar-right-buttons .button-tracking-sites');"></div>
+</div>
+<div class="menu" id="reading-more-options">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 320px;"></div>
+	<div class="menu-close" onclick="reading.magnifyingGlassControl(2); events.desactiveMenu('#reading-more-options', '.bar-right-buttons .button-more-options');"></div>
+</div>
+<div class="menu" id="reading-menu-gamepad">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 256px;">
+		<div class="menu-simple-content">
+			<div>
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); reading.loadBookmarks(); events.activeMenu('#collections-bookmark', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">collections_bookmark</i>
+					{{language.reading.viewBookmarks}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item gamepad-reading-music" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); reading.music.loadMenu(); events.activeMenu('#reading-music', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">queue_music</i>
+					{{language.reading.music.main}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); reading.loadTrackigSites(); events.activeMenu('#tracking-sites', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">sync</i>
+					{{language.reading.tracking.main}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); events.activeMenu('#reading-magnifying-glass', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">search</i>
+					{{language.reading.magnifyingGlass.main}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); reading.loadReadingPages(false, false, 'ebook-layout'); events.activeMenu('#reading-pages', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">format_size</i>
+					{{language.reading.pages.ebookLayout}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); reading.loadReadingPages(false, false, 'page-layout'); events.activeMenu('#reading-pages', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">auto_stories</i>
+					{{language.reading.pages.pageLayout}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); reading.loadReadingPages(false, false, 'filters'); events.activeMenu('#reading-pages', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">invert_colors</i>
+					{{language.reading.pages.colorFilters}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); reading.loadReadingPages(false, false, 'ai'); events.activeMenu('#reading-pages', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">auto_awesome</i>
+					{{language.reading.pages.aiTools}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#reading-menu-gamepad'); events.activeMenu('#reading-sort', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">sort</i>
+					{{language.global.sort.main}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="electronRemote.app.quit();">
+					<i class="material-icon menu-simple-icon-first">exit_to_app</i>
+					{{language.global.contextMenu.closeApp}}
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.desactiveMenu('#reading-menu-gamepad');"></div>
+</div>
+
+<div class="menu" id="reading-context-menu">
+	<div class="menu-simple elevation-2" onclick="events.desactiveMenu('#reading-context-menu');">
+		<div class="menu-simple-content">
+			<div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-set-as-poster gamepad-item" onclick="reading.contextMenu.setAsPoster();">
+					<i class="material-icon menu-simple-icon-first">add_photo_alternate</i>
+					{{language.global.contextMenu.setAsPoster}}
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-set-as-poster-folders gamepad-item" onclick="reading.contextMenu.setAsPosterFolders();">
+					<i class="material-icon menu-simple-icon-first">perm_media</i>
+					{{language.global.contextMenu.setAsPosterFolders}}
+				</div>
+
+				<div class="menu-simple-separator separator-set-as-poster"></div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-save-image gamepad-item" onclick="reading.contextMenu.saveImage();">
+					<i class="material-icon menu-simple-icon-first">image</i>
+					<span>{{language.global.contextMenu.saveImage}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-save-all-images gamepad-item" onclick="reading.contextMenu.saveAllImages();">
+					<i class="material-icon menu-simple-icon-first">photo_library</i>
+					<span>{{language.global.contextMenu.saveAllImages}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-copy-image gamepad-item" onclick="reading.contextMenu.copyImageToClipboard();">
+					<i class="material-icon menu-simple-icon-first">content_copy</i>
+					<span>{{language.global.contextMenu.copyImage}}</span>
+				</div>
+
+				<div class="menu-simple-separator separator-save-images"></div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-save-bookmarks-images gamepad-item" onclick="reading.contextMenu.saveBookmarksImages(true);">
+					<i class="material-icon menu-simple-icon-first">book</i>
+					<span>{{language.global.contextMenu.saveBookmarksImages}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-save-all-bookmarks-images gamepad-item" onclick="reading.contextMenu.saveAllBookmarksImages(true);">
+					<i class="material-icon menu-simple-icon-first">collections_bookmark</i>
+					<span>{{language.global.contextMenu.saveAllBookmarksImages}}</span>
+				</div>
+
+				<div class="menu-simple-separator separator-save-images"></div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-open-file-location gamepad-item" onclick="reading.contextMenu.openFileLocation();">
+					<i class="material-icon menu-simple-icon-first">folder_open</i>
+					<span>{{language.global.contextMenu.openFileLocation}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little reading-context-menu-file-info gamepad-item" onclick="reading.contextMenu.aboutFile();">
+					<i class="material-icon menu-simple-icon-first">info</i>
+					<span>{{language.global.contextMenu.aboutFile}}</span>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<div class="menu-close"></div>
+</div>
+
+<div class="menu" id="index-file-info-find-on">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 552px; z-index: 125;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true);" style="z-index: 124;"></div>
+</div>
+
+<div class="menu" id="reading-sort">
+	<div class="menu-simple elevation-2" style="width: 256px;">
+		<div class="menu-simple-content">
+			<div>
+				<div class="menu-simple-element menu-simple-element-little sort-name gamepad-item{{#compare page.sort '==' 'name'}} s{{/compare}}" onclick="dom.changeSort(1, 'name', 'reading')">{{language.global.sort.name}}</div>
+				<div class="menu-simple-element menu-simple-element-little sort-numeric gamepad-item{{#compare page.sort '==' 'numeric'}} s{{/compare}}" onclick="dom.changeSort(1, 'numeric', 'reading')">{{language.global.sort.number}}</div>
+				<div class="menu-simple-element menu-simple-element-little sort-name-numeric gamepad-item{{#compare page.sort '==' 'name-numeric'}} s{{/compare}}" onclick="dom.changeSort(1, 'name-numeric', 'reading')">{{language.global.sort.nameNumber}}</div>
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.sort.foldersFirst}}
+					<div class="switch{{#if page.foldersFirst}} a{{/if}}" on="dom.changeSort(3, true, 'reading')" off="dom.changeSort(3, false, 'reading')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.sort.compressedFirst}}
+					<div class="switch{{#if page.compressedFirst}} a{{/if}}" on="dom.changeSort(4, true, 'reading')" off="dom.changeSort(4, false, 'reading')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.sort.invert}}
+					<div class="switch{{#if page.sortInvert}} a{{/if}}" on="dom.changeSort(2, true, 'reading')" off="dom.changeSort(2, false, 'reading')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.desactiveMenu('#reading-sort', '.bar-right-buttons .button-sort');"></div>
+</div>
+
+<script type="text/javascript">
+	dom.selectElement('.pages-{{config.readingView}}');	
+</script>
+<datalist id="marginlist">
+	{{#for 0 8 1}}
+	<option value="{{this}}">
+	{{/for}}
+	{{#for 8 26 2}}
+	<option value="{{this}}">
+	{{/for}}
+	{{#for 26 50 4}}
+	<option value="{{this}}">
+	{{/for}}
+	{{#for 50 3000 5}}
+	<option value="{{this}}">
+	{{/for}}
+</datalist>

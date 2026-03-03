@@ -1,0 +1,324 @@
+<div class="menu" id="index-sort">
+	<div class="menu-simple elevation-2" style="width: 256px;">
+		<div class="menu-simple-content">
+			<div>
+				<div class="menu-simple-element menu-simple-element-little sort-name gamepad-item{{#compare page.sort '==' 'name'}} s{{/compare}}" onclick="dom.changeSort(1, 'name', '{{page.name}}')">{{language.global.sort.name}}</div>
+				<div class="menu-simple-element menu-simple-element-little sort-numeric gamepad-item{{#compare page.sort '==' 'numeric'}} s{{/compare}}" onclick="dom.changeSort(1, 'numeric', '{{page.name}}')">{{language.global.sort.number}}</div>
+				<div class="menu-simple-element menu-simple-element-little sort-name-numeric gamepad-item{{#compare page.sort '==' 'name-numeric'}} s{{/compare}}" onclick="dom.changeSort(1, 'name-numeric', '{{page.name}}')">{{language.global.sort.nameNumber}}</div>
+				{{#compare page.name '==' 'recently-opened'}}
+				<div class="menu-simple-element menu-simple-element-little sort-last-opened gamepad-item{{#compare page.sort '==' 'last-opened'}} s{{/compare}}" onclick="dom.changeSort(1, 'last-opened', '{{page.name}}')">{{language.global.sort.lastOpened}}</div>
+				<div class="menu-simple-element menu-simple-element-little sort-last-reading gamepad-item{{#compare page.sort '==' 'last-reading'}} s{{/compare}}" onclick="dom.changeSort(1, 'last-reading', '{{page.name}}')">{{language.global.sort.lastReading}}</div>
+				{{else compare page.name '==' 'browsing'}}
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.sort.foldersFirst}}
+					<div class="switch{{#if page.foldersFirst}} a{{/if}}" on="dom.changeSort(3, true, false)" off="dom.changeSort(3, false, false)">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.sort.compressedFirst}}
+					<div class="switch{{#if page.compressedFirst}} a{{/if}}" on="dom.changeSort(4, true, false)" off="dom.changeSort(4, false, false)">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+				{{else}}
+				<div class="menu-simple-element menu-simple-element-little sort-last-add gamepad-item{{#compare page.sort '==' 'last-add'}} s{{/compare}}" onclick="dom.changeSort(1, 'last-add', '{{page.name}}')">{{language.global.sort.lastAdd}}</div>
+				<div class="menu-simple-element menu-simple-element-little sort-last-reading gamepad-item{{#compare page.sort '==' 'last-reading'}} s{{/compare}}" onclick="dom.changeSort(1, 'last-reading', '{{page.name}}')">{{language.global.sort.lastReading}}</div>
+				{{/compare}}
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.sort.invert}}
+					<div class="switch{{#if page.sortInvert}} a{{/if}}" on="dom.changeSort(2, true, '{{page.name}}')" off="dom.changeSort(2, false, '{{page.name}}')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.desactiveMenu('#index-sort', '.bar-right-buttons .button-sort');"></div>
+</div>
+
+<div class="menu" id="index-view">
+	<div class="menu-simple elevation-2" style="width: 300px;">
+		<div class="menu-simple-content">
+			<div>
+				<div class="menu-simple-element menu-simple-element-little view-module gamepad-item{{#compare page.view '==' 'module'}} s{{/compare}}" onclick="dom.changeView('module', '{{page.name}}');"><i class="material-icon menu-simple-icon-first">view_module</i>{{language.global.view.module}}</div>
+				<div class="menu-simple-element menu-simple-element-little view-list gamepad-item{{#compare page.view '==' 'list'}} s{{/compare}}" onclick="dom.changeView('list', '{{page.name}}');"><i class="material-icon menu-simple-icon-first">view_list</i>{{language.global.view.list}}</div>
+
+				<div class="simple-slider gamepad-item view-module-size {{#compare page.view '==' 'list'}} disable-pointer{{/compare}}" data-gamepad-left="events.rangeMoveStep(this, -1)" data-gamepad-right="events.rangeMoveStep(this, 1)" style="margin-top: 8px;">
+					<div class="simple-slider-text">{{language.global.view.moduleSize}}<div><i class="material-icon slider-reset" onclick="events.resetRange(this)" data-default="150">undo</i><span>{{page.viewModuleSize}}</span></div></div>
+					<div class="range">
+						<div class="range-position">
+							<span class="range-line" style="width: 100%"></span>
+							<span class="range-steps"></span>
+							<div>
+								<div class="range-point" position="100" style="left: 100%;"><div class="elevation-1"></div></div>
+							</div>
+						</div>
+						<input type="range" min="100" max="300" step="50" value="{{page.viewModuleSize}}" onrange="dom.changeViewModuleSize(\{{value}}, \{{toEnd}}, '{{page.name}}')">
+					</div>
+				</div>
+
+				{{#if page.boxes}}
+				<div class="menu-simple-text gamepad-item">
+					{{language.comics.continueReading}}
+					<div class="switch{{#if page.continueReading}} a{{/if}}" on="dom.changeBoxes('continueReading', true, '{{page.name}}')" off="dom.changeBoxes('continueReading', false, '{{page.name}}')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+				<div class="menu-simple-text gamepad-item">
+					{{language.comics.recentlyAdded}}
+					<div class="switch{{#if page.recentlyAdded}} a{{/if}}" on="dom.changeBoxes('recentlyAdded', true, '{{page.name}}')" off="dom.changeBoxes('recentlyAdded', false, '{{page.name}}')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+				{{/if}}
+
+				<div class="menu-simple-separator"></div>
+
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.view.fadeCompleted}}
+					<div class="switch{{#if page.fadeCompleted}} a{{/if}}" on="dom.changeConfig('fadeCompleted', true, '{{page.name}}')" off="dom.changeConfig('fadeCompleted', false, '{{page.name}}')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.view.progressBar}}
+					<div class="switch{{#if page.progressBar}} a{{/if}}" on="dom.changeConfig('progressBar', true, '{{page.name}}')" off="dom.changeConfig('progressBar', false, '{{page.name}}')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.view.progressPages}}
+					<div class="switch{{#if page.progressPages}} a{{/if}}" on="dom.changeConfig('progressPages', true, '{{page.name}}')" off="dom.changeConfig('progressPages', false, '{{page.name}}')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+
+				<div class="menu-simple-text gamepad-item">
+					{{language.global.view.progressPercent}}
+					<div class="switch{{#if page.progressPercent}} a{{/if}}" on="dom.changeConfig('progressPercent', true, '{{page.name}}')" off="dom.changeConfig('progressPercent', false, '{{page.name}}')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.desactiveMenu('#index-view', '.bar-right-buttons .button-view');"></div>
+</div>
+
+<div class="menu" id="opds-view">
+	<div class="menu-simple elevation-2" style="width: 300px;">
+		<div class="menu-simple-content">
+			<div>
+				<div class="menu-simple-text gamepad-item">
+					{{language.comics.continueReading}}
+					<div class="switch{{#if page.opds.continueReading}} a{{/if}}" on="dom.changeBoxes('continueReading', true, 'opds')" off="dom.changeBoxes('continueReading', false, 'opds')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+				<div class="menu-simple-text gamepad-item">
+					{{language.comics.recentlyAdded}}
+					<div class="switch{{#if page.opds.recentlyAdded}} a{{/if}}" on="dom.changeBoxes('recentlyAdded', true, 'opds')" off="dom.changeBoxes('recentlyAdded', false, 'opds')">
+						<div></div>
+						<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.desactiveMenu('#opds-view', '.bar-right-buttons .button-view');"></div>
+</div>
+
+<div class="menu" id="index-context-menu">
+	<div class="menu-simple elevation-2" onclick="events.desactiveMenu('#index-context-menu');">
+		<div class="menu-simple-content">
+			<div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-mark-read gamepad-item">
+					<i class="material-icon menu-simple-icon-first">import_contacts</i>
+					<span>{{language.global.contextMenu.markAsRead}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-mark-unread gamepad-item">
+					<i class="material-icon menu-simple-icon-first">menu_book</i><!-- auto_stories -->
+					<span>{{language.global.contextMenu.markAsUnread}}</span>
+				</div>
+
+				<div class="menu-simple-separator separator-mark"></div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-favorite gamepad-item">
+					<i class="material-icon menu-simple-icon-first">favorite</i>
+					<span>{{language.global.contextMenu.favorite}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-labels gamepad-item">
+					<i class="material-icon menu-simple-icon-first">label</i>
+					<span>{{language.global.labels}}</span>
+				</div>
+
+				<!--<div class="menu-simple-separator separator-labels"></div>-->
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-add-poster gamepad-item">
+					<i class="material-icon menu-simple-icon-first">add_photo_alternate</i>
+					<span></span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-delete-poster gamepad-item">
+					<i class="material-icon menu-simple-icon-first">disabled_by_default</i>
+					{{language.global.contextMenu.deletePoster}}
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-set-as-poster gamepad-item">
+					<i class="material-icon menu-simple-icon-first">add_photo_alternate</i>
+					{{language.global.contextMenu.setAsPoster}}
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-set-as-poster-folders gamepad-item">
+					<i class="material-icon menu-simple-icon-first">perm_media</i>
+					{{language.global.contextMenu.setAsPosterFolders}}
+				</div>
+
+				<div class="menu-simple-separator separator-poster"></div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-open-in-new-tab gamepad-item">
+					<i class="material-icon menu-simple-icon-first">tab</i>
+					<span>{{language.global.contextMenu.openInNewTab}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-open-in-new-window gamepad-item">
+					<i class="material-icon menu-simple-icon-first">open_in_new</i>
+					<span>{{language.global.contextMenu.openInNewWindow}}</span>
+				</div>
+
+				<div class="menu-simple-separator separator-open-in"></div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-open-file-location gamepad-item">
+					<i class="material-icon menu-simple-icon-first">folder_open</i>
+					<span>{{language.global.contextMenu.openFileLocation}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-clear-file-cache gamepad-item">
+					<i class="material-icon menu-simple-icon-first">mop</i>
+					<span>{{language.global.contextMenu.clearFileCache}}</span>
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-file-info gamepad-item">
+					<i class="material-icon menu-simple-icon-first">info</i>
+					<span>{{language.global.contextMenu.aboutFile}}</span>
+				</div>
+
+				<div class="menu-simple-separator separator-remove"></div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-remove gamepad-item">
+					<i class="material-icon menu-simple-icon-first">remove</i>
+					{{language.global.contextMenu.remove}}
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-move-to-trash gamepad-item">
+					<i class="material-icon menu-simple-icon-first">delete</i>
+					{{language.global.contextMenu.moveToTrash}}
+				</div>
+
+				<div class="menu-simple-element menu-simple-element-little context-menu-delete-permanently gamepad-item">
+					<i class="material-icon menu-simple-icon-first">delete_forever</i>
+					{{language.global.contextMenu.deletePermanently}}
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<div class="menu-close"></div>
+</div>
+
+<div class="menu" id="index-menu-gamepad">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 256px;">
+		<div class="menu-simple-content">
+			<div>
+
+				<div class="menu-simple-element gamepad-item gamepad-only-root" onclick="dom.labels.filterOnlyRoot();">
+					<i class="material-icon menu-simple-icon-first">drive_folder_upload</i>
+					{{language.global.filter.onlyRoot}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="dom.labels.filterFavorite();">
+					<i class="material-icon menu-simple-icon-first">favorite</i>
+					{{language.global.contextMenu.favorite}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#index-menu-gamepad'); dom.labels.loadLabels(); events.activeMenu('#index-labels', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">label</i>
+					{{language.global.labels}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="events.desactiveMenu('#index-menu-gamepad'); dom.search.showHide();">
+					<i class="material-icon menu-simple-icon-first">search</i>
+					{{language.global.search}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="events.desactiveMenu('#index-menu-gamepad'); dom.search.showHide(true);">
+					<i class="material-icon menu-simple-icon-first">filter_list</i>
+					{{language.global.filterCurrentPage}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#index-menu-gamepad'); events.activeMenu('#index-view', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first menu-gamepad-view-icon">view_module</i>
+					{{language.global.view.main}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="(async function(){await events.desactiveMenu('#index-menu-gamepad'); events.activeMenu('#index-sort', false, 'gamepad', 'gamepad');})()">
+					<i class="material-icon menu-simple-icon-first">sort</i>
+					{{language.global.sort.main}}
+				</div>
+
+				<div class="menu-simple-element gamepad-item" onclick="electronRemote.app.quit();">
+					<i class="material-icon menu-simple-icon-first">exit_to_app</i>
+					{{language.global.contextMenu.closeApp}}
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.desactiveMenu('#index-menu-gamepad');"></div>
+</div>
+
+<div class="menu" id="index-file-info-find-on">
+	<div class="menu-simple menu-simple-header elevation-2" style="width: 552px; z-index: 125;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(true);" style="z-index: 124;"></div>
+</div>
+
+<div class="menu" id="menu-simple-element">
+	<div class="menu-simple menu-simple-header elevation-2" style="max-width: 500px; z-index: 125;">
+		<div class="menu-simple-content">
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.hideSelect(false);" style="z-index: 124;"></div>
+</div>
+
+<div class="menu" id="index-labels">
+	<div class="menu-simple elevation-2" style="width: 320px;">
+		<div class="menu-simple-content">
+
+		</div>
+	</div>
+	<div class="menu-close" onclick="events.desactiveMenu('#index-labels', '.bar-right-buttons .button-labels');"></div>
+</div>
+
+<script type="text/javascript">
+	dom.selectElement('.sort-{{page.sort}}');
+	dom.selectElement('.view-{{page.view}}');	
+</script>

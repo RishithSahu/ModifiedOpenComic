@@ -1,0 +1,72 @@
+<div class="preload">
+	Roboto
+	<b>Roboto</b>
+	<span style="font-weight: 500;">Roboto</span>
+	<i class="material-icon">add</i>
+</div>
+<div class="app {{config.themeColor}}{{#if config.nightMode}} night-mode{{/if}}{{#if config.nightModeBlackBackground}} night-mode-black-background{{/if}}{{#if config.nightModeWhiteBlankPage}} night-mode-white-blank-page{{/if}}">
+	<div class="title-bar"></div>
+	<div class="tabs-bar" onmouseleave="tabs.mouseLeave(event)"><div class="small-scrollbar scroll-fade-x"><div></div></div></div>
+	<div class="bar-header"></div>
+	<div class="global-elements">
+		<div class="hover body-small">
+			<div></div>
+		</div>
+		<div class="global-menus">
+
+		</div>
+		<div class="menus">
+
+		</div>
+		<div class="dialogs">
+
+		</div>
+		<div class="snackbars">
+
+		</div>
+		<div class="placeholder-width body-large"></div>
+		<div class="search-bar">
+			<div class="elevation-3">
+				<div class="search-bar-input">
+					<i class="icon-24 material-icon">search</i>
+					<input class="body-large search-input" type="text" onkeyup="dom.search.keyup.call(this, event)" placeholder="{{language.global.search}}">
+					<i class="icon-24 material-icon" onclick="dom.search.hide()">close</i>
+				</div>
+				<div class="search-bar-results">
+
+
+
+				</div>
+			</div>
+			<span onclick="dom.search.hide()"></span>
+		</div>
+		<div class="material-icon floating-action-button floating-action-button-min hover-text elevation-3" style="bottom: 152px;" onclick="dom.addComicButtons(false); addComic(false);" hover-text="{{language.menu.file.addFile}}">
+			<div class="material-icon ">note_add</div>
+		</div>
+		<div class="floating-action-button floating-action-button-min hover-text elevation-3" style="bottom: 96px;" onclick="dom.addComicButtons(false); addComic(true);" hover-text="{{language.menu.file.addFolder}}">
+			<div class="material-icon ">create_new_folder</div>
+		</div>
+		<div class="floating-action-button floating-action-button-add hover-text elevation-3" hover-text="{{language.global.add}}">
+			<div class="material-icon">add</div>
+		</div>
+	</div>
+	<div class="content-left">
+
+	</div>
+	<div class="content-right">
+
+	</div>
+	<div class="drop-zone"></div>
+	<div class="footer">
+	</div>
+
+	<svg style="display: none;">
+		<path id="progress-pages-100" pathLength="2" d="M8 11h84"/>
+		<path id="progress-pages-" pathLength="2" d="M8 13h130"/>
+		<path id="progress-pages-150" pathLength="2" d="M8 13h130"/>
+		<path id="progress-pages-200" pathLength="2" d="M10 15h176"/>
+		<path id="progress-pages-250" pathLength="2" d="M12 17h222"/>
+		<path id="progress-pages-300" pathLength="2" d="M14 19h268"/>
+	</svg>
+
+</div>

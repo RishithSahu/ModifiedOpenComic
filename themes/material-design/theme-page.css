@@ -1,0 +1,80 @@
+.theme-page
+{
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	padding-bottom: 60px;
+	padding: 0px 24px;
+	margin-top: 40px;
+}
+
+.theme-page-item
+{
+	width: calc(50% - 8px);
+	border-radius: 24px;
+	background-color: var(--md-sys-color-surface-container-low);
+	transition: 0.2s;
+	margin-bottom: 16px;
+	cursor: pointer;
+	float: left;
+	position: relative;
+}
+
+.theme-page-item:hover
+{
+	background-color: var(--md-sys-color-secondary-container);
+}
+
+.theme-page-item > div
+{
+	height: 200px;
+	border-radius: 24px 24px 24px 24px;
+	overflow: hidden;
+}
+
+.theme-page-item > div > div
+{
+	height: 200px;
+}
+
+.theme-page-item > div > div > div
+{
+	float: left;
+	width: 50%;
+	height: 100%;
+}
+
+.theme-page-item > span
+{
+	display: block;
+	position: relative;
+	margin: 24px;
+}
+
+.theme-page-item.gamepad-highlight
+{
+	transform: scale(1.02);
+}
+
+.theme-page-item:after
+{
+	content: '';
+	display: block;
+	background-color: transparent;
+	position: absolute;
+	top: -2px;
+	left: -2px;
+	width: calc(100% + 4px);
+	height: calc(100% + 4px);
+	box-sizing: border-box;
+	border: 4px solid rgba(180, 180, 180, 1);
+	border-radius: 26px;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.theme-page-item.gamepad-highlight:after
+{
+	opacity: 1;
+	animation: 4s blink normal 1s infinite ease-in-out;
+}

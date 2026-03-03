@@ -1,0 +1,320 @@
+.boxes
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	gap: 10px;
+	padding: 16px 8px 20px 8px;
+	width: calc(100% + 12px);
+	box-sizing: border-box;
+}
+
+.boxes .box
+{
+	height: 334px;
+	overflow: hidden;
+	width: 100%;
+	position: relative;
+	border-radius: 18px;
+	margin: 0px 4px;
+	background-color: var(--md-sys-color-surface-container);
+	background-image: linear-gradient(180deg, color-mix(in srgb, var(--md-sys-color-surface-container-highest), transparent 70%) 0%, color-mix(in srgb, var(--md-sys-color-surface-container), #000 6%) 100%);
+	border: 1px solid color-mix(in srgb, var(--md-sys-color-outline), transparent 82%);
+	box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.18);
+	transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.boxes .box:before
+{
+	content: '';
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	height: 4px;
+	border-radius: 18px 18px 0px 0px;
+	background: linear-gradient(90deg, color-mix(in srgb, var(--md-sys-color-primary), #fff 16%) 0%, color-mix(in srgb, var(--md-sys-color-primary), #000 12%) 100%);
+	opacity: 0.95;
+}
+
+.box-title
+{
+	padding: 14px 16px 8px 16px;
+	font-weight: 600;
+	letter-spacing: 0.2px;
+	display: flex;
+	align-items: center;
+	min-height: 42px;
+	box-sizing: border-box;
+}
+
+.box-title .box-title-pill
+{
+	max-width: 100%;
+	display: inline-flex;
+	align-items: center;
+	padding: 5px 12px;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--md-sys-color-outline), transparent 74%);
+	background: color-mix(in srgb, var(--md-sys-color-surface-container-highest), transparent 52%);
+	font-weight: 650;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.box-title .box-title-pill:before
+{
+	content: '';
+	width: 7px;
+	height: 7px;
+	flex: 0 0 7px;
+	border-radius: 50%;
+	margin-right: 8px;
+	background: color-mix(in srgb, var(--md-sys-color-primary), #fff 18%);
+	box-shadow: 0px 0px 0px 3px color-mix(in srgb, var(--md-sys-color-primary), transparent 78%);
+}
+
+.box-content
+{
+	width: 100%;
+	padding: 0px 10px 12px 10px;
+	box-sizing: border-box;
+}
+
+.box-content .content-view-module
+{
+	width: 100%;
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: flex-start;
+	align-items: flex-start;
+	gap: 8px;
+	overflow: hidden;
+	padding-right: 0px;
+}
+
+.box-content .content-view-module-100 > div
+{
+	width: 110px;
+	height: 260px;
+	contain-intrinsic-size: 110px 260px;
+	margin: 2px 0px 0px 0px;
+	padding: 6px 2px 0px 2px;
+	box-sizing: border-box;
+	flex: 0 0 110px;
+}
+
+.box-content .content-view-module .v-folder,
+.box-content .content-view-module .v-img
+{
+	width: 106px;
+	height: 158px;
+	border-radius: 14px;
+}
+
+.box-content .content-view-module .v-img img,
+.box-content .content-view-module .v-folder:before,
+.box-content .content-view-module .v-folder:after,
+.box-content .content-view-module .folder-poster > img
+{
+	border-radius: 14px;
+}
+
+.box-content .content-view-module .v-text
+{
+	width: 106px;
+	height: 44px;
+	margin-top: 10px;
+	padding: 0px 1px;
+	box-sizing: border-box;
+	line-height: 18px;
+	text-align: left;
+	white-space: normal;
+	word-break: break-word;
+	overflow: hidden;
+	text-overflow: clip;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	font-weight: 600;
+}
+
+.box-content .content-view-module .v-secondary-text
+{
+	width: 106px;
+	height: 17px;
+	margin-top: 5px;
+	padding: 0px 1px;
+	box-sizing: border-box;
+	line-height: 17px;
+	text-align: left;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	opacity: 0.86;
+}
+
+.box-content .content-view-module .v-folder
+{
+	background-color: var(--md-sys-color-force-surface);
+}
+
+.box-content .content-view-module .progress-pages,
+.box-content .content-view-module .progress-bar
+{
+	display: none !important;
+}
+
+.boxes .box.box-continue
+{
+	border-color: color-mix(in srgb, #6abff8, transparent 62%);
+	background-image: linear-gradient(180deg, color-mix(in srgb, #65bff0, transparent 90%) 0%, color-mix(in srgb, var(--md-sys-color-surface-container), #000 8%) 100%);
+}
+
+.boxes .box.box-continue:before
+{
+	background: linear-gradient(90deg, #4dc2ff 0%, #6d9cff 100%);
+}
+
+.boxes .box.box-continue .box-title-pill
+{
+	border-color: color-mix(in srgb, #66bdf8, transparent 52%);
+	background: color-mix(in srgb, #66bdf8, transparent 82%);
+	color: color-mix(in srgb, var(--md-sys-color-on-surface), #dff2ff 22%);
+}
+
+.boxes .box.box-continue .box-title-pill:before
+{
+	background: #66ccff;
+	box-shadow: 0px 0px 0px 3px rgba(102, 204, 255, 0.22);
+}
+
+.boxes .box.box-continue .content-view-module .v-secondary-text
+{
+	color: color-mix(in srgb, var(--md-sys-color-on-surface), #8fd6ff 22%);
+}
+
+.boxes .box.box-recommended
+{
+	border-color: color-mix(in srgb, #f0b35c, transparent 60%);
+	background-image: linear-gradient(180deg, color-mix(in srgb, #e6ae61, transparent 92%) 0%, color-mix(in srgb, var(--md-sys-color-surface-container), #000 9%) 100%);
+}
+
+.boxes .box.box-recommended:before
+{
+	background: linear-gradient(90deg, #f7c35a 0%, #f19c52 100%);
+}
+
+.boxes .box.box-recommended .box-title-pill
+{
+	border-radius: 10px;
+	border-color: color-mix(in srgb, #f4be67, transparent 50%);
+	background: color-mix(in srgb, #f1b764, transparent 82%);
+	color: color-mix(in srgb, var(--md-sys-color-on-surface), #fff0d2 20%);
+}
+
+.boxes .box.box-recommended .box-title-pill:before
+{
+	width: 7px;
+	height: 7px;
+	flex: 0 0 7px;
+	border-radius: 1px;
+	transform: rotate(45deg);
+	background: #ffd58a;
+	box-shadow: 0px 0px 0px 3px rgba(247, 195, 90, 0.2);
+}
+
+.boxes .box.box-recommended .content-view-module .v-secondary-text
+{
+	color: color-mix(in srgb, var(--md-sys-color-on-surface), #f3c77e 20%);
+}
+
+.boxes .box.box-recent
+{
+	border-color: color-mix(in srgb, #57d3a0, transparent 58%);
+	background-image: linear-gradient(180deg, color-mix(in srgb, #56c69b, transparent 92%) 0%, color-mix(in srgb, var(--md-sys-color-surface-container), #000 8%) 100%);
+}
+
+.boxes .box.box-recent:before
+{
+	background: linear-gradient(90deg, #4ed89f 0%, #2fbac2 100%);
+}
+
+.boxes .box.box-recent .box-title-pill
+{
+	border-radius: 8px 14px 14px 8px;
+	border-color: color-mix(in srgb, #65dcb0, transparent 50%);
+	background: color-mix(in srgb, #65dcb0, transparent 84%);
+	color: color-mix(in srgb, var(--md-sys-color-on-surface), #d8ffef 20%);
+}
+
+.boxes .box.box-recent .box-title-pill:before
+{
+	width: 3px;
+	height: 14px;
+	flex: 0 0 3px;
+	border-radius: 2px;
+	background: #68e5b6;
+	box-shadow: none;
+}
+
+.boxes .box.box-recent .content-view-module .v-secondary-text
+{
+	color: color-mix(in srgb, var(--md-sys-color-on-surface), #8edebf 20%);
+}
+
+.boxes .box.box-recommended .content-view-module > div .item-image
+{
+	position: relative;
+	overflow: hidden;
+}
+
+.boxes .box.box-recommended .recommendation-feedback-controls
+{
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	display: flex;
+	gap: 5px;
+	z-index: 8;
+}
+
+.boxes .box.box-recommended .recommendation-feedback-button
+{
+	width: 24px;
+	height: 24px;
+	border: 0px;
+	border-radius: 8px;
+	background: color-mix(in srgb, #000, transparent 34%);
+	color: rgba(255, 255, 255, 0.92);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: transform 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+
+.boxes .box.box-recommended .recommendation-feedback-button i
+{
+	font-size: 15px;
+	line-height: 1;
+}
+
+.boxes .box.box-recommended .recommendation-feedback-button:hover
+{
+	transform: translateY(-1px);
+	background: color-mix(in srgb, #000, transparent 18%);
+}
+
+.boxes .box.box-recommended .recommendation-feedback-button.recommendation-feedback-up.active
+{
+	background: color-mix(in srgb, #1f9a67, transparent 14%);
+	color: #d8ffec;
+}
+
+.boxes .box.box-recommended .recommendation-feedback-button.recommendation-feedback-down.active
+{
+	background: color-mix(in srgb, #ba4444, transparent 16%);
+	color: #ffe3e3;
+}
