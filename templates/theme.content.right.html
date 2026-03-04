@@ -1,36 +1,49 @@
 <div class="settings-body body-medium">
-	<h1 class="display-medium">{{language.global.theme}}</h1>
+<h1 class="display-medium">{{language.global.theme}}</h1>
 
-	<div class="menu-simple-text gamepad-item">
-		<span>{{language.settings.theme.nightModeBlackBackground}}</span>
-		<div class="switch{{#if config.nightModeBlackBackground}} a{{/if}}" on="settings.set('nightModeBlackBackground', true); dom.nightModeConfig();" off="settings.set('nightModeBlackBackground', false); dom.nightModeConfig();">
-			<div></div>
-			<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
-		</div>
-	</div>
+<div class="theme-section-title title-medium">Display</div>
 
-	<div class="menu-simple-text gamepad-item">
-		<span>{{language.settings.theme.nightModeWhiteBlankPage}}</span>
-		<div class="switch{{#if config.nightModeWhiteBlankPage}} a{{/if}}" on="settings.set('nightModeWhiteBlankPage', true); dom.nightModeConfig();" off="settings.set('nightModeWhiteBlankPage', false); dom.nightModeConfig();">
-			<div></div>
-			<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
-		</div>
-	</div>
+<div class="menu-simple-text gamepad-item">
+<span>{{language.settings.theme.nightModeBlackBackground}}</span>
+<div class="switch{{#if config.nightModeBlackBackground}} a{{/if}}" on="settings.set('nightModeBlackBackground', true); dom.nightModeConfig();" off="settings.set('nightModeBlackBackground', false); dom.nightModeConfig();">
+<div></div>
+<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+</div>
+</div>
 
-	<div class="theme-page">
-		{{#each themeColors}}
+<div class="menu-simple-text gamepad-item">
+<span>{{language.settings.theme.nightModeWhiteBlankPage}}</span>
+<div class="switch{{#if config.nightModeWhiteBlankPage}} a{{/if}}" on="settings.set('nightModeWhiteBlankPage', true); dom.nightModeConfig();" off="settings.set('nightModeWhiteBlankPage', false); dom.nightModeConfig();">
+<div></div>
+<svg viewBox="0 0 52 32"><path d="M 8,0 C 3.58,0 0,3.58 0,8 0,12.42 3.58,16 8,16 8,16 8,16 8,16 12.42,16 16,12.42 16,8 16,3.58 12.42,0 8,0 8,0 8,0 8,0 Z"></path></svg>
+</div>
+</div>
 
-			<div class="theme-page-item gamepad-item{{#if @first}} gamepad-to-highlight{{/if}}{{#if active}} active{{/if}}" onclick="theme.setColor('{{key}}');">
-				<div>
-					<div>
-						{{#each colors}}
-						<div style="background-color: {{@this}};"></div>
-						{{/each}}
-					</div>
-				</div>
-				<span class="headline-small">{{name}}</span>
-			</div>
+<div class="theme-section-title title-medium">Color Themes</div>
+<div class="theme-section-subtitle body-medium">Choose an accent color for the interface</div>
 
-		{{/each}}
-	</div>
+<div class="theme-page">
+{{#each themeColors}}
+
+<div class="theme-page-item gamepad-item{{#if @first}} gamepad-to-highlight{{/if}}{{#if active}} active{{/if}}" onclick="theme.setColor('{{key}}');">
+<div class="theme-page-preview">
+<div class="theme-page-colors">
+{{#each colors}}
+<div style="background-color: {{@this}};"></div>
+{{/each}}
+</div>
+<div class="theme-page-accent" style="background-color: {{primaryColor}};"></div>
+</div>
+<div class="theme-page-footer">
+<span class="title-medium">{{name}}</span>
+{{#if active}}
+<div class="theme-page-check">
+<span class="material-icons">check_circle</span>
+</div>
+{{/if}}
+</div>
+</div>
+
+{{/each}}
+</div>
 </div>

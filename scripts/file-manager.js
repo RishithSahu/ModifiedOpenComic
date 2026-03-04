@@ -2761,11 +2761,29 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 
 		this.time('ebookPagesEpub: ' + this.path);
 
+		const debug = (stage, payload = {}) => {
+			try {
+				console.log('[epub-debug][file-manager]['+stage+']', {
+					path: this.path,
+					...payload,
+				});
+			}
+			catch (error) {}
+		};
+
+		const startedAt = Date.now();
+		debug('start', {config: {width: config?.width, height: config?.height}});
+
 		let timeoutST = false;
 		let pages = { pages: [], toc: [], landmarks: false };
 
 		try
 		{
+			const isTimeoutError = function (error, label) {
+				const message = String(error?.message || '');
+				return message.indexOf(label + ':') === 0;
+			};
+
 			const withTimeout = function (promise, timeout, label) {
 				return new Promise(function (resolve, reject) {
 					let done = false;
@@ -2790,13 +2808,54 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 				});
 			};
 
-			let epub = await withTimeout(this.openEpub(), 20000, 'ebookPagesEpub.openEpubTimeout');
+			let epub = false;
+			try
+			{
+				debug('openEpub:begin');
+				epub = await withTimeout(this.openEpub(), 45000, 'ebookPagesEpub.openEpubTimeout');
+				debug('openEpub:ok');
+			}
+			catch(error)
+			{
+				if(isTimeoutError(error, 'ebookPagesEpub.openEpubTimeout'))
+				{
+					debug('openEpub:timeout-retry');
+					epub = await this.openEpub();
+					debug('openEpub:retry-ok');
+				}
+				else
+				{
+					debug('openEpub:error', {error: String(error?.message || error)});
+					throw error;
+				}
+			}
 			let _this = this;
 
-			let files = await withTimeout(this.read(), 20000, 'ebookPagesEpub.readTimeout');
-			files = this.filesToOnedimension(files);
+			let totalFiles = 0;
 
-			let totalFiles = files.length;
+			try
+			{
+				debug('readEpubFiles:begin');
+				const epubFiles = await withTimeout(epub.readEpubFiles(), 30000, 'ebookPagesEpub.readEpubFilesTimeout');
+				totalFiles = Array.isArray(epubFiles) ? epubFiles.length : 0;
+				debug('readEpubFiles:ok', {totalFiles: totalFiles});
+			}
+			catch(error)
+			{
+				if(!isTimeoutError(error, 'ebookPagesEpub.readEpubFilesTimeout'))
+				{
+					debug('readEpubFiles:error', {error: String(error?.message || error)});
+					throw error;
+				}
+
+				debug('readEpubFiles:timeout-fallback');
+			}
+
+			if(totalFiles <= 0)
+				totalFiles = Math.max(1, +(epub?.epub?.spine?.items?.length || 1));
+
+			debug('pagination:begin', {totalFiles: totalFiles});
+
 			let progressIndex = 1;
 
 			if (epub.extracted)
@@ -2804,32 +2863,38 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 			else
 				this.setProgress(0);
 
-			const timeout = Math.min(Math.max(totalFiles * 700, 10000), 35000);
-
-			let epubPagesPromise = epub.epubPages(config, function () {
+			pages = await epub.epubPages(config, function () {
 
 				// _this.setFileStatus(file, {extracted: true, width: _this.config.width});
 				_this.setProgress(epub.extracted ? (0.5 + progressIndex++ / totalFiles / 2) : (progressIndex++ / totalFiles));
 
 			});
 
-			let timeoutPromise = new Promise(function (resolve, reject) {
-				timeoutST = setTimeout(function () {
-					reject(new Error('ebookPagesTimeout: ' + _this.path));
-				}, timeout);
+			debug('pagination:ok', {
+				pages: pages?.pages?.length || 0,
+				toc: pages?.toc?.length || 0,
+				durationMs: Date.now() - startedAt,
 			});
-
-			pages = await Promise.race([epubPagesPromise, timeoutPromise]);
 		}
 		catch (error)
 		{
 			console.error(error);
+			debug('error', {
+				error: String(error?.message || error),
+				stack: String(error?.stack || ''),
+				durationMs: Date.now() - startedAt,
+			});
 		}
 		finally
 		{
 			if (timeoutST) clearTimeout(timeoutST);
 			this.setProgress(1);
 			this.timeEnd('ebookPagesEpub: ' + this.path);
+			debug('end', {
+				pages: pages?.pages?.length || 0,
+				toc: pages?.toc?.length || 0,
+				durationMs: Date.now() - startedAt,
+			});
 		}
 
 		if (!pages || !pages.pages)

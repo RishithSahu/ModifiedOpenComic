@@ -3255,6 +3255,13 @@ function isBookmark(path, _return = false) {
 
 		page = _ebook.pages[page];
 
+		if (!page || typeof page.chapterProgress === 'undefined' || typeof page.chapterProgressSize === 'undefined') {
+			if (!_return)
+				activeBookmark(false);
+
+			return false;
+		}
+
 		let min = page.chapterProgressSize == page.chapterProgress ? 0 : page.chapterProgress - (page.chapterProgressSize / 2);
 		let max = page.chapterProgress + (page.chapterProgressSize / 2);
 
@@ -4161,9 +4168,27 @@ async function fastUpdateEbookPages(readingEbook = false, resize = false) {
 
 var hasGenerateEbookPages = false;
 
+function logEpubRenderDebug(stage = '', payload = {}) {
+	try {
+		console.log('[epub-debug][reading]['+stage+']', payload);
+	}
+	catch (error) {}
+}
+
 async function generateEbookPages(end = false, reset = false, fast = false, imagePath = false, first = false) {
+	const startedAt = Date.now();
+	logEpubRenderDebug('generate:start', {
+		mainPath: dom.history.mainPath || '',
+		end: end,
+		reset: reset,
+		fast: fast,
+		imagePath: imagePath || '',
+		first: first,
+	});
+
 	// Avoid running multiple times at the same time
 	if (hasGenerateEbookPages) {
+		logEpubRenderDebug('generate:skip-busy', {mainPath: dom.history.mainPath || ''});
 		hasGenerateEbookPages = 1;
 
 		return;
@@ -4189,31 +4214,34 @@ async function generateEbookPages(end = false, reset = false, fast = false, imag
 
 	let ebookConfig = await getEbookConfig();
 	let ebookPages = false;
-	let ebookPagesTimeoutST = false;
 
 	try
 	{
-		let ebookPagesPromise = readingFileC.ebookPages(ebookConfig);
-		let timeoutPromise = new Promise(function (resolve, reject) {
-			ebookPagesTimeoutST = setTimeout(function () {
-				reject(new Error('generateEbookPagesTimeout: ' + (dom.history.mainPath || '')));
-			}, 60000);
+		logEpubRenderDebug('generate:ebookPages:request', {mainPath: dom.history.mainPath || ''});
+		ebookPages = await readingFileC.ebookPages(ebookConfig);
+		logEpubRenderDebug('generate:ebookPages:response', {
+			mainPath: dom.history.mainPath || '',
+			pages: ebookPages?.pages?.length || 0,
+			toc: ebookPages?.toc?.length || 0,
 		});
-
-		ebookPages = await Promise.race([ebookPagesPromise, timeoutPromise]);
 	}
 	catch (error)
 	{
 		console.error(error);
+		logEpubRenderDebug('generate:ebookPages:error', {
+			mainPath: dom.history.mainPath || '',
+			error: String(error?.message || error),
+		});
 		ebookPages = { pages: [], toc: [], landmarks: false };
-	}
-	finally
-	{
-		if (ebookPagesTimeoutST) clearTimeout(ebookPagesTimeoutST);
 	}
 
 	if(!ebookPages || !ebookPages.pages || !ebookPages.pages.length)
 	{
+		logEpubRenderDebug('generate:empty-pages', {
+			mainPath: dom.history.mainPath || '',
+			durationMs: Date.now() - startedAt,
+		});
+
 		const contentRight = template._contentRight();
 		if(contentRight)
 		{
@@ -4235,6 +4263,10 @@ async function generateEbookPages(end = false, reset = false, fast = false, imag
 
 		reading.isLoad();
 		hasGenerateEbookPages = false;
+		logEpubRenderDebug('generate:end-empty', {
+			mainPath: dom.history.mainPath || '',
+			durationMs: Date.now() - startedAt,
+		});
 		return;
 	}
 
@@ -4325,9 +4357,19 @@ async function generateEbookPages(end = false, reset = false, fast = false, imag
 		setTimeout(function () { onScroll.call(template._contentRight().firstElementChild) }, 500);
 
 		reading.isLoad();
+		logEpubRenderDebug('generate:success', {
+			mainPath: dom.history.mainPath || '',
+			pages: ebookPages.pages.length,
+			toc: ebookPages.toc?.length || 0,
+			durationMs: Date.now() - startedAt,
+		});
 	}
 
 	hasGenerateEbookPages = false;
+	logEpubRenderDebug('generate:end', {
+		mainPath: dom.history.mainPath || '',
+		durationMs: Date.now() - startedAt,
+	});
 }
 
 function currentImagePosition() {

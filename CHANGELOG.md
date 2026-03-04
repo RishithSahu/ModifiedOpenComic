@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.7.6 (04-03-2026)
+
+##### New Features
+
+- Show AniList rating (`averageScore`) in tracking search/current-tracking dialogs and in top metadata cards.
+- Add metadata backfill logic to rescrape AniList data when older tracked entries are missing rating.
+
+##### Bug Fixes
+
+- Fix crashes in file-info metadata parsing when non-string values are passed to comma-separated parsing logic.
+
+##### Optimizations & Stability
+
+- Add end-to-end EPUB debug instrumentation across reading, file-manager, and EPUB modules to isolate open/read/pagination stages.
+- Prioritize local extracted chapter HTML reads in EPUB chapter loading and reduce dependency on fragile section URL fetches.
+
+## v1.7.5 (04-03-2026)
+
+##### Bug Fixes
+
+- Fix Continue Reading and Recently Added boxes showing category/container folders (e.g. "3 Reading", "4 Yet to Read Series") instead of — or alongside — the actual manga inside them. Only items with direct tracking metadata or non-folder content are now included.
+- Fix duplicate box sections (multiple "Continue reading", "Recommended for you", "Recently added" blocks) appearing when concurrent page-load calls raced during async thumbnail fetching. Added a per-variant dedup guard in the box builder and `contentRightIndex` abort checks between each box call.
+
+## v1.7.5 (04-03-2026)
+
+##### New Features
+
+- Add a dedicated genre filter menu in Library and Recently opened (including gamepad menu), using tracked metadata genres instead of opening the text search overlay from the filter icon.
+- Expand recommendation generation to use the full indexed tracking metadata pool, so "Recommended for you" can still appear even when the current page has no directly tracked manga items.
+
+##### Bug Fixes
+
+- Fix missing thumbnails in metadata-backed recommendation cards by forcing thumbnail/poster resolution when cards do not have preloaded images.
+- Restore recommendation feedback controls (thumbs up / thumbs down) in the "Recommended for you" section and persist feedback to recommendation scoring.
+- Restore author/subname visibility in recommendation cards generated from indexed metadata fallback entries.
+- Fix metadata description/top-info genre display to show all available genres (remove previous 3-genre cap).
+
 ## v1.7.1 (02-03-2026)
 
 ##### New Features

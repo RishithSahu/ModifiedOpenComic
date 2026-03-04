@@ -198,6 +198,41 @@ function freshnessScore(added = 0)
 	return Math.max(0.2, 1 - (Math.min(days, 720) / 720));
 }
 
+function feedbackSignalScore(feedback = {})
+{
+	let shown = Math.max(0, +(feedback?.shown || 0));
+	let liked = Math.max(0, +(feedback?.liked || 0));
+	let disliked = Math.max(0, +(feedback?.disliked || 0));
+
+	const rating = +(feedback?.rating || 0);
+	if(rating > 0)
+	{
+		shown = Math.max(shown, 1);
+		liked = Math.max(liked, 1);
+	}
+	else if(rating < 0)
+	{
+		shown = Math.max(shown, 1);
+		disliked = Math.max(disliked, 1);
+	}
+
+	if(liked > shown)
+		shown = liked;
+
+	if(disliked > shown)
+		shown = disliked;
+
+	const likeRate = (liked + 1) / (shown + 2);
+	const dislikeRate = disliked / Math.max(1, shown);
+
+	return {
+		shown,
+		liked,
+		disliked,
+		score: Math.max(-0.30, Math.min(0.35, ((likeRate - 0.5) * 0.7) - (dislikeRate * 0.5))),
+	};
+}
+
 function buildRecommendations(comics = [], options = {})
 {
 	const trackingFolderMetadata = options.trackingFolderMetadata || {};
@@ -225,11 +260,7 @@ function buildRecommendations(comics = [], options = {})
 			continue;
 
 		const feedback = recommendationFeedback[comic.path] || {};
-		const feedbackRating = Number(feedback.rating || 0);
-
-		// Hide recommendations explicitly marked as bad by the user.
-		if(feedbackRating < 0)
-			continue;
+		const feedbackSignal = feedbackSignalScore(feedback);
 
 		const genres = listGenres(metadata);
 		const candidateMinutes = estimateSeriesReadingMinutes(comic.path, metadata, readingProgress, readingPages);
@@ -237,18 +268,18 @@ function buildRecommendations(comics = [], options = {})
 		const genreScore = genreClusterScore(genres, profile);
 		const timeScore = timeAffinityScore(candidateMinutes, profile);
 		const freshScore = freshnessScore(comic.added || 0);
-		let score = Math.round(((genreScore * 0.65) + (timeScore * 0.25) + (freshScore * 0.10)) * 100);
-
-		// Positive feedback nudges highly relevant items upward.
-		if(feedbackRating > 0)
-			score = Math.min(100, score + 18);
+		const mixedScore = (genreScore * 0.62) + (timeScore * 0.23) + (freshScore * 0.10) + feedbackSignal.score;
+		const score = Math.max(1, Math.min(100, Math.round(mixedScore * 100)));
 
 		recommended.push({
 			...comic,
 			recommendationScore: score,
 			recommendationGenres: genres,
 			recommendationReadingTimeMinutes: candidateMinutes,
-			recommendationRating: feedbackRating,
+			recommendationRating: Number(feedback.rating || 0),
+			recommendationFeedbackShown: feedbackSignal.shown,
+			recommendationFeedbackLiked: feedbackSignal.liked,
+			recommendationFeedbackDisliked: feedbackSignal.disliked,
 		});
 	}
 

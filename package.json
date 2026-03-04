@@ -1,7 +1,7 @@
 {
 	"name": "opencomic",
 	"productName": "OpenComic",
-	"version": "1.7.1",
+	"version": "1.7.5",
 	"main": ".dist/main.js",
 	"type": "commonjs",
 	"keywords": [
@@ -145,7 +145,8 @@
 		"asar": true,
 		"publish": null,
 		"win": {
-			"sign": false
+			"sign": false,
+			"buildVersion": "1.7.5.1"
 		},
 		"files": [
 			"**/*",

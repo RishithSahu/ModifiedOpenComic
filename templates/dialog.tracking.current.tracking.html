@@ -6,7 +6,12 @@
   <div class="tracking-current-center">
     <span class="dialog-header title-large">{{trackingResult.title}}</span>
     <div class="tracking-current-progress">
-      {{#if siteData.trackingChapter}}
+      {{#if trackingResult.rating}}
+      <div class="tracking-current-progress-rating">
+        AniList Rating:
+        <div><span>{{trackingResult.rating}}</span>/100</div>
+      </div>
+      {{/if}} {{#if siteData.trackingChapter}}
       <div class="tracking-current-progress-chapters">
         {{language.reading.tracking.chapters}}:
         <div>

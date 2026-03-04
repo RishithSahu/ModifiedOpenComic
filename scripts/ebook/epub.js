@@ -15,73 +15,130 @@ var epub = function(path, config = {}) {
 
 	this.containerXml = false;
 	this.opf = false;
+	this.opfRelativePath = '';
+	this.opfPromise = false;
+	this.openEpubPromise = false;
+
+	this.debug = function(stage = '', payload = {}) {
+		try {
+			console.log('[epub-debug][epub]['+stage+']', {
+				path: this.path,
+				...payload,
+			});
+		}
+		catch (error) {}
+	}
 
 	/* Manage Zip epub */
 
 	this.openEpubZip = async function() {
 
 		if(this.zip) return;
+		this.debug('zip:open:begin');
 		this.zip = fileManager.file(this.path);
 		this.zip.updateConfig({progress: {multiply: 0.5}});
+		this.debug('zip:open:ok');
 
 	}
 
 	this.readEpubZipFiles = async function() {
 
-		if(this.zipFiles) return this.zipFiles;
-
-		await this.openEpubZip();
-
-		return this.zipFiles = await this.zip.read({filtered: false, forceType: '7z', prefixes: {epub: 'epub-zip'}});
+		return this.zipFiles || [];
 
 	}
 
 	this.extracted = false;
 
 	// Extract epub files
-	this.makeAvailable = async function() {
+	this.normalizeRelativeArchivePath = function(relativePath = '') {
 
-		let files = fileManager.fileCompressed('').filesToOnedimension(this.zipFiles);
-		files = files.filter((file) => !file.folder);
+		return String(relativePath)
+			.replace(/\\/g, '/')
+			.replace(/^\/+/, '')
+			.replace(/\?.*$/, '')
+			.replace(/#.*$/, '');
 
-		this.extracted = await this.zip.makeAvailable(files);
+	}
+
+	this.makeAvailableOne = async function(relativePath) {
+		await this.openEpubZip();
+		const normalizedRelativePath = this.normalizeRelativeArchivePath(relativePath);
+		const virtualPath = p.join(this.path, ...normalizedRelativePath.split('/'));
+
+		this.debug('zip:extract:one:begin', {relativePath: normalizedRelativePath});
+		await this.zip.makeAvailable([{path: virtualPath}]);
+		this.debug('zip:extract:one:ok', {relativePath: normalizedRelativePath});
+
+		return true;
+
+	}
+
+	this.getSectionRelativePath = function(section = false) {
+
+		const href = this.normalizeRelativeArchivePath(section?.href || section?.canonical || '');
+
+		if(!href)
+			return '';
+
+		const opfDir = this.opfRelativePath ? p.posix.dirname(this.opfRelativePath) : '';
+		const relativePath = opfDir && opfDir !== '.' ? p.posix.join(opfDir, href) : href;
+
+		return this.normalizeRelativeArchivePath(relativePath);
 
 	}
 
 	this.findContentOpf = async function() {
 
 		if(this.opf) return this.opf;
-
-		await this.readEpubZipFiles();
-		await this.makeAvailable();
-
-		let path = p.join(this.realPathZip, CONTAINER_PATH);
-
-		if(fs.existsSync(path))
+		if(this.opfPromise)
 		{
-			this.containerXml = await fsp.readFile(path, 'utf8');
-			this.opf = extract(/\<rootfile\s[^>]*full-path="([^">]+)"/, this.containerXml, 1);
+			this.debug('opf:find:join');
+			return this.opfPromise;
+		}
 
-			if(this.opf)
+		this.opfPromise = (async () => {
+
+			this.debug('opf:find:begin');
+
+			await this.makeAvailableOne(CONTAINER_PATH);
+
+			let path = p.join(this.realPathZip, CONTAINER_PATH);
+
+			if(fs.existsSync(path))
 			{
-				this.opf = p.join(this.realPathZip, this.opf)
+				this.containerXml = await fsp.readFile(path, 'utf8');
+				let opfRelativePath = extract(/\<rootfile\s[^>]*full-path="([^">]+)"/, this.containerXml, 1);
 
-				if(!fs.existsSync(this.opf))
-					throw new Error('Epub opf file not exists');
+				if(opfRelativePath)
+				{
+					this.opfRelativePath = this.normalizeRelativeArchivePath(opfRelativePath);
+					await this.makeAvailableOne(this.opfRelativePath);
+
+					this.opf = p.join(this.realPathZip, this.opfRelativePath)
+
+					if(!fs.existsSync(this.opf))
+						throw new Error('Epub opf file not exists');
+				}
+				else
+				{
+					throw new Error('Epub not have opf file');
+				}
 			}
 			else
 			{
-				throw new Error('Epub not have opf file');
+				throw new Error('Epub container file not exists');
 			}
-		}
-		else
-		{
-			throw new Error('Epub container file not exists');
-		}
 
-		await this.ensureIbooksDisplayOptionsFile();
+			await this.ensureIbooksDisplayOptionsFile();
+			this.debug('opf:find:ok', {opf: this.opf});
 
-		return this.opf;
+			return this.opf;
+
+		})().finally(() => {
+			this.opfPromise = false;
+		});
+
+		return this.opfPromise;
 	}
 
 	this.ensureIbooksDisplayOptionsFile = async function() {
@@ -108,12 +165,12 @@ var epub = function(path, config = {}) {
 	}
 
 	/* Manage epub */
-
 	this.ebook = false;
 
 	this.epub = false;
 	this.epubFiles = false;
 	this.epubMetadata = false;
+	this.manualSpine = [];
 
 	this.toc = false;
 
@@ -170,33 +227,198 @@ var epub = function(path, config = {}) {
 
 	}
 
-	this.openEpub = async function() {
+	this.waitForFileReady = async function(filePath, maxMs = 1200) {
 
-		if(this.epub) return;
-		if(epubjs === false) epubjs = require('epubjs');
+		const startedAt = Date.now();
+
+		while((Date.now() - startedAt) < maxMs)
+		{
+			try
+			{
+				if(fs.existsSync(filePath))
+				{
+					const stat = fs.statSync(filePath);
+					if(stat.isFile() && stat.size > 0)
+						return true;
+				}
+			}
+			catch(error){}
+
+			await app.sleep(30);
+		}
+
+		return false;
+
+	}
+
+	this.getActiveSpineItems = function() {
+
+		const epubSpineItems = this.epub?.spine?.items || [];
+
+		if(epubSpineItems.length > 0)
+			return epubSpineItems;
+
+		return this.manualSpine || [];
+
+	}
+
+	this.buildManualSpineFromOpf = async function() {
 
 		await this.findContentOpf();
 
-		this.epub = new epubjs.Book(this.opf);
+		if(!this.opf || !fs.existsSync(this.opf))
+			return [];
+
+		let opfSource = '';
 
 		try
 		{
-			this.toc = await this.withTimeout(this.epub.loaded.navigation, 15000, 'loaded.navigation');
+			opfSource = await fsp.readFile(this.opf, 'utf8');
 		}
 		catch(error)
 		{
-			console.warn('EPUB navigation not available, fallback to empty TOC', error);
-			this.toc = {toc: []};
+			this.debug('manual-spine:read:error', {error: String(error?.message || error)});
+			return [];
 		}
+
+		let opf = false;
 
 		try
 		{
-			await this.withTimeout(this.epub.opened, 15000, 'opened');
+			let parser = new DOMParser();
+			opf = parser.parseFromString(opfSource, 'text/xml');
 		}
 		catch(error)
 		{
-			console.warn('EPUB open timeout, continuing with partial load', error);
+			this.debug('manual-spine:parse:error', {error: String(error?.message || error)});
+			return [];
 		}
+
+		const manifestById = {};
+		const manifestItems = opf ? opf.getElementsByTagName('item') : [];
+
+		for(let i = 0, len = manifestItems.length; i < len; i++)
+		{
+			const manifestItem = manifestItems[i];
+			const id = manifestItem.getAttribute('id') || '';
+			const href = manifestItem.getAttribute('href') || '';
+
+			if(id)
+				manifestById[id] = href;
+		}
+
+		const spineItems = [];
+		const itemRefs = opf ? opf.getElementsByTagName('itemref') : [];
+
+		for(let i = 0, len = itemRefs.length; i < len; i++)
+		{
+			const itemRef = itemRefs[i];
+			const idref = itemRef.getAttribute('idref') || '';
+			const href = manifestById[idref] || '';
+
+			if(!href)
+				continue;
+
+			const relativePath = this.normalizeRelativeArchivePath(
+				this.opfRelativePath ? p.posix.join(p.posix.dirname(this.opfRelativePath), href) : href
+			);
+
+			spineItems.push({
+				idref: idref,
+				href: href,
+				relativePath: relativePath,
+			});
+		}
+
+		this.manualSpine = spineItems;
+		this.debug('manual-spine:ok', {count: spineItems.length});
+
+		return spineItems;
+
+	}
+
+	this.openEpub = async function() {
+
+		if(this.epub) return;
+		if(this.openEpubPromise)
+		{
+			this.debug('book:open:join');
+			return this.openEpubPromise;
+		}
+
+		this.openEpubPromise = (async () => {
+			if(epubjs === false) epubjs = require('epubjs');
+			this.debug('book:open:begin');
+
+			const loadBookState = async (label = '') => {
+				try
+				{
+					this.toc = await this.withTimeout(this.epub.loaded.navigation, 15000, 'loaded.navigation.'+label);
+					this.debug('book:navigation:ok', {label: label, tocItems: this.toc?.toc?.length || 0});
+				}
+				catch(error)
+				{
+					console.warn('EPUB navigation not available, fallback to empty TOC', error);
+					this.debug('book:navigation:error', {label: label, error: String(error?.message || error)});
+					this.toc = {toc: []};
+				}
+
+				try
+				{
+					await this.withTimeout(this.epub.opened, 15000, 'opened.'+label);
+					this.debug('book:opened:ok', {label: label});
+				}
+				catch(error)
+				{
+					console.warn('EPUB open timeout, continuing with partial load', error);
+					this.debug('book:opened:timeout', {label: label, error: String(error?.message || error)});
+				}
+
+				return this.epub?.spine?.items?.length || 0;
+			};
+
+			let directOpen = false;
+			let directSpineItems = 0;
+
+			try
+			{
+				this.debug('book:open:direct:begin');
+				this.epub = new epubjs.Book(this.path, {openAs: 'epub'});
+				directOpen = true;
+				directSpineItems = await loadBookState('direct');
+				this.debug('book:open:direct:state', {spineItems: directSpineItems});
+			}
+			catch(error)
+			{
+				this.debug('book:open:direct:error', {error: String(error?.message || error)});
+				directOpen = false;
+			}
+
+			if(!directOpen || directSpineItems <= 0)
+			{
+				if(directOpen && directSpineItems <= 0)
+					this.debug('book:open:direct:empty-spine');
+
+				this.debug('book:open:fallback-opf:begin');
+				await this.findContentOpf();
+				this.epub = new epubjs.Book(this.opf);
+				this.debug('book:open:fallback-opf:ok', {opf: this.opf});
+				await loadBookState('opf');
+			}
+
+			if((this.epub?.spine?.items?.length || 0) <= 0)
+				await this.buildManualSpineFromOpf();
+
+			this.debug('book:open:ok', {
+				spineItems: this.epub?.spine?.items?.length || 0,
+				manualSpineItems: this.manualSpine?.length || 0,
+			});
+
+		})().finally(() => {
+			this.openEpubPromise = false;
+		});
+
+		return this.openEpubPromise;
 	}
 
 	this.getHrefNames = function(items, hrefNames = {}) {
@@ -222,6 +444,7 @@ var epub = function(path, config = {}) {
 		if(this.epubFiles) return this.epubFiles;
 
 		await this.openEpub();
+		this.debug('files:read:begin');
 
 		this.epubFiles = [];
 
@@ -232,14 +455,35 @@ var epub = function(path, config = {}) {
 
 		let prevName = '';
 		let prevNameNum = 2;
-		let len = this.epub.spine.items.length;
+		let spineItems = this.getActiveSpineItems();
+		let len = spineItems.length;
+
+		if(len <= 0)
+		{
+			await this.buildManualSpineFromOpf().catch(() => []);
+			spineItems = this.getActiveSpineItems();
+			len = spineItems.length;
+		}
+
+		if(len <= 0)
+		{
+			this.debug('files:read:fallback-synthetic');
+			this.manualSpine = [{
+				idref: 'fallback-chapter-1',
+				href: '',
+				relativePath: '',
+			}];
+			spineItems = this.manualSpine;
+			len = 1;
+		}
+
 		let leadingZeros = Math.max(String(len).length, 4);
 
 		for(let i = 0; i < len; i++)
 		{
-			let item = this.epub.spine.items[i];
+			let item = spineItems[i] || {};
 
-			let name = hrefNames[item.href] || app.capitalize(app.extract(/^(.*?)\.[a-z0-9]+$/, item.idref, 1).trim());
+			let name = hrefNames[item.href] || app.capitalize(app.extract(/^(.*?)\.[a-z0-9]+$/, item.idref || item.href || '', 1).trim());
 
 			if(!name)
 			{
@@ -253,6 +497,8 @@ var epub = function(path, config = {}) {
 
 			this.epubFiles.push(String(i).padStart(leadingZeros, '0')+'_sortonly - '+fileManager.replaceReservedCharacters(name)+'.jpg');
 		}
+
+		this.debug('files:read:ok', {count: this.epubFiles.length, spine: len});
 
 		return this.epubFiles;
 
@@ -333,6 +579,15 @@ var epub = function(path, config = {}) {
 
 		let metadata = await this.withTimeout(this.epub.loaded.metadata, 15000, 'loaded.metadata').catch(function(){ return {}; });
 
+		if(!this.opf || !fs.existsSync(this.opf))
+			await this.findContentOpf().catch(function(){});
+
+		if(!this.opf || !fs.existsSync(this.opf))
+		{
+			this.epubMetadata = metadata;
+			return this.epubMetadata;
+		}
+
 		let res = fs.readFileSync(this.opf, 'utf8');
 
 		let parser = new DOMParser();
@@ -379,19 +634,80 @@ var epub = function(path, config = {}) {
 
 		if(this.chaptersHtml[index]) return this.chaptersHtml[index];
 
-		let section = this.epub.spine.get(index);
+		let section = this.epub?.spine?.get ? this.epub.spine.get(index) : false;
+		let manualSpineItem = false;
+
+		if(!section)
+			manualSpineItem = (this.manualSpine || [])[index] || false;
+
+		if(!section && manualSpineItem)
+		{
+			const relativePath = manualSpineItem.relativePath || this.normalizeRelativeArchivePath(manualSpineItem.href || '');
+
+			if(relativePath)
+				await this.makeAvailableOne(relativePath);
+
+			const chapterPath = p.join(this.realPathZip, ...relativePath.split('/'));
+			let html = '';
+
+			if(fs.existsSync(chapterPath))
+				html = await fsp.readFile(chapterPath, 'utf8').catch(function(){ return ''; });
+
+			if(!html || !html.trim())
+				html = this.createFallbackChapterHtml(manualSpineItem.idref || ('Chapter '+(index + 1)));
+
+			section = {
+				url: 'file:///'+chapterPath.replace(/\\/g, '/'),
+				idref: manualSpineItem.idref || ('chapter-'+index),
+				href: manualSpineItem.href || '',
+			};
+
+			return this.chaptersHtml[index] = {html: html, section: section};
+		}
 
 		if(section)
 		{
 			let html = '';
+			let loaded = false;
+			const sectionRelativePath = this.getSectionRelativePath(section);
+			let extractedSectionPath = '';
 
 			try
 			{
-				html = await this.withTimeout(section.load(), this.getChapterLoadTimeout(), 'section.load.'+index);
+				if(sectionRelativePath)
+				{
+					await this.makeAvailableOne(sectionRelativePath);
+					extractedSectionPath = p.join(this.realPathZip, ...sectionRelativePath.split('/'));
+				}
+
+				if(extractedSectionPath)
+				{
+					const ready = await this.waitForFileReady(extractedSectionPath, 1500);
+
+					if(ready)
+					{
+						html = await this.withTimeout(fsp.readFile(extractedSectionPath, 'utf8'), 3000, 'section.readFile.extracted.'+index);
+						loaded = !!(html && html.trim());
+					}
+					else
+					{
+						this.debug('chapter:extract:not-ready', {index: index, sectionRelativePath: sectionRelativePath});
+					}
+				}
+
+				const sectionPath = this.removeFileScheme(section.url || '');
+
+				if(!loaded && sectionPath && fs.existsSync(sectionPath))
+				{
+					html = await this.withTimeout(fsp.readFile(sectionPath, 'utf8'), 3000, 'section.readFile.'+index);
+					loaded = !!(html && html.trim());
+				}
 			}
-			catch(error)
+			catch(error) {}
+
+			if(!loaded)
 			{
-				console.warn('EPUB section load failed, using fallback chapter page', {index: index, error: error?.message || error});
+				this.debug('chapter:load:fallback', {index: index, error: 'local-chapter-missing-or-empty'});
 				html = this.createFallbackChapterHtml(section.idref || ('Chapter '+(index + 1)));
 			}
 
@@ -409,9 +725,22 @@ var epub = function(path, config = {}) {
 			}
 
 			if(!html || !html.trim())
+			{
+				this.debug('chapter:empty:fallback', {index: index});
 				html = this.createFallbackChapterHtml(section.idref || ('Chapter '+(index + 1)));
+			}
 
-			return this.chaptersHtml[index] = {html: html, section: section};
+			let sectionUrl = section.url || '';
+			if(extractedSectionPath)
+				sectionUrl = 'file:///'+extractedSectionPath.replace(/\\/g, '/');
+
+			const normalizedSection = {
+				url: sectionUrl,
+				idref: section.idref || ('chapter-'+index),
+				href: section.href || '',
+			};
+
+			return this.chaptersHtml[index] = {html: html, section: normalizedSection};
 		}
 		else
 			throw new Error('Epub section not exists');
@@ -467,71 +796,82 @@ var epub = function(path, config = {}) {
 	}
 
 	this.epubPages = async function(config, callback = false) {
+		const startedAt = Date.now();
+		this.debug('pages:start', {
+			width: config?.width,
+			height: config?.height,
+		});
 
 		await this.openEpub();
 		let files = await this.readEpubFiles();
 
-		let chapters = [];
-
+		const chapterFiles = [];
 		for(let i = 0, len = files.length; i < len; i++)
 		{
-			let file = files[i];
+			if(files[i] != 'cover.tbn')
+				chapterFiles.push(files[i]);
+		}
 
-			if(file != 'cover.tbn')
+		let chapters = new Array(chapterFiles.length);
+		let nextIndex = 0;
+		const _this = this;
+		const workerCount = Math.min(8, Math.max(1, chapterFiles.length));
+
+		async function worker() {
+			while(true)
 			{
-				let index = this.getFileIndex(file);
+				const i = nextIndex++;
+				if(i >= chapterFiles.length)
+					return;
 
-				let chapter = await this.chapterHtml(index);
-				let dirname = p.dirname(this.removeFileScheme(chapter.section.url));
+				const file = chapterFiles[i];
+				const index = _this.getFileIndex(file);
+				const chapter = await _this.chapterHtml(index);
+				const dirname = p.dirname(_this.removeFileScheme(chapter.section.url));
 
-				chapters.push({
+				const activeSpineItems = _this.getActiveSpineItems();
+
+				chapters[i] = {
 					name: file,
 					html: chapter.html,
-					path: p.join(this.path, file),
+					path: p.join(_this.path, file),
 					basePath: dirname,
-					spine: this.epub.spine.items[index] || {},
-				});
+					spine: activeSpineItems[index] || {},
+				};
+
+				if(callback) callback(file);
 			}
 		}
+
+		if(chapterFiles.length)
+			await Promise.all(Array(workerCount).fill(0).map(worker));
+
+		this.debug('pages:chapters-prepared', {
+			chapters: chapterFiles.length,
+			workerCount: workerCount,
+			durationMs: Date.now() - startedAt,
+		});
 
 		if(chapters.length > 0)
 		{
 			this.ebook = ebook.load({chapters: chapters});
-			const paginationTimeout = Math.min(Math.max(chapters.length * 700, 10000), 35000);
-			let pages = [];
-			let fallbackPagination = false;
+			this.ebook.updateConfig(config);
 
-			try
-			{
-				pages = await this.withTimeout(this.ebook.chaptersToPages(config, async function(index, data) {
+			this.ebook.chaptersPages = chapters.map(function(chapter) {
+				return [{
+					path: chapter.path,
+					ids: [],
+					html: chapter.html || '',
+				}];
+			});
 
-					if(callback) callback(chapters[index].name);
-
-				}), paginationTimeout, 'chaptersToPages');
-			}
-			catch(error)
-			{
-				console.warn('EPUB pagination failed, using chapter fallback pages', {error: error?.message || error});
-				fallbackPagination = true;
-				this.ebook.chaptersPages = chapters.map(function(chapter) {
-					return [{
-						path: chapter.path,
-						ids: [],
-						html: chapter.html || '',
-					}];
-				});
-				pages = this.ebook.pagesToOnedimension(this.ebook.chaptersPages);
-			}
+			const pages = this.ebook.pagesToOnedimension(this.ebook.chaptersPages);
 
 			let toc = [];
 			try
 			{
-				if(!fallbackPagination && this.toc && this.toc.toc)
-				{
-					console.time('generateTocWithPages');
+				if(this.toc && this.toc.toc)
 					toc = this.ebook.generateTocWithPages(this.toc.toc);
-					console.timeEnd('generateTocWithPages');
-				}
 			}
 			catch(error)
 			{
@@ -539,8 +879,10 @@ var epub = function(path, config = {}) {
 				toc = [];
 			}
 
-			return {pages: pages, toc: toc, landmarks: false/*landmarks*/};
+			return {pages: pages, toc: toc, landmarks: false};
 		}
+
+		this.debug('pages:empty', {durationMs: Date.now() - startedAt});
 
 		return {pages: [], toc: [], landmarks: false};
 	}

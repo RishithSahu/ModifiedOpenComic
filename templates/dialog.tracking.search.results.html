@@ -9,7 +9,9 @@
   ></div>
   <span>
     <div class="body-medium">{{title}}</div>
-    <span class="body-medium">{{authors}}</span>
+    <span class="body-medium">
+      {{authors}} {{#if rating}} · ★ {{rating}}/100 {{/if}}
+    </span>
   </span>
   <div
     class="menu-tracking-open"

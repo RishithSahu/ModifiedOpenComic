@@ -327,6 +327,7 @@ function metadataDisplayKey(metadata = false)
 		metadata.author || '',
 		metadata.demographic || '',
 		metadata.serializationYear || 0,
+		metadata.rating || 0,
 		metadata.description || '',
 		genres,
 		metadata?.recommendation?.readingTimeMinutes || 0,
@@ -405,6 +406,9 @@ function needsMetadataScrape(path = false)
 		return true;
 
 	if((metadata.confidence || 0) < METADATA_SCRAPE_MIN_CONFIDENCE)
+		return true;
+
+	if((metadata.rating || 0) <= 0)
 		return true;
 
 	if(!metadata.updatedAt)
@@ -1030,6 +1034,7 @@ function setTrackingId(site, siteId)
 					genres: metadata?.genres || [],
 					description: metadata?.description || '',
 					serializationYear: metadata?.serializationYear || 0,
+					rating: metadata?.rating || 0,
 					recommendation: {
 						readingTimeMinutes: estimatedReadingMinutes,
 						genreClusters: genreClusters,
@@ -1273,14 +1278,15 @@ async function scrapeFolderMetadata(path = false, force = false)
 		const now = Date.now();
 		const current = getFolderMetadata(folderPath);
 		const cooldownUntil = metadataScrapeCooldown.get(cacheKey) || 0;
+		const needsRatingBackfill = !!(current && current.source === 'anilist' && current.anilistId && (current.rating || 0) <= 0);
 
 		if(!force && current && (current.source === 'manual' || current.source === 'import'))
 			return current;
 
-		if(!force && current && current.anilistId && current.source === 'anilist' && current.updatedAt && (now - current.updatedAt) < METADATA_SCRAPE_TTL)
+		if(!force && !needsRatingBackfill && current && current.anilistId && current.source === 'anilist' && current.updatedAt && (now - current.updatedAt) < METADATA_SCRAPE_TTL)
 			return current;
 
-		if(!force && cooldownUntil && now < cooldownUntil)
+		if(!force && !needsRatingBackfill && cooldownUntil && now < cooldownUntil)
 		{
 			metadataScrapeStats.retryBlocked++;
 			logMetadataScrape('cooldown', {
@@ -1377,6 +1383,7 @@ async function scrapeFolderMetadata(path = false, force = false)
 			genres: metadata?.genres || [],
 			description: metadata?.description || '',
 			serializationYear: metadata?.serializationYear || best.serializationYear || 0,
+			rating: metadata?.rating || best.rating || 0,
 			recommendation: {
 				readingTimeMinutes: estimatedReadingMinutes,
 				genreClusters: genreClusters,
@@ -1489,6 +1496,7 @@ async function refetchFolderMetadataFromAniList(path = false, anilistId = 0, for
 					genres: metadata?.genres || [],
 					description: metadata?.description || '',
 					serializationYear: metadata?.serializationYear || 0,
+					rating: metadata?.rating || 0,
 					recommendation: {
 						readingTimeMinutes: estimatedReadingMinutes,
 						genreClusters: genreClusters,

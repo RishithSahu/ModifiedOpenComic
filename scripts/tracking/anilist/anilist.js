@@ -136,6 +136,7 @@ async function searchComic(title)
 			}
 			media (id: $id, type: MANGA, search: $search) {
 				id
+				averageScore
 				coverImage {
 					medium
 					large
@@ -213,6 +214,7 @@ async function searchComic(title)
 					titleUserPreferred: media?.title?.userPreferred || '',
 					synonyms: Array.isArray(media?.synonyms) ? media.synonyms : [],
 					serializationYear: +(media?.startDate?.year || 0),
+					rating: +(media?.averageScore || 0),
 					image: (media?.coverImage?.medium || media?.coverImage?.large || media?.coverImage?.extraLarge || ''),
 					authors: authors,
 				};
@@ -293,6 +295,7 @@ async function getComicMetadata(siteId)
 	query ($id: Int, $type: MediaType) {
 		Media (id: $id, type: $type) {
 			id
+			averageScore
 			title {
 				romaji
 				english
@@ -358,6 +361,7 @@ async function getComicMetadata(siteId)
 			genres: Array.isArray(media?.genres) ? media.genres : [],
 			description: String(media?.description || ''),
 			serializationYear: +(media?.startDate?.year || 0),
+			rating: +(media?.averageScore || 0),
 			chapters: +(media?.chapters || 0),
 			volumes: +(media?.volumes || 0),
 		};
@@ -376,6 +380,7 @@ async function getComicData(siteId)
 			id
 			chapters
 			volumes
+			averageScore
 			mediaListEntry {
 				status
 				progress
@@ -415,13 +420,14 @@ async function getComicData(siteId)
         
 			if(json.data?.Media)
 			{
-				const {title, coverImage, chapters, volumes, mediaListEntry} = json.data.Media;
+				const {title, coverImage, chapters, volumes, averageScore, mediaListEntry} = json.data.Media;
 
 				return {
 					title: title.romaji,
 					image: coverImage.large,
 					chapters: +chapters || 0,
 					volumes: +volumes || 0,
+					rating: +averageScore || 0,
 					progress: {
 						chapters: +mediaListEntry?.progress || 0,
 						volumes: +mediaListEntry?.progressVolumes || 0,

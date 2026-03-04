@@ -567,7 +567,34 @@ function parseContributor(metadata) {
 }
 
 function splitCommaSeparated(string) {
-	let data = string.split(',');
+	if(app.empty(string))
+		return [];
+
+	let data = [];
+
+	if(Array.isArray(string))
+	{
+		for(let i = 0, len = string.length; i < len; i++)
+		{
+			const value = string[i];
+
+			if(app.empty(value))
+				continue;
+
+			if(typeof value === 'string')
+				data.push(...value.split(','));
+			else
+				data.push(String(value));
+		}
+	}
+	else if(typeof string === 'string')
+	{
+		data = string.split(',');
+	}
+	else
+	{
+		data = [String(string)];
+	}
 
 	let _data = [];
 

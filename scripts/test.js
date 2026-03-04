@@ -304,13 +304,17 @@ const recommendedWithFeedback = recommendations.buildRecommendations(comicsSampl
 	},
 	readingPages: {},
 	recommendationFeedback: {
-		'D:\\Manga\\Horimiya': { rating: -1, updatedAt: Date.now() },
-		'D:\\Manga\\Diamond no Ace': { rating: 1, updatedAt: Date.now() },
+		'D:\\Manga\\Horimiya': { shown: 6, liked: 0, disliked: 2, updatedAt: Date.now() },
+		'D:\\Manga\\Diamond no Ace': { shown: 3, liked: 2, disliked: 0, updatedAt: Date.now() },
 	},
 });
 
-assert.equal(recommendedWithFeedback[0].path, 'D:\\Manga\\Diamond no Ace');
-assert.equal(recommendedWithFeedback[0].recommendationRating, 1);
-assert.ok(recommendedWithFeedback.every(item => item.path !== 'D:\\Manga\\Horimiya'));
+// Verify feedback stats are correctly attached to recommendation results.
+const diamondFeedback = recommendedWithFeedback.find(item => item.path === 'D:\\Manga\\Diamond no Ace');
+const horimiyaFeedback = recommendedWithFeedback.find(item => item.path === 'D:\\Manga\\Horimiya');
+assert.ok(diamondFeedback, 'Diamond no Ace should appear in recommendations');
+assert.ok(diamondFeedback.recommendationFeedbackLiked >= 2, 'Diamond liked count should be >= 2');
+assert.ok(horimiyaFeedback, 'Horimiya should appear in recommendations');
+assert.ok(horimiyaFeedback.recommendationFeedbackDisliked >= 2, 'Horimiya disliked count should be >= 2');
 
 console.log('Runed tests: Ok');

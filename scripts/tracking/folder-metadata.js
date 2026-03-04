@@ -105,6 +105,7 @@ function createDefaultFolderMetadata()
 		genres: [],
 		description: '',
 		serializationYear: 0,
+		rating: 0,
 		recommendation: {
 			readingTimeMinutes: 0,
 			genreClusters: [],
@@ -137,6 +138,7 @@ function sanitizeFolderMetadata(input = {}, now = Date.now())
 	metadata.genres = normalizeStringArray(input.genres, 20, 48);
 	metadata.description = normalizeString(input.description, 8000);
 	metadata.serializationYear = normalizeYear(input.serializationYear);
+	metadata.rating = normalizeInteger(input.rating, 0, 100);
 	metadata.recommendation = {
 		readingTimeMinutes: normalizeInteger(recommendation.readingTimeMinutes, 0, 1000000),
 		genreClusters: normalizeStringArray(recommendation.genreClusters, 20, 48),
@@ -184,6 +186,9 @@ function validateFolderMetadata(input = {})
 
 	if(!Number.isInteger(input.serializationYear) || input.serializationYear < 0)
 		errors.push('serializationYear must be a non-negative integer');
+
+	if(!Number.isInteger(input.rating) || input.rating < 0 || input.rating > 100)
+		errors.push('rating must be an integer between 0 and 100');
 
 	if(!input.recommendation || typeof input.recommendation !== 'object' || Array.isArray(input.recommendation))
 	{
@@ -238,6 +243,9 @@ function validateRequiredFolderMetadata(input = {})
 
 	if(!metadata.serializationYear)
 		errors.push('serializationYear is required');
+
+	if(!Number.isInteger(metadata.rating) || metadata.rating < 0 || metadata.rating > 100)
+		errors.push('rating must be an integer between 0 and 100');
 
 	if(!metadata.anilistId)
 		errors.push('anilistId is required');

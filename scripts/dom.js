@@ -165,9 +165,10 @@ function getTrackingFolderMetadata(path, trackingFolderMetadata = false, isFolde
 	if (!metadata || typeof metadata !== 'object')
 		return false;
 
-	const genres = Array.isArray(metadata.genres) ? metadata.genres.filter(Boolean).slice(0, 3) : [];
+	const genres = Array.isArray(metadata.genres) ? metadata.genres.filter(Boolean) : [];
 	const demographic = metadata.demographic ? app.capitalize(String(metadata.demographic)) : '';
 	const year = metadata.serializationYear ? String(metadata.serializationYear) : '';
+	const rating = (+metadata.rating > 0) ? ('★ '+Math.round(+metadata.rating)+'/100') : '';
 
 	const metadataSubname = metadata.author || '';
 	let metadataTopSubname = '';
@@ -182,6 +183,9 @@ function getTrackingFolderMetadata(path, trackingFolderMetadata = false, isFolde
 	if (year)
 		parts.push(year);
 
+	if (rating)
+		parts.push(rating);
+
 	if (parts.length) {
 		metadataTopSubname = parts.join(' · ');
 	}
@@ -191,6 +195,7 @@ function getTrackingFolderMetadata(path, trackingFolderMetadata = false, isFolde
 		metadataAuthor: metadata.author || '',
 		metadataDemographic: demographic,
 		metadataYear: year,
+		metadataRating: rating,
 		metadataGenres: genres,
 		metadataGenresText: genres.join(' · '),
 		metadataDescription: metadata.description || '',
@@ -1056,7 +1061,9 @@ async function loadIndexPage(animation = true, path = false, content = false, ke
 
 		dom.boxes.reset();
 		if (sort != 'last-reading' && continueReading) await dom.boxes.continueReading(comics);
+		if (contentRightIndex != template.contentRightIndex()) return;
 		if (sort != 'last-reading') await dom.boxes.recommended(comics, true);
+		if (contentRightIndex != template.contentRightIndex()) return;
 		if (sort != 'last-add' && recentlyAdded) await dom.boxes.recentlyAdded(comics);
 
 		handlebarsContext.comics = comics;
@@ -2892,6 +2899,9 @@ function mountRecommendationFeedbackControls() {
 	if (!recommendedBox)
 		return;
 
+	if (recommendedBox.querySelector('.recommendation-feedback'))
+		return;
+
 	const feedback = getRecommendationFeedback();
 	const items = recommendedBox.querySelectorAll('.content-view-module > div');
 
@@ -2961,27 +2971,46 @@ function rateRecommendation(path, rating, event = false) {
 	rating = rating > 0 ? 1 : -1;
 
 	const feedback = app.copy(getRecommendationFeedback());
-	const currentRating = Number(feedback[path]?.rating || 0);
-	const nextRating = (currentRating === rating) ? 0 : rating;
+	const item = feedback[path] || {};
 
-	if (nextRating === 0)
-		delete feedback[path];
+	let shown = Math.max(0, +(item.shown || 0));
+	let liked = Math.max(0, +(item.liked || 0));
+	let disliked = Math.max(0, +(item.disliked || 0));
+
+	const legacyRating = Number(item.rating || 0);
+	if (legacyRating > 0) {
+		shown = Math.max(shown, 1);
+		liked = Math.max(liked, 1);
+	}
+	else if (legacyRating < 0) {
+		shown = Math.max(shown, 1);
+		disliked = Math.max(disliked, 1);
+	}
+
+	if (rating > 0)
+		liked++;
 	else
-		feedback[path] = {
-			rating: nextRating,
-			updatedAt: Date.now(),
-		};
+		disliked++;
+
+	feedback[path] = {
+		shown,
+		liked,
+		disliked,
+		updatedAt: Date.now(),
+	};
 
 	storage.update('recommendationFeedback', feedback);
 
-	const contentRight = template._contentRight();
-	const scrollElement = contentRight?.firstElementChild;
-	const keepScroll = scrollElement ? scrollElement.scrollTop : false;
+	if (rating < 0) {
+		const contentRight = template._contentRight();
+		const scrollElement = contentRight?.firstElementChild;
+		const keepScroll = scrollElement ? scrollElement.scrollTop : false;
 
-	if (handlebarsContext.page.key === 'index' || handlebarsContext.page.key === 'browsing')
-		loadIndexPage(false, history.path, true, keepScroll, history.mainPath, false, true);
-	else
-		dom.reload(false, false);
+		if (handlebarsContext.page.key === 'index' || handlebarsContext.page.key === 'browsing')
+			loadIndexPage(false, history.path, true, keepScroll, history.mainPath, false, true);
+		else
+			dom.reload(false, false);
+	}
 
 	return false;
 }

@@ -2047,6 +2047,29 @@ a:hover
 	text-overflow: ellipsis;
 }
 
+.content-view-module-100 .recommendation-feedback
+{
+	width: 100px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 2px;
+	padding: 0px 2px;
+	box-sizing: border-box;
+}
+
+.content-view-module-100 .recommendation-feedback .recommendation-feedback-button
+{
+	min-width: 22px;
+	width: 22px;
+	height: 22px;
+	line-height: 22px;
+	font-size: 16px;
+	padding: 0px;
+	border-radius: 6px;
+}
+
 .content-view-module-100 .folder-images
 {
 	width: 41px;

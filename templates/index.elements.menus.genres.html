@@ -1,0 +1,26 @@
+<div>
+  <div
+    class="menu-simple-element menu-simple-element-little gamepad-item{{#unless filterHasGenres}} s{{/unless}}"
+    onclick="dom.labels.clearFilterGenres()"
+  >
+    <i
+      class="material-icon menu-simple-icon-first{{#unless filterHasGenres}} fill{{/unless}}"
+      >filter_alt_off</i
+    >
+    <span>{{language.buttons.off}}</span>
+  </div>
+
+  <div class="menu-simple-separator"></div>
+
+  {{#each filterGenres}}
+  <div
+    class="menu-simple-element menu-simple-element-little gamepad-item{{#if active}} s{{/if}}"
+    onclick="dom.labels.filterGenres('{{chain 'escapeBackSlash' 'escapeQuotesSimples' normalized}}');"
+  >
+    <i class="material-icon menu-simple-icon-first{{#if active}} fill{{/if}}"
+      >label</i
+    >
+    <span>{{name}}</span>
+  </div>
+  {{/each}}
+</div>

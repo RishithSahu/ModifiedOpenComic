@@ -11,6 +11,10 @@ function save(path = false, mainPath = false) {
 
 	if (!path) {
 		const image = reading.getImage(reading.currentPage());
+
+		if (!image || !image.path)
+			return;
+
 		path = p.normalize(image.path);
 	}
 
@@ -33,11 +37,13 @@ function save(path = false, mainPath = false) {
 	let chapterProgress = 0;
 
 	if (reading.isEbook()) {
-		const page = reading._ebook.pages[reading.currentPageIndex()];
+		const page = reading._ebook?.pages?.[reading.currentPageIndex()];
 
-		progress = page.progress;
-		chapterIndex = page.chapterIndex;
-		chapterProgress = page.chapterProgress;
+		if (page) {
+			progress = page.progress || 0;
+			chapterIndex = page.chapterIndex || 0;
+			chapterProgress = page.chapterProgress || 0;
+		}
 	}
 
 	// Calculate general progress in pages

@@ -408,10 +408,15 @@ async function render(index, _scale = false, magnifyingGlass = false, queueIndex
 
 		if(renderEbook)
 		{
+			const ebookPage = ebook.page(index - 1);
+			const ebookHtml = (ebookPage && typeof ebookPage.html !== 'undefined' && ebookPage.html)
+				? ebookPage.html
+				: '<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:24px;font-family:sans-serif;">Page unavailable</body></html>';
+
 			rendered[index] = 1;
 			renderedMagnifyingGlass[index] = 1;
 
-			let iframe = ebook.pageToIframe(ebook.page(index - 1).html);
+			let iframe = ebook.pageToIframe(ebookHtml);
 			let iframeMG = iframe.cloneNode(true);
 
 			let ocImg = contentRight.querySelector('.r-img-i'+index+' oc-img');

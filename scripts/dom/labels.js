@@ -334,6 +334,176 @@ function normalizeGenreFilterValue(value = '')
 	return app.stripTagsWithDOM(value).replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
+function formatGenreFilterValue(value = '')
+{
+	if(typeof value !== 'string')
+		value = String(value || '');
+
+	value = app.stripTagsWithDOM(value).replace(/\s+/g, ' ').trim();
+
+	if(!value)
+		return '';
+
+	return value.replace(/\b\w/g, function(match){
+		return match.toUpperCase();
+	});
+}
+
+function getFilterGenres(filter = {})
+{
+	const genres = [];
+
+	if(Array.isArray(filter.genres))
+		genres.push(...filter.genres);
+	else if(filter.genre)
+		genres.push(filter.genre);
+
+	const normalizedGenres = [];
+	const normalizedGenresSet = {};
+
+	for(let i = 0, len = genres.length; i < len; i++)
+	{
+		const genre = normalizeGenreFilterValue(genres[i]);
+		if(!genre || normalizedGenresSet[genre])
+			continue;
+
+		normalizedGenresSet[genre] = true;
+		normalizedGenres.push(genre);
+	}
+
+	return normalizedGenres;
+}
+
+function getAvailableGenres()
+{
+	const genresByNormalized = {};
+	const trackingFolderMetadata = relative.get('trackingFolderMetadata') || {};
+
+	for(const key in trackingFolderMetadata)
+	{
+		const metadata = trackingFolderMetadata[key];
+		if(!metadata || !Array.isArray(metadata.genres))
+			continue;
+
+		for(let i = 0, len = metadata.genres.length; i < len; i++)
+		{
+			const genre = metadata.genres[i];
+			const normalized = normalizeGenreFilterValue(genre);
+
+			if(!normalized || genresByNormalized[normalized])
+				continue;
+
+			genresByNormalized[normalized] = formatGenreFilterValue(genre) || formatGenreFilterValue(normalized);
+		}
+	}
+
+	const comics = Array.isArray(handlebarsContext.comics) ? handlebarsContext.comics : [];
+
+	for(let i = 0, len = comics.length; i < len; i++)
+	{
+		const comicGenres = getComicGenres(comics[i], trackingFolderMetadata);
+
+		for(let j = 0, len2 = comicGenres.length; j < len2; j++)
+		{
+			const normalized = comicGenres[j];
+			if(!normalized || genresByNormalized[normalized])
+				continue;
+
+			genresByNormalized[normalized] = formatGenreFilterValue(normalized);
+		}
+	}
+
+	const genres = Object.keys(genresByNormalized).map(function(normalized){
+		return {
+			normalized,
+			name: genresByNormalized[normalized],
+		};
+	});
+
+	genres.sort(function(a, b){
+		if(a.name === b.name)
+			return 0;
+
+		return a.name > b.name ? 1 : -1;
+	});
+
+	return genres;
+}
+
+function loadGenres()
+{
+	const label = dom.prevIndexLabel() || {};
+	const filter = label.filter || {};
+	const activeGenres = getFilterGenres(filter);
+	const activeGenresSet = {};
+
+	for(let i = 0, len = activeGenres.length; i < len; i++)
+		activeGenresSet[activeGenres[i]] = true;
+
+	const genres = getAvailableGenres().map(function(genre, index){
+		return {
+			key: index,
+			name: genre.name,
+			normalized: genre.normalized,
+			active: !!activeGenresSet[genre.normalized],
+		};
+	});
+
+	handlebarsContext.filterGenres = genres;
+	handlebarsContext.filterHasGenres = activeGenres.length > 0;
+
+	const element = document.querySelector('#index-genres .menu-simple-content');
+	if(element)
+		element.innerHTML = template.load('index.elements.menus.genres.html');
+
+	events.events();
+}
+
+function filterGenres(genre = '')
+{
+	const currentFilter = dom.prevIndexLabel()?.filter || {};
+	const normalized = normalizeGenreFilterValue(genre);
+
+	if(!normalized)
+		return;
+
+	let genres = getFilterGenres(currentFilter);
+
+	if(genres.includes(normalized))
+		genres = genres.filter(value => value !== normalized);
+	else
+		genres.push(normalized);
+
+	const hasGenre = genres.length > 0;
+
+	dom.query('.button-genre-filter').class(hasGenre, 'fill');
+
+	filter({
+		...currentFilter,
+		genre: false,
+		genres: hasGenre ? genres : false,
+		hasGenre,
+	});
+
+	loadGenres();
+}
+
+function clearFilterGenres()
+{
+	const currentFilter = dom.prevIndexLabel()?.filter || {};
+
+	dom.query('.button-genre-filter').class(false, 'fill');
+
+	filter({
+		...currentFilter,
+		genre: false,
+		genres: false,
+		hasGenre: false,
+	});
+
+	loadGenres();
+}
+
 function getComicGenres(comic, trackingFolderMetadata = {})
 {
 	const genres = [];
@@ -1071,7 +1241,10 @@ module.exports = {
 	filter,
 	filterFavorite,
 	loadLabels,
+	loadGenres,
 	filterLabels,
+	filterGenres,
+	clearFilterGenres,
 	filterRequireAllLabels,
 	filterOnlyRoot,
 	filterList,
