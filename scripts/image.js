@@ -44,7 +44,7 @@ async function _resize(fromImage, toImage, config = {}, deep = 0)
 
 	let options = {}
 
-	if(deep > 3)
+	if(deep > 2)
 		options = {failOn: 'none'};
 
 	try
@@ -61,7 +61,7 @@ async function _resize(fromImage, toImage, config = {}, deep = 0)
 		}
 		else if(error)
 		{
-			if(deep > 3)
+			if(deep > 2)
 			{
 				console.error(fromImage, error);
 				throw error;
@@ -70,12 +70,12 @@ async function _resize(fromImage, toImage, config = {}, deep = 0)
 			{
 				deep++;
 
-				if(deep > 3)
-					console.warn('Warning: Image resizing failed, Trying once more in '+(100 * deep)+'ms with failOn: none | '+fromImage, error);
+				if(deep > 2)
+					console.warn('Warning: Image resizing failed, Trying once more in '+(150 * deep)+'ms with failOn: none | '+fromImage, error);
 				else
-					console.log('Log: Image resizing failed, Trying again in '+(100 * deep)+'ms | '+fromImage, error);
+					console.log('Log: Image resizing failed, Trying again in '+(150 * deep)+'ms | '+fromImage, error);
 
-				await app.sleep(100 * deep);
+				await app.sleep(150 * deep);
 				return _resize(fromImage, toImage, config, deep);
 			}
 		}

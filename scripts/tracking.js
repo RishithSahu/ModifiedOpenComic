@@ -248,6 +248,7 @@ const metadataScrapeRejectedIds = new Map();
 let metadataScrapeQueueActive = false;
 let metadataUiRefreshST = false;
 let metadataUiRefreshLast = 0;
+let metadataUiRefreshPending = false;
 const metadataScrapeStats = {
 	queued: 0,
 	started: 0,
@@ -374,6 +375,12 @@ function queueMetadataUiRefresh()
 	if(typeof dom === 'undefined' || !dom || typeof dom.reload !== 'function')
 		return;
 
+	if(metadataScrapeQueueActive || metadataScrapeQueue.length)
+	{
+		metadataUiRefreshPending = true;
+		return;
+	}
+
 	const elapsed = Date.now() - metadataUiRefreshLast;
 	const wait = Math.max(0, METADATA_UI_REFRESH_THROTTLE - elapsed);
 
@@ -457,6 +464,12 @@ async function processMetadataScrapeQueue()
 	finally
 	{
 		metadataScrapeQueueActive = false;
+
+		if(metadataUiRefreshPending)
+		{
+			metadataUiRefreshPending = false;
+			queueMetadataUiRefresh();
+		}
 	}
 }
 

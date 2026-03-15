@@ -26,6 +26,11 @@ function save(path = false, mainPath = false) {
 		// Save also the current folder progress
 		if (mainPath !== dirname)
 			save(path, dirname);
+
+		// For compressed files, also save progress for the series folder (parent of the compressed file)
+		const parentOfDirname = p.dirname(dirname);
+		if (fileManager.isCompressed(dirname) && mainPath !== parentOfDirname && dirname !== parentOfDirname)
+			save(path, parentOfDirname);
 	}
 
 	const hasChildFolders = Object.values(reading.currentComics()).find((comic) => comic.folder);

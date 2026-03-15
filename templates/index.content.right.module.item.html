@@ -1,10 +1,10 @@
-<div class="sha-{{sha}} gamepad-item{{#if @first}}{{#unless noHighlight}} gamepad-to-highlight{{/unless}}{{/if}}" onclick="{{#if folder}}dom.loadIndexPage(true, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', false, false, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}');{{else}}dom.openComic(true, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}');{{/if}}{{onclick}}" oncontextmenu="dom.comicContextMenu.call(this, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}', {{#if @root.comicsIndex}}{{#unless fromRecentlyOpened}}true{{else}}false{{/unless}}{{else}}false{{/if}}, {{#if @root.comicsIndex}}{{#unless fromMasterFolder}}true{{else}}false{{/unless}}{{else}}false{{/if}}, {{#if folder}}true{{else}}false{{/if}}, fromGamepad)" onmousedown="tabs.middleClickOpen(event, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}')">
+<div class="sha-{{sha}} gamepad-item{{#if @first}}{{#unless noHighlight}} gamepad-to-highlight{{/unless}}{{/if}}" data-name="{{name}}" onclick="{{#if folder}}dom.loadIndexPage(true, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', false, false, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}');{{else}}dom.openComic(true, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}');{{/if}}{{onclick}}" oncontextmenu="dom.comicContextMenu.call(this, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}', {{#if @root.comicsIndex}}{{#unless fromRecentlyOpened}}true{{else}}false{{/unless}}{{else}}false{{/if}}, {{#if @root.comicsIndex}}{{#unless fromMasterFolder}}true{{else}}false{{/unless}}{{else}}false{{/if}}, {{#if folder}}true{{else}}false{{/if}}, fromGamepad)" onmousedown="tabs.middleClickOpen(event, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}')">
 	{{#if folder}}
 	<div>
 		<div class="v-folder item-image">
 			{{#if poster}}
 				<div class="folder-poster">
-					<img{{#if poster.path}} class="has-poster" src="{{poster.path}}"{{else}} class="sha-image-{{poster.sha}} folder-poster-img"{{/if}}>
+					<img{{#if poster.path}} class="has-poster{{#compare name '==' 'Pepper & Carrot'}} pepper-cover{{/compare}}" src="{{poster.path}}"{{else}} class="sha-image-{{poster.sha}} folder-poster-img{{#compare name '==' 'Pepper & Carrot'}} pepper-cover{{/compare}}"{{/if}}>
 				</div>
 				{{#if images}}
 					{{#each images}}
@@ -53,9 +53,9 @@
 	<div class="v-secondary-text body-small">&nbsp;</div>
 	{{/if}}
 	{{#compare parent.variant '==' 'recommended'}}
-	<div class="recommendation-feedback">
-		<div class="material-icon button button2 recommendation-feedback-button" onclick="dom.boxes.setRecommendationFeedback('{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', 1, event, this);">thumb_up</div>
-		<div class="material-icon button button2 recommendation-feedback-button" onclick="dom.boxes.setRecommendationFeedback('{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', -1, event, this);">thumb_down</div>
+	<div class="recommendation-feedback" data-path="{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}">
+		<button type="button" class="button button2 recommendation-feedback-button" data-rating="1" onclick="return dom.rateRecommendation('{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', 1, event);">👍</button>
+		<button type="button" class="button button2 recommendation-feedback-button" data-rating="-1" onclick="return dom.rateRecommendation('{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', -1, event);">👎</button>
 	</div>
 	{{/compare}}
 </div>

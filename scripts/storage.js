@@ -148,6 +148,8 @@ const storageDefault = {
 		continueReadingRecentlyOpened: true,
 		recentlyAddedIndex: true,
 		recentlyAddedRecentlyOpened: true,
+		rankingSidebarIndex: true,
+		rankingSidebarRecentlyOpened: false,
 		viewModuleSize: 150,
 		viewModuleSizeIndex: 150,
 		viewModuleSizeRecentlyOpened: 150,
@@ -172,6 +174,7 @@ const storageDefault = {
 				compressedFirst: true,
 				continueReading: true,
 				recentlyAdded: true,
+				rankingSidebar: true,
 				viewModuleSize: 150,	
 				fadeCompleted: true,
 				progressBar: true,
@@ -247,6 +250,7 @@ const storageDefault = {
 		serverTimeoutMultiplier: 1,
 		useCustomCacheAndTmpFolder: false,
 		customCacheAndTmpFolder: '',
+		tutorialCompleted: false,
 		cacheMaxSize: 256, // MB
 		cacheMaxOld: 60,
 		tmpMaxSize: 4, // GB

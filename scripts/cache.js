@@ -34,6 +34,9 @@ async function processTheImageQueue(img = false)
 		poster: 'cover',
 	};
 
+	if (img.type === 'poster' && /[\\/]Pepper & Carrot[\\/]/.test(img.file))
+		fit.poster = 'inside';
+
 	const ratios = getRatios();
 	const forceSize = img.forceSize || 150;
 
@@ -222,6 +225,7 @@ function returnThumbnailsImages(images, callback, file = false)
 			await file.makeAvailable(toGenerateThumbnails, function(image) {
 
 				const data = toGenerateThumbnailsData[image.path];
+				if(!data) return;
 				const size = data.type ? sizes[data.type][data.forceSize] : sizes.image[data.forceSize];
 
 				addImageToQueue(image.path, size, data.sha, callback, data.vars || false, data.type, data.forceSize);
@@ -278,7 +282,7 @@ function clearJsonInMemory()
 	{
 		const json = jsonMemory[key];
 
-		if(time - json.lastUsage > 60 * 60) // 1 hour
+		if(time - json.lastUsage > 30 * 60) // 30 minutes
 		{
 			delete jsonMemory[key];
 
@@ -293,7 +297,7 @@ function clearJsonInMemory()
 		});
 	}
 
-	const max = 50;
+	const max = 100;
 
 	if(num > max)
 	{

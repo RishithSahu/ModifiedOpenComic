@@ -84,6 +84,7 @@ function setNewPoster(path, reload = true, message = false)
 			if(!error)
 			{
 				await cache.deleteInCache(posterPath);
+				cache.folderThumbnails.remove(currentPath);
 
 				if(message)
 				{
@@ -101,7 +102,7 @@ function setNewPoster(path, reload = true, message = false)
 					});
 				}
 
-				if(reload) dom.reload();
+				dom.reload();
 			}
 			else
 			{
@@ -128,11 +129,13 @@ function setNewPoster(path, reload = true, message = false)
 
 		});
 
-	}).catch(function(){
+	}).catch(function(error){
+
+		console.error(error);
 
 		events.snackbar({
 			key: 'setNewPoster',
-			text: 'Error',
+			text: (error && error.message) ? error.message : 'Error',
 			duration: 6,
 			update: true,
 			buttons: [
@@ -205,11 +208,30 @@ async function setAsPoster(path, _currentPath = false)
 
 	if(canAddPosterOutside(currentPath))
 	{
-		let file = fileManager.file(path);
-		await file.makeAvailable([{path: path}]);
-		file.destroy();
+		try
+		{
+			let file = fileManager.file(path);
+			await file.makeAvailable([{path: path}]);
+			file.destroy();
 
-		await setNewPoster(fileManager.realPath(path), false, true);
+			setNewPoster(fileManager.realPath(path), false, true);
+		}
+		catch(error)
+		{
+			console.error('setAsPoster error:', error);
+			events.snackbar({
+				key: 'setAsPosterError',
+				text: (error && error.message) ? error.message : 'Error setting poster',
+				duration: 10,
+				update: true,
+				buttons: [
+					{
+						text: language.buttons.dismiss,
+						function: 'events.closeSnackbar();',
+					},
+				],
+			});
+		}
 	}
 	else
 	{

@@ -58,6 +58,9 @@ async function clear(path)
 	// Force recount of pages
 	await reading.progress.countPages(path, false);
 
+	// Clear folder thumbnail cache so it regenerates from current folder contents
+	cache.folderThumbnails.remove(path);
+
 	dom.reload();
 
 	events.snackbar({

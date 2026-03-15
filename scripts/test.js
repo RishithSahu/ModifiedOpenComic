@@ -317,4 +317,59 @@ assert.ok(diamondFeedback.recommendationFeedbackLiked >= 2, 'Diamond liked count
 assert.ok(horimiyaFeedback, 'Horimiya should appear in recommendations');
 assert.ok(horimiyaFeedback.recommendationFeedbackDisliked >= 2, 'Horimiya disliked count should be >= 2');
 
+const recommendedWithNormalizedFeedbackKey = recommendations.buildRecommendations(comicsSample, {
+	trackingFolderMetadata: {
+		'D:\\Manga\\Aho Girl': {
+			genres: ['Comedy', 'School'],
+			recommendation: { readingTimeMinutes: 120, genreClusters: ['comedy', 'school'] },
+		},
+		'D:\\Manga\\Diamond no Ace': {
+			genres: ['Sports'],
+			recommendation: { readingTimeMinutes: 400, genreClusters: ['sports'] },
+		},
+		'D:\\Manga\\Horimiya': {
+			genres: ['Romance', 'School'],
+			recommendation: { readingTimeMinutes: 180, genreClusters: ['romance', 'school'] },
+		},
+	},
+	readingProgress: {
+		'D:\\Manga\\Aho Girl': { page: 10, lastReading: Date.now() - 1000 * 60 * 60 * 24 },
+	},
+	readingPages: {},
+	recommendationFeedback: {
+		'd:\\manga\\horimiya': { shown: 12, liked: 0, disliked: 5, updatedAt: Date.now() },
+	},
+});
+
+const horimiyaNormalizedFeedback = recommendedWithNormalizedFeedbackKey.find(item => item.path === 'D:\\Manga\\Horimiya');
+assert.ok(horimiyaNormalizedFeedback, 'Horimiya should appear in recommendations with normalized feedback key');
+assert.ok(horimiyaNormalizedFeedback.recommendationFeedbackDisliked >= 5, 'Dislike count should be read from normalized key');
+
+const recommendedSuppressed = recommendations.buildRecommendations(comicsSample, {
+	trackingFolderMetadata: {
+		'D:\\Manga\\Aho Girl': {
+			genres: ['Comedy', 'School'],
+			recommendation: { readingTimeMinutes: 120, genreClusters: ['comedy', 'school'] },
+		},
+		'D:\\Manga\\Diamond no Ace': {
+			genres: ['Sports'],
+			recommendation: { readingTimeMinutes: 400, genreClusters: ['sports'] },
+		},
+		'D:\\Manga\\Horimiya': {
+			genres: ['Romance', 'School'],
+			recommendation: { readingTimeMinutes: 180, genreClusters: ['romance', 'school'] },
+		},
+	},
+	readingProgress: {
+		'D:\\Manga\\Aho Girl': { page: 10, lastReading: Date.now() - 1000 * 60 * 60 * 24 },
+	},
+	readingPages: {},
+	recommendationFeedback: {
+		'D:\\Manga\\Horimiya': { shown: 240, liked: 0, disliked: 200, updatedAt: Date.now() },
+	},
+});
+
+const horimiyaSuppressed = recommendedSuppressed.find(item => item.path === 'D:\\Manga\\Horimiya');
+assert.ok(!horimiyaSuppressed, 'Horimiya should be suppressed after reaching 200 dislikes');
+
 console.log('Runed tests: Ok');

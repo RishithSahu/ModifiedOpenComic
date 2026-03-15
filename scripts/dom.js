@@ -509,6 +509,7 @@ async function loadFilesIndexPage(files, file, animation, path, keepScroll, main
 	}
 
 	handlebarsContext.comics = pathFiles;
+	handlebarsContext.internalRankingSidebar = false;
 
 	const processReadingProgress = function (progress) {
 
@@ -530,16 +531,21 @@ async function loadFilesIndexPage(files, file, animation, path, keepScroll, main
 	}
 
 	// Comic reading progress
-	if (readingProgress)
-		handlebarsContext.comicsReadingProgress = processReadingProgress(readingProgress);
-	else
+	// In a subfolder, only show the current folder's progress (not the global/library-wide one)
+	if (mainPath != path) {
 		handlebarsContext.comicsReadingProgress = false;
+		if (readingProgressCurrentPath)
+			handlebarsContext.comicsReadingProgressCurrentPath = processReadingProgress(readingProgressCurrentPath);
+		else
+			handlebarsContext.comicsReadingProgressCurrentPath = false;
+	} else {
+		if (readingProgress)
+			handlebarsContext.comicsReadingProgress = processReadingProgress(readingProgress);
+		else
+			handlebarsContext.comicsReadingProgress = false;
 
-	// Current folder reading progress
-	if (readingProgressCurrentPath && (!readingProgress || readingProgress.path !== readingProgressCurrentPath.path))
-		handlebarsContext.comicsReadingProgressCurrentPath = processReadingProgress(readingProgressCurrentPath);
-	else
 		handlebarsContext.comicsReadingProgressCurrentPath = false;
+	}
 
 	handlebarsContext.folderMetadataTop = getFolderMetadataTop(path, mainPath, trackingFolderMetadata);
 
@@ -1069,6 +1075,7 @@ async function loadIndexPage(animation = true, path = false, content = false, ke
 		handlebarsContext.comics = comics;
 		handlebarsContext.comicsIndex = true;
 		handlebarsContext.sortAndView = sortAndView || false;
+		handlebarsContext.internalRankingSidebar = handlebarsContext.page.rankingSidebar ? dom.boxes.internalRankingSidebar(comics) : false;
 		handlebarsContext.comicsReadingProgress = false;
 		handlebarsContext.comicsReadingProgressCurrentPath = false;
 		handlebarsContext.folderMetadataTop = false;
@@ -1097,12 +1104,16 @@ async function loadIndexPage(animation = true, path = false, content = false, ke
 
 	}
 	else {
+		const browsingPath = path;
 		const files = await readFilesIndexPage(path, mainPath, fromGoBack, notAutomaticBrowsing, fromGoForwards);
 
 		path = files.path;
 		mainPath = files.mainPath;
 
 		if (files.open) {
+			if (!fromGoBack && !fromGoForwards) {
+				recentlyOpened.set(browsingPath);
+			}
 			template.loadContentRight('index.content.right.loading.html', animation, keepScroll);
 			dom.openComic(animation, path, mainPath, false, false, false, true);
 
@@ -1116,6 +1127,7 @@ async function loadIndexPage(animation = true, path = false, content = false, ke
 		handlebarsContext.comics = [];
 		handlebarsContext.comicsIndex = false;
 		handlebarsContext.sortAndView = false;
+		handlebarsContext.internalRankingSidebar = false;
 		handlebarsContext.comicsDeep2 = path.replace(new RegExp('^\s*' + pregQuote(mainPathR)), '').split(p.sep).length >= 2 ? true : false;
 		dom.setCurrentPageVars('browsing', { filter: _indexLabel?.filter || {} });
 
@@ -1195,6 +1207,7 @@ async function loadIndexPage(animation = true, path = false, content = false, ke
 
 	shortcuts.register(isOpds || _indexLabel.opds ? 'opds' : 'browse');
 	mountRecommendationFeedbackControls();
+	restoreRecommendationFeedbackStates();
 	gamepad.updateBrowsableItems(path ? sha1(path) : 'library');
 	reading.discord.update();
 	scroll.event();
@@ -1600,6 +1613,23 @@ async function _getFolderThumbnails(file, images, _images, path, folderSha, isAs
 }
 
 async function selectFolderThumbnailSource(file, path) {
+	// Check for .tbn poster file in parent directory (created by "Set as poster")
+	const tbnPath = p.resolve(p.dirname(path), p.parse(path).name + '.tbn');
+	if (fs.existsSync(tbnPath))
+		return { path: tbnPath, sha: sha1(tbnPath), type: 'poster' };
+
+	if (p.basename(path) === 'Pepper & Carrot') {
+		try {
+			const entries = fs.readdirSync(path);
+			const tbnName = entries.find(name => /\.tbn$/i.test(name));
+			if (tbnName) {
+				const tbnInside = p.join(path, tbnName);
+				return { path: tbnInside, sha: sha1(tbnInside), type: 'poster' };
+			}
+		}
+		catch {}
+	}
+
 	const files = await file.read({ cacheServer: true, filtered: false });
 	const fullFiltered = fileManager.filtered(files);
 
@@ -1687,8 +1717,31 @@ async function getFolderThumbnails(path, forceSize = false, index = 0, start = 0
 
 			if (_images) {
 				_images = _images.poster ? _images.poster : (_images.images?.[0] || false);
+
+				// Invalidate stale cache entries whose compressed source file was renamed or deleted
+				if (_images && _images.path) {
+					const compressedFile = fileManager.lastCompressedFile(_images.path);
+					if (compressedFile && !fileManager.simpleExists(compressedFile)) {
+						cache.folderThumbnails.remove(path);
+						_images = false;
+					}
+					// If cached poster is from inside a compressed file, check if a cover
+					// image now exists directly in the folder and should be preferred
+					else if (compressedFile) {
+						try {
+							const coverRegex = /^cover(?:[\s._-].*)?\.[a-z0-9]+$/i;
+							const entries = fs.readdirSync(path);
+							const hasCover = entries.some(name => coverRegex.test(name) && compatible.image(name));
+							if (hasCover) {
+								cache.folderThumbnails.remove(path);
+								_images = false;
+							}
+						} catch {}
+					}
+				}
 			}
-			else {
+
+			if (!_images) {
 				_images = await selectFolderThumbnailSource(file, path);
 
 				if (_images)
@@ -2149,6 +2202,7 @@ const defaultSortAndView = {
 	sortInvert: false,
 	continueReading: true,
 	recentlyAdded: true,
+	rankingSidebar: true,
 	viewModuleSize: 150,
 };
 
@@ -2206,6 +2260,7 @@ function setCurrentPageVars(page, _indexLabel = false) {
 			boxes: (page == 'recently-opened' || page == 'browsing') ? false : true,
 			continueReading: sortAndView ? sortAndView.continueReading : config['continueReading' + extraKey],
 			recentlyAdded: sortAndView ? sortAndView.recentlyAdded : config['recentlyAdded' + extraKey],
+			rankingSidebar: sortAndView ? sortAndView.rankingSidebar : config['rankingSidebar' + extraKey],
 			viewModuleSize: sortAndView ? sortAndView.viewModuleSize : config['viewModuleSize' + extraKey],
 			filter: _indexLabel.filter || {},
 			labelOrFavorites: !!(_indexLabel.label || _indexLabel.favorites),
@@ -2871,6 +2926,8 @@ function getRecommendationFeedback() {
 	return feedback;
 }
 
+const RECOMMENDATION_SUPPRESS_DISLIKES = 200;
+
 function resolveRecommendedComicPathBySha(sha = '') {
 	if (!sha)
 		return '';
@@ -2925,7 +2982,8 @@ function mountRecommendationFeedbackControls() {
 			continue;
 
 		const normalizedPath = relative.path(path);
-		const currentRating = Number(feedback[normalizedPath]?.rating || feedback[path]?.rating || 0);
+		const entry = feedback[normalizedPath] || feedback[path] || {};
+		const currentRating = Number(entry.lastRating || entry.rating || 0);
 		const controls = document.createElement('div');
 		controls.className = 'recommendation-feedback-controls' + (currentRating ? ' has-rating' : '');
 
@@ -2955,6 +3013,41 @@ function mountRecommendationFeedbackControls() {
 		controls.appendChild(createButton(1, 'thumb_up', 'Good recommendation'));
 		controls.appendChild(createButton(-1, 'thumb_down', 'Bad recommendation'));
 		image.appendChild(controls);
+	}
+}
+
+function restoreRecommendationFeedbackStates() {
+	const contentRight = template._contentRight();
+	const recommendedBox = contentRight?.querySelector('.boxes .box.box-recommended');
+
+	if (!recommendedBox)
+		return;
+
+	const feedback = getRecommendationFeedback();
+	const containers = recommendedBox.querySelectorAll('.recommendation-feedback[data-path]');
+
+	for (let i = 0, len = containers.length; i < len; i++) {
+		const container = containers[i];
+		const path = container.getAttribute('data-path');
+		if (!path)
+			continue;
+
+		const normalizedPath = p.normalize(path);
+		const entry = feedback[normalizedPath] || feedback[path] || {};
+		const lastRating = Number(entry.lastRating || entry.rating || 0);
+
+		if (!lastRating)
+			continue;
+
+		const buttons = container.querySelectorAll('.recommendation-feedback-button');
+
+		for (let j = 0, blen = buttons.length; j < blen; j++) {
+			const btn = buttons[j];
+			const btnRating = Number(btn.getAttribute('data-rating') || 0);
+
+			if (btnRating === lastRating)
+				btn.classList.add('fill');
+		}
 	}
 }
 
@@ -2992,24 +3085,161 @@ function rateRecommendation(path, rating, event = false) {
 	else
 		disliked++;
 
+	const reachedSuppressionThreshold = (rating < 0 && (item.disliked || 0) < RECOMMENDATION_SUPPRESS_DISLIKES && disliked >= RECOMMENDATION_SUPPRESS_DISLIKES);
+
 	feedback[path] = {
 		shown,
 		liked,
 		disliked,
+		lastRating: rating,
 		updatedAt: Date.now(),
 	};
 
 	storage.update('recommendationFeedback', feedback);
 
+	const clickedButton = (event && event.currentTarget && event.currentTarget.classList) ? event.currentTarget : null;
+
+	if (clickedButton) {
+		const container = clickedButton.closest('.recommendation-feedback');
+
+		if (container) {
+			const buttons = container.querySelectorAll('.recommendation-feedback-button');
+
+			for (let i = 0, len = buttons.length; i < len; i++) {
+				buttons[i].classList.remove('fill', 'feedback-pressed', 'feedback-pressed-up', 'feedback-pressed-down');
+			}
+		}
+
+		clickedButton.classList.add('fill', 'feedback-pressed', (rating > 0 ? 'feedback-pressed-up' : 'feedback-pressed-down'));
+
+		setTimeout(function () {
+			clickedButton.classList.remove('feedback-pressed', 'feedback-pressed-up', 'feedback-pressed-down');
+		}, 460);
+	}
+
+	const applyFeedbackButtonState = function () {
+		const contentRight = template._contentRight();
+		const recommendedBox = contentRight?.querySelector('.boxes .box.box-recommended');
+
+		if (!recommendedBox)
+			return;
+
+		const escapeSelectorAttr = function (value) {
+			return String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+		};
+
+		const escapedPath = escapeSelectorAttr(path);
+		const escapedNormalizedPath = escapeSelectorAttr(p.normalize(path));
+		const selectors = [
+			'.recommendation-feedback[data-path="' + escapedPath + '"]',
+			'.recommendation-feedback[data-path="' + escapedNormalizedPath + '"]',
+		];
+
+		let container = null;
+
+		for (let i = 0; i < selectors.length; i++) {
+			container = recommendedBox.querySelector(selectors[i]);
+			if (container)
+				break;
+		}
+
+		if (!container)
+			return;
+
+		const buttons = container.querySelectorAll('.recommendation-feedback-button');
+
+		for (let i = 0, len = buttons.length; i < len; i++) {
+			const button = buttons[i];
+			const buttonRating = Number(button.getAttribute('data-rating') || 0);
+
+			button.classList.remove('fill', 'feedback-pressed', 'feedback-pressed-up', 'feedback-pressed-down');
+
+			if (buttonRating === rating)
+				button.classList.add('fill');
+		}
+
+		const active = container.querySelector('.recommendation-feedback-button[data-rating="' + rating + '"]');
+
+		if (active) {
+			active.classList.add('feedback-pressed', (rating > 0 ? 'feedback-pressed-up' : 'feedback-pressed-down'));
+
+			setTimeout(function () {
+				active.classList.remove('feedback-pressed', 'feedback-pressed-up', 'feedback-pressed-down');
+			}, 420);
+		}
+	};
+
+	applyFeedbackButtonState();
+
 	if (rating < 0) {
 		const contentRight = template._contentRight();
-		const scrollElement = contentRight?.firstElementChild;
-		const keepScroll = scrollElement ? scrollElement.scrollTop : false;
+		const recommendedBox = contentRight?.querySelector('.boxes .box.box-recommended');
 
-		if (handlebarsContext.page.key === 'index' || handlebarsContext.page.key === 'browsing')
-			loadIndexPage(false, history.path, true, keepScroll, history.mainPath, false, true);
-		else
-			dom.reload(false, false);
+		if (recommendedBox) {
+			const normalizedTarget = String(p.normalize(path || '')).toLowerCase();
+
+			const boxesList = Array.isArray(handlebarsContext.boxes) ? handlebarsContext.boxes : [];
+			for (let i = 0, len = boxesList.length; i < len; i++) {
+				const box = boxesList[i];
+				if (box?.variant !== 'recommended' || !Array.isArray(box.comics))
+					continue;
+
+				box.comics = box.comics.filter(function (comic) {
+					const comicPath = String(p.normalize(comic?.path || '')).toLowerCase();
+					return comicPath !== normalizedTarget;
+				});
+			}
+
+			const removeCard = function () {
+				let feedbackContainer = null;
+
+				if (clickedButton)
+					feedbackContainer = clickedButton.closest('.recommendation-feedback');
+
+				if (!feedbackContainer) {
+					const escaped = String(path || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+					feedbackContainer = recommendedBox.querySelector('.recommendation-feedback[data-path="' + escaped + '"]');
+				}
+
+				const card = feedbackContainer?.closest('.content-view-module > div');
+				if (!card)
+					return;
+
+				card.classList.add('recommendation-removing');
+
+				setTimeout(function () {
+					card.remove();
+
+					const remaining = recommendedBox.querySelectorAll('.content-view-module > div').length;
+					if (!remaining)
+						recommendedBox.remove();
+				}, 260);
+			};
+
+			setTimeout(removeCard, 120);
+		}
+
+		if (reachedSuppressionThreshold) {
+			const cardName = clickedButton?.closest('.content-view-module > div')?.getAttribute('data-name') || p.basename(path);
+			const safePath = escapeQuotes(escapeBackSlash(path), 'simples');
+
+			events.dialog({
+				header: 'Recommendation disabled',
+				width: 460,
+				height: false,
+				content: '"' + String(cardName || '').replace(/"/g, '&quot;') + '" reached ' + RECOMMENDATION_SUPPRESS_DISLIKES + ' dislikes and will no longer be recommended. You can delete it if you no longer want to keep it in your library.',
+				buttons: [
+					{
+						text: language.buttons.close,
+						function: 'events.closeDialog();',
+					},
+					{
+						text: 'Delete series',
+						function: 'events.closeDialog(); dom.deletePermanently(\'' + safePath + '\', false);',
+					}
+				],
+			});
+		}
 	}
 
 	return false;

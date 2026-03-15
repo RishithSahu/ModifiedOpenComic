@@ -1,7 +1,7 @@
 {
 	"name": "opencomic",
 	"productName": "OpenComic",
-	"version": "1.7.5",
+	"version": "1.7.6",
 	"main": ".dist/main.js",
 	"type": "commonjs",
 	"keywords": [
@@ -142,12 +142,10 @@
 		"appId": "org.opencomic.app",
 		"productName": "OpenComic",
 		"executableName": "opencomic",
+		"buildVersion": "1.7.6",
 		"asar": true,
+		"compression": "maximum",
 		"publish": null,
-		"win": {
-			"sign": false,
-			"buildVersion": "1.7.5.1"
-		},
 		"files": [
 			"**/*",
 			"!dist_packager/**",
@@ -157,6 +155,10 @@
 			"!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
 			"!**/node_modules/*.d.ts",
 			"!**/node_modules/.bin",
+			"!**/node_modules/*/{.github,.npmignore,LICENSE,license,License}",
+			"!**/node_modules/*/docs/**",
+			"!**/node_modules/*/doc/**",
+			"!**/node_modules/**/*.map",
 			"!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
 			"!.editorconfig",
 			"!**/._*",
@@ -164,6 +166,12 @@
 			"!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
 			"!**/{appveyor.yml,.travis.yml,circle.yml}",
 			"!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}",
+			"!*.txt",
+			"!*.md",
+			"!scripts/**/*.mts",
+			"!scripts/**/*.ts",
+			"!eslint.config.mts",
+			"!tsconfig.json",
 			"!themes/*/templates",
 			"!templates",
 			"!images",
@@ -192,9 +200,11 @@
 			"images/assets/ai-descreen-output.webp",
 			"images/assets/ai-artifact-removal-input.webp",
 			"images/assets/ai-artifact-removal-output.webp",
+			"images/screenshots/guide/**",
 			"templates/index.html",
 			"templates/about.html",
 			"templates/ebook.render.html",
+			"Pepper & Carrot/**",
 			"build/flatpak"
 		],
 		"asarUnpack": [
@@ -225,7 +235,8 @@
 			"oneClick": false,
 			"installerIcon": "images/icon.ico",
 			"uninstallerIcon": "images/icon.ico",
-			"installerHeaderIcon": "images/icon.ico"
+			"installerHeaderIcon": "images/icon.ico",
+			"differentialPackage": false
 		},
 		"appx": {
 			"identityName": "28270OleguerLlopart.OpenComic",

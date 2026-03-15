@@ -1,9 +1,103 @@
+const p = require('path');
+
 function normalizeGenre(value = '')
 {
 	return String(value || '')
 		.toLowerCase()
 		.replace(/\s+/g, ' ')
 		.trim();
+}
+
+const RECOMMENDATION_SUPPRESS_DISLIKES = 200;
+const RECOMMENDATION_FAIRNESS_DISLIKE_START = 35;
+const RECOMMENDATION_FAIRNESS_BONUS_MAX = 0.03;
+
+function normalizeFeedbackKey(path = '')
+{
+	if(!path)
+		return '';
+
+	return String(p.normalize(path)).toLowerCase();
+}
+
+function normalizeFeedbackCounters(feedback = {})
+{
+	let shown = Math.max(0, +(feedback?.shown || 0));
+	let liked = Math.max(0, +(feedback?.liked || 0));
+	let disliked = Math.max(0, +(feedback?.disliked || 0));
+
+	const rating = +(feedback?.rating || 0);
+	const lastRating = +(feedback?.lastRating || 0) || rating;
+
+	if(rating > 0)
+	{
+		shown = Math.max(shown, 1);
+		liked = Math.max(liked, 1);
+	}
+	else if(rating < 0)
+	{
+		shown = Math.max(shown, 1);
+		disliked = Math.max(disliked, 1);
+	}
+
+	if(liked > shown)
+		shown = liked;
+
+	if(disliked > shown)
+		shown = disliked;
+
+	return {
+		shown,
+		liked,
+		disliked,
+		lastRating,
+		updatedAt: +(feedback?.updatedAt || 0),
+	};
+}
+
+function mergeFeedbackCounters(base = {}, next = {})
+{
+	const a = normalizeFeedbackCounters(base);
+	const b = normalizeFeedbackCounters(next);
+
+	const preferB = b.updatedAt >= a.updatedAt;
+
+	return {
+		shown: Math.max(a.shown, b.shown),
+		liked: Math.max(a.liked, b.liked),
+		disliked: Math.max(a.disliked, b.disliked),
+		lastRating: preferB ? b.lastRating : a.lastRating,
+		updatedAt: Math.max(a.updatedAt, b.updatedAt),
+	};
+}
+
+function buildFeedbackLookup(recommendationFeedback = {})
+{
+	const lookup = new Map();
+
+	for(const key in recommendationFeedback)
+	{
+		const normalizedKey = normalizeFeedbackKey(key);
+		if(!normalizedKey)
+			continue;
+
+		const current = lookup.get(normalizedKey) || {};
+		lookup.set(normalizedKey, mergeFeedbackCounters(current, recommendationFeedback[key] || {}));
+	}
+
+	return lookup;
+}
+
+function getFeedbackForPath(recommendationFeedback = {}, feedbackLookup = new Map(), path = '')
+{
+	if(path && recommendationFeedback[path])
+		return normalizeFeedbackCounters(recommendationFeedback[path]);
+
+	const normalizedKey = normalizeFeedbackKey(path);
+	if(!normalizedKey)
+		return normalizeFeedbackCounters({});
+
+	return normalizeFeedbackCounters(feedbackLookup.get(normalizedKey) || {});
 }
 
 function escapeRegex(value = '')
@@ -200,36 +294,32 @@ function freshnessScore(added = 0)
 
 function feedbackSignalScore(feedback = {})
 {
-	let shown = Math.max(0, +(feedback?.shown || 0));
-	let liked = Math.max(0, +(feedback?.liked || 0));
-	let disliked = Math.max(0, +(feedback?.disliked || 0));
-
-	const rating = +(feedback?.rating || 0);
-	if(rating > 0)
-	{
-		shown = Math.max(shown, 1);
-		liked = Math.max(liked, 1);
-	}
-	else if(rating < 0)
-	{
-		shown = Math.max(shown, 1);
-		disliked = Math.max(disliked, 1);
-	}
-
-	if(liked > shown)
-		shown = liked;
-
-	if(disliked > shown)
-		shown = disliked;
+	const counters = normalizeFeedbackCounters(feedback);
+	const shown = counters.shown;
+	const liked = counters.liked;
+	const disliked = counters.disliked;
 
 	const likeRate = (liked + 1) / (shown + 2);
 	const dislikeRate = disliked / Math.max(1, shown);
+	let fairnessBonus = 0;
+
+	if(disliked >= RECOMMENDATION_FAIRNESS_DISLIKE_START && disliked < RECOMMENDATION_SUPPRESS_DISLIKES)
+	{
+		const span = Math.max(1, RECOMMENDATION_SUPPRESS_DISLIKES - RECOMMENDATION_FAIRNESS_DISLIKE_START);
+		const progress = Math.min(1, (disliked - RECOMMENDATION_FAIRNESS_DISLIKE_START) / span);
+		fairnessBonus = RECOMMENDATION_FAIRNESS_BONUS_MAX * progress;
+	}
+
+	const score = ((likeRate - 0.5) * 0.7) - (dislikeRate * 0.5) + fairnessBonus;
 
 	return {
 		shown,
 		liked,
 		disliked,
-		score: Math.max(-0.30, Math.min(0.35, ((likeRate - 0.5) * 0.7) - (dislikeRate * 0.5))),
+		lastRating: counters.lastRating,
+		fairnessBonus,
+		suppressed: disliked >= RECOMMENDATION_SUPPRESS_DISLIKES,
+		score: Math.max(-0.30, Math.min(0.35, score)),
 	};
 }
 
@@ -239,6 +329,7 @@ function buildRecommendations(comics = [], options = {})
 	const readingProgress = options.readingProgress || {};
 	const readingPages = options.readingPages || {};
 	const recommendationFeedback = options.recommendationFeedback || {};
+	const feedbackLookup = buildFeedbackLookup(recommendationFeedback);
 	const profile = buildProfile(comics, trackingFolderMetadata, readingProgress, readingPages);
 	const recommended = [];
 
@@ -259,8 +350,10 @@ function buildRecommendations(comics = [], options = {})
 		if(!metadata)
 			continue;
 
-		const feedback = recommendationFeedback[comic.path] || {};
+		const feedback = getFeedbackForPath(recommendationFeedback, feedbackLookup, comic.path);
 		const feedbackSignal = feedbackSignalScore(feedback);
+		if(feedbackSignal.suppressed)
+			continue;
 
 		const genres = listGenres(metadata);
 		const candidateMinutes = estimateSeriesReadingMinutes(comic.path, metadata, readingProgress, readingPages);
@@ -276,10 +369,11 @@ function buildRecommendations(comics = [], options = {})
 			recommendationScore: score,
 			recommendationGenres: genres,
 			recommendationReadingTimeMinutes: candidateMinutes,
-			recommendationRating: Number(feedback.rating || 0),
+			recommendationRating: Number(feedbackSignal.lastRating || 0),
 			recommendationFeedbackShown: feedbackSignal.shown,
 			recommendationFeedbackLiked: feedbackSignal.liked,
 			recommendationFeedbackDisliked: feedbackSignal.disliked,
+			recommendationFairnessBonus: feedbackSignal.fairnessBonus,
 		});
 	}
 

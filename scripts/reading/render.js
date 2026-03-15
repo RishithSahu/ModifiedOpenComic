@@ -290,9 +290,18 @@ function renderedBlobLimit()
 
 function pruneRenderedObjectURL()
 {
-	// Disabled for now: aggressive blob eviction was causing ERR_FILE_NOT_FOUND
-	// in page transitions and decode race conditions.
-	return;
+	const limit = renderedBlobLimit();
+	if(renderedObjectsURL.length <= limit) return;
+
+	// Sort by creation time, evict oldest entries beyond the limit
+	const toEvict = renderedObjectsURL
+		.filter(o => !o.pinned && o.createdAt && (Date.now() - o.createdAt) > 30000)
+		.slice(0, renderedObjectsURL.length - limit);
+
+	for(let i = 0; i < toEvict.length; i++)
+	{
+		revokeObjectURL(toEvict[i].key, false);
+	}
 }
 
 function reRenderImage(index, runAi = false)

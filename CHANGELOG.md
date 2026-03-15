@@ -4,21 +4,47 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v1.7.6 (04-03-2026)
+## v1.7.6 (05-03-2026)
 
 ##### New Features
 
-- Show AniList rating (`averageScore`) in tracking search/current-tracking dialogs and in top metadata cards.
-- Add metadata backfill logic to rescrape AniList data when older tracked entries are missing rating.
+- Added a tutorial.
+- Add horizontal scrollbar to Continue Reading, Recommended for You, and Recently Added boxes so all series are accessible regardless of window size.
+- Increase maximum items displayed in box sections from 6 to 20.
+- Replace Material Icon thumbs up/down feedback buttons with emoji equivalents (👍/👎) and remove button background styling.
+- Add internal ranking sidebar (toggleable from library options) showing AniList rating, personal likes/dislikes, and a final weighted score.
+- Add recommendation feedback press animations and persistent visual button state.
 
 ##### Bug Fixes
 
-- Fix crashes in file-info metadata parsing when non-string values are passed to comma-separated parsing logic.
+- Fix recently opened tracking not updating when browsing manga from the library (only worked via File > Open).
+- Fix Recents showing only the parent folder instead of the actual file (e.g. compressed manga) that was opened.
+- Fix Continue Reading showing the last-read manga from a different folder; it now only appears if a manga from the current folder has been read.
+- Fix Continue Reading box showing parent category folder name instead of the actual manga series name.
+- Fix Continue Reading progress not being saved for series accessed via compressed files (cbz/cbr).
+- Fix ENOENT errors caused by stale stored paths after renaming manga files.
+- Fix blank thumbnails in Continue Reading when cached poster references a renamed/missing compressed file; stale cache entries are now automatically invalidated.
+- Fix author name (`v-secondary-text`) not being centered for grid sizes 200, 250, and 300.
+- Fix visible text overflow (partial 3rd line) between title and author name in box item cards.
+- Fix "Set image as poster" failing with a generic "Error" snackbar; added proper error handling and try/catch around the poster-setting flow.
+- Fix folder thumbnails not updating after setting a new poster or clearing file cache; folder thumbnail cache is now invalidated so the new poster takes effect immediately.
+- Fix cover images (e.g. `cover.jpg`) in manga folders being ignored when a stale cached thumbnail from inside a compressed/PDF file existed; cache is now invalidated when a cover image is detected in the folder.
+- Fix `.tbn` poster files (created by "Set as poster") not being picked up as folder thumbnails.
+- Adjust folder poster thumbnails to avoid over-zoomed image display in library cards.
+- Fix recommendation feedback buttons visibility/placement across all module sizes and scale thumbs with card size.
+- Fix dislike behavior to remove only the selected recommendation card instead of reloading the entire recommendation section.
+- Fix recommendation repetition by adding anti-repeat rotation logic so reloads no longer keep showing the same set.
+- Fix top-box card sizing to use the same module-size path as library cards for consistent thumbnail sizing.
 
 ##### Optimizations & Stability
 
+- Add AniList rating display (`averageScore`) in tracking search/current-tracking dialogs and in top metadata cards.
+- Add metadata backfill logic to rescrape AniList data when older tracked entries are missing rating.
+- Fix crashes in file-info metadata parsing when non-string values are passed to comma-separated parsing logic.
 - Add end-to-end EPUB debug instrumentation across reading, file-manager, and EPUB modules to isolate open/read/pagination stages.
 - Prioritize local extracted chapter HTML reads in EPUB chapter loading and reduce dependency on fragile section URL fetches.
+- Updated the Guide.
+- Improve recommendation scoring robustness: normalize feedback counters/paths, apply fairness bonus for heavily disliked series, suppress series after 200 dislikes, and prompt user with a delete dialog when threshold is reached.
 
 ## v1.7.5 (04-03-2026)
 

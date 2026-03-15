@@ -76,7 +76,7 @@ function processJob(thread = 0)
 
 				closeWorker(thread);
 
-			}, 10000);
+			}, 5000);
 		}
 
 		return null;
@@ -102,7 +102,7 @@ function processJob(thread = 0)
 
 					closeWorker(thread);
 
-				}, 10000);
+				}, 5000);
 			}
 
 			queue.unshift(job);

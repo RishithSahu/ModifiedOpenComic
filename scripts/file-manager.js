@@ -523,6 +523,7 @@ var file = function (path, _config = false) {
 
 					if (findPoster) {
 						poster = this._poster(files, file.path); // Find poster in the same folder where the folder/file is located
+						if (!poster) poster = this._poster(files, file.path, true); // Also match generic poster names (cover.jpg, poster.jpg, etc.) beside the file
 						if (!poster) poster = this._poster(_files, file.path, true); // Find poster inside folder/file
 					}
 
@@ -803,9 +804,12 @@ var file = function (path, _config = false) {
 					if (!filesToDecompress[compressedFile]) filesToDecompress[compressedFile] = [];
 					filesToDecompress[compressedFile].push(file.path);
 				}
-				else {
+				else if (compressedFile && simpleExists(compressedFile)) {
 					if (!filesToDecompress[compressedFile]) filesToDecompress[compressedFile] = [];
 					filesToDecompress[compressedFile].push(removePathPart(file.path, compressedFile));
+				}
+				else {
+					continue;
 				}
 
 				filesToDecompressNum++;

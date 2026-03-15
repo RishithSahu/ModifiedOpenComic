@@ -1,20 +1,23 @@
 {{#if boxes}}
 
 <div class="boxes gamepad-not-outside">
-	{{#each boxes}}
+  {{#each boxes}}
 
-		<div class="box{{#if variant}} box-{{variant}}{{/if}}">
-			<div class="box-title body-medium"><span class="box-title-pill">{{title}}</span></div>
-			<div class="box-content">
-				<div class="content-view-module content-view-module-100">
-					{{#each comics}}
-						{{> index.content.right.module.item.html parent=..}}
-					{{/each}}
-				</div>
-			</div>
-		</div>
+  <div class="box{{#if variant}} box-{{variant}}{{/if}}">
+    <div class="box-title body-medium">
+      <span class="box-title-pill">{{title}}</span>
+    </div>
+    <div class="box-content">
+      <div
+        class="content-view-module content-view-module-{{@root.page.viewModuleSize}}"
+      >
+        {{#each comics}} {{> index.content.right.module.item.html parent=..}}
+        {{/each}}
+      </div>
+    </div>
+  </div>
 
-	{{/each}}
+  {{/each}}
 </div>
 
 {{/if}}

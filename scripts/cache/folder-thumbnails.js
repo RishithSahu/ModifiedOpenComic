@@ -60,6 +60,16 @@ function set(path, images) {
 	storage.setThrottle('cacheFolderThumbnails', folderThumbnails);
 }
 
+function remove(path) {
+	const folderThumbnails = storage.get('cacheFolderThumbnails');
+	const key = calcKey(path);
+
+	if (folderThumbnails[key]) {
+		delete folderThumbnails[key];
+		storage.set('cacheFolderThumbnails', folderThumbnails);
+	}
+}
+
 function purge() {
 	const folderThumbnails = storage.get('cacheFolderThumbnails');
 
@@ -79,5 +89,6 @@ function purge() {
 module.exports = {
 	get,
 	set,
+	remove,
 	purge,
 }

@@ -95,6 +95,27 @@ function addToQueue(sha) {
 					const cached = cache.folderThumbnails.get(path, forceSize);
 					let _images = cached ? (cached.poster ? cached.poster : (cached.images?.[0] || false)) : false;
 
+					// Invalidate stale cache: if cached poster is from inside a compressed
+					// file but a cover image now exists in the folder, prefer the cover
+					if (_images && _images.path) {
+						const compressedFile = fileManager.lastCompressedFile(_images.path);
+						if (compressedFile && !fileManager.simpleExists(compressedFile)) {
+							cache.folderThumbnails.remove(path);
+							_images = false;
+						}
+						else if (compressedFile) {
+							try {
+								const coverRegex = /^cover(?:[\s._-].*)?\.[a-z0-9]+$/i;
+								const entries = fs.readdirSync(path);
+								const hasCover = entries.some(name => coverRegex.test(name) && compatible.image(name));
+								if (hasCover) {
+									cache.folderThumbnails.remove(path);
+									_images = false;
+								}
+							} catch {}
+						}
+					}
+
 					if (!_images) {
 						_images = await dom._selectFolderThumbnailSource(file, path);
 

@@ -1,10 +1,48 @@
 
 const recommendations = require(p.join(appDir, '.dist/tracking/recommendations.js'));
+const RECOMMENDATION_SUPPRESS_DISLIKES = 200;
+const RECOMMENDATION_FAIRNESS_DISLIKE_START = 35;
+const RECOMMENDATION_RECENT_HISTORY_LIMIT = 120;
+const RECOMMENDATION_POOL_MULTIPLIER = 4;
+let recentRecommendationHistory = [];
+
+function normalizeRecommendationKey(path = '')
+{
+	if(!path)
+		return '';
+
+	return String(p.normalize(path)).toLowerCase();
+}
+
+function buildRecommendationFeedbackLookup(feedback = {})
+{
+	const lookup = {};
+
+	for(const path in feedback)
+	{
+		const key = normalizeRecommendationKey(path);
+		if(!key)
+			continue;
+
+		const item = feedback[path] || {};
+		const prev = lookup[key] || {};
+
+		lookup[key] = {
+			shown: Math.max(0, +(prev.shown || 0), +(item.shown || 0)),
+			liked: Math.max(0, +(prev.liked || 0), +(item.liked || 0)),
+			disliked: Math.max(0, +(prev.disliked || 0), +(item.disliked || 0)),
+			rating: +(item.rating || prev.rating || 0),
+			lastRating: +(item.lastRating || prev.lastRating || 0),
+			updatedAt: Math.max(+(prev.updatedAt || 0), +(item.updatedAt || 0)),
+		};
+	}
+
+	return lookup;
+}
 
 function getBoxMaxItems()
 {
-	const estimatedBoxWidth = Math.max(260, Math.floor((window.innerWidth - 64) / 3));
-	return Math.max(3, Math.min(6, Math.floor((estimatedBoxWidth - 20) / 118)));
+	return 20;
 }
 
 function normalizeRecommendationPath(path = '')
@@ -15,10 +53,61 @@ function normalizeRecommendationPath(path = '')
 	return p.normalize(path);
 }
 
-function getRecommendationStats(feedback = {}, path = '')
+function rememberShownRecommendations(comics = [])
+{
+	if(!Array.isArray(comics) || !comics.length)
+		return;
+
+	for(let i = 0, len = comics.length; i < len; i++)
+	{
+		const key = normalizeRecommendationKey(comics[i]?.path || '');
+		if(!key)
+			continue;
+
+		recentRecommendationHistory.push(key);
+	}
+
+	if(recentRecommendationHistory.length > RECOMMENDATION_RECENT_HISTORY_LIMIT)
+		recentRecommendationHistory = recentRecommendationHistory.slice(-RECOMMENDATION_RECENT_HISTORY_LIMIT);
+}
+
+function selectRecommendedComicsForDisplay(comics = [], maxItems = 20)
+{
+	if(!Array.isArray(comics) || !comics.length)
+		return [];
+
+	const poolSize = Math.min(comics.length, Math.max(maxItems, maxItems * RECOMMENDATION_POOL_MULTIPLIER));
+	const pool = comics.slice(0, poolSize);
+	const recentSet = new Set(recentRecommendationHistory);
+
+	let candidates = pool.filter(function(comic){
+		return !recentSet.has(normalizeRecommendationKey(comic?.path || ''));
+	});
+
+	if(candidates.length < maxItems)
+		candidates = pool;
+
+	const sorted = candidates.slice().sort(function(a, b){
+		if((a.recommendationFeedbackShown || 0) !== (b.recommendationFeedbackShown || 0))
+			return (a.recommendationFeedbackShown || 0) - (b.recommendationFeedbackShown || 0);
+
+		if((b.recommendationDisplayScore || 0) !== (a.recommendationDisplayScore || 0))
+			return (b.recommendationDisplayScore || 0) - (a.recommendationDisplayScore || 0);
+
+		return (Math.random() > 0.5) ? 1 : -1;
+	});
+
+	const selected = sorted.slice(0, maxItems);
+	rememberShownRecommendations(selected);
+
+	return selected;
+}
+
+function getRecommendationStats(feedback = {}, path = '', feedbackLookup = false)
 {
 	const normalizedPath = normalizeRecommendationPath(path);
-	const item = feedback[normalizedPath] || feedback[path] || {};
+	const key = normalizeRecommendationKey(normalizedPath);
+	const item = feedback[normalizedPath] || feedback[path] || (feedbackLookup ? feedbackLookup[key] : {}) || {};
 
 	let shown = Math.max(0, +(item.shown || 0));
 	let liked = Math.max(0, +(item.liked || 0));
@@ -53,22 +142,27 @@ function getRecommendationStats(feedback = {}, path = '')
 function rankRecommendedComicsForDisplay(comics = [], feedback = {})
 {
 	const ranked = [];
+	const feedbackLookup = buildRecommendationFeedbackLookup(feedback);
 
 	for(let i = 0, len = comics.length; i < len; i++)
 	{
 		const comic = comics[i];
-		const stats = getRecommendationStats(feedback, comic?.path || '');
+		const stats = getRecommendationStats(feedback, comic?.path || '', feedbackLookup);
 		const shown = stats.shown;
 		const liked = stats.liked;
 		const disliked = stats.disliked;
+
+		if(disliked >= RECOMMENDATION_SUPPRESS_DISLIKES)
+			continue;
 
 		const likeRatio = (liked + 1) / (shown + 2);
 		const exposurePenalty = Math.min(45, shown * 6);
 		const dislikePenalty = Math.min(30, disliked * 7);
 		const likeBoost = Math.round(likeRatio * 30);
+		const fairnessBoost = (disliked >= RECOMMENDATION_FAIRNESS_DISLIKE_START) ? Math.min(4, 1 + Math.floor((disliked - RECOMMENDATION_FAIRNESS_DISLIKE_START) / 45)) : 0;
 		const refreshJitter = Math.random() * 7;
 
-		const recommendationDisplayScore = Math.max(1, Math.round((comic.recommendationScore || 0) + likeBoost - exposurePenalty - dislikePenalty + refreshJitter));
+		const recommendationDisplayScore = Math.max(1, Math.round((comic.recommendationScore || 0) + likeBoost + fairnessBoost - exposurePenalty - dislikePenalty + refreshJitter));
 
 		ranked.push({
 			...comic,
@@ -90,6 +184,85 @@ function rankRecommendedComicsForDisplay(comics = [], feedback = {})
 	});
 
 	return ranked;
+}
+
+function clamp(value = 0, min = 0, max = 100)
+{
+	return Math.max(min, Math.min(max, value));
+}
+
+function buildInternalRankingSidebar(comics = [], trackingFolderMetadata = {}, recommendationFeedback = {})
+{
+	const recommendationCandidates = buildRecommendationCandidates(comics, trackingFolderMetadata);
+	const feedbackLookup = buildRecommendationFeedbackLookup(recommendationFeedback);
+	const ranked = [];
+	const seen = new Set();
+
+	for(let i = 0, len = recommendationCandidates.candidates.length; i < len; i++)
+	{
+		const comic = recommendationCandidates.candidates[i];
+		const path = normalizeRecommendationPath(comic?.path || '');
+		if(!path)
+			continue;
+
+		const key = normalizeRecommendationKey(path);
+		if(!key || seen.has(key))
+			continue;
+
+		seen.add(key);
+
+		const metadata = trackingFolderMetadata[path] || trackingFolderMetadata[comic.path] || {};
+		const stats = getRecommendationStats(recommendationFeedback, path, feedbackLookup);
+		const anilistRating = clamp(+(metadata?.rating || 0), 0, 100);
+		const likes = stats.liked;
+		const dislikes = stats.disliked;
+
+		if(dislikes >= RECOMMENDATION_SUPPRESS_DISLIKES)
+			continue;
+
+		if(anilistRating <= 0 && likes <= 0 && dislikes <= 0)
+			continue;
+
+		const totalVotes = likes + dislikes;
+		const voteBalance = (likes - dislikes) / Math.max(1, totalVotes);
+		const voteConfidence = Math.min(1, totalVotes / 30);
+		const feedbackScore = clamp(50 + (voteBalance * 50 * voteConfidence), 0, 100);
+		const finalRanking = clamp((anilistRating * 0.78) + (feedbackScore * 0.22), 0, 100);
+
+		ranked.push({
+			path,
+			name: metadata?.title || comic?.name || p.basename(path),
+			author: metadata?.author || comic?.subname || '',
+			anilistRating: +anilistRating.toFixed(1),
+			likes,
+			dislikes,
+			finalRanking: +finalRanking.toFixed(1),
+			totalVotes,
+		});
+	}
+
+	ranked.sort(function(a, b){
+		if((b.finalRanking || 0) !== (a.finalRanking || 0))
+			return (b.finalRanking || 0) - (a.finalRanking || 0);
+
+		if((b.anilistRating || 0) !== (a.anilistRating || 0))
+			return (b.anilistRating || 0) - (a.anilistRating || 0);
+
+		return (b.likes || 0) - (a.likes || 0);
+	});
+
+	for(let i = 0, len = ranked.length; i < len; i++)
+		ranked[i].rank = i + 1;
+
+	return ranked.slice(0, 20);
+}
+
+function internalRankingSidebar(comics = [])
+{
+	const trackingFolderMetadata = relative.get('trackingFolderMetadata') || {};
+	const recommendationFeedback = storage.get('recommendationFeedback') || {};
+
+	return buildInternalRankingSidebar(comics, trackingFolderMetadata, recommendationFeedback);
 }
 
 function registerRecommendationsShown(comics = [])
@@ -120,7 +293,7 @@ function registerRecommendationsShown(comics = [])
 	}
 
 	if(changed)
-		storage.set('recommendationFeedback', feedback);
+		storage.update('recommendationFeedback', feedback);
 }
 
 async function box(_comics, single, title, order, orderKey = false, orderKey2 = false, variant = '')
@@ -152,7 +325,7 @@ async function box(_comics, single, title, order, orderKey = false, orderKey2 = 
 
 		if(!hasLoadedImages || comics[i].addToQueue === 2 || (viewModuleSize !== 100 && viewModuleSize !== 150))
 		{
-			const images = await dom.getFolderThumbnails(comics[i].path, (viewModuleSize === 100 ? 100 : null));
+			const images = await dom.getFolderThumbnails(comics[i].path, viewModuleSize);
 
 			comics[i].poster = images.poster;
 			comics[i].images = images.images;
@@ -169,7 +342,7 @@ async function box(_comics, single, title, order, orderKey = false, orderKey2 = 
 	const box = {
 		title: title,
 		boxes: true,
-		size: 100,
+		size: viewModuleSize,
 		comics: comics,
 		variant: variant,
 	};
@@ -363,10 +536,11 @@ function setRecommendationFeedback(path = '', rating = 0, event = false, button 
 		shown: stats.shown,
 		liked: stats.liked + (nextRating > 0 ? 1 : 0),
 		disliked: stats.disliked + (nextRating < 0 ? 1 : 0),
+		lastRating: nextRating,
 		updatedAt: Date.now(),
 	};
 
-	storage.set('recommendationFeedback', feedback);
+	storage.update('recommendationFeedback', feedback);
 	applyRecommendationFeedbackButtonState(button);
 
 	if(nextRating < 0)
@@ -399,7 +573,7 @@ async function recommended(comics, single = false)
 
 	recommendedComics = rankRecommendedComicsForDisplay(recommendedComics, recommendationFeedback);
 
-	const selectedComics = recommendedComics.slice(0, getBoxMaxItems());
+	const selectedComics = selectRecommendedComicsForDisplay(recommendedComics, getBoxMaxItems());
 	registerRecommendationsShown(selectedComics);
 
 	return box(selectedComics, single, language.comics.recommendedForYou || 'Recommended for you', 'real-numeric', 'recommendationDisplayScore', false, 'recommended');
@@ -415,5 +589,6 @@ module.exports = {
 	recentlyAdded: recentlyAdded,
 	recommended: recommended,
 	setRecommendationFeedback: setRecommendationFeedback,
+	internalRankingSidebar: internalRankingSidebar,
 	reset: reset,
 };

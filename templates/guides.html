@@ -1,0 +1,125 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <script src="../.dist/about.js" type="text/javascript"></script>
+    <link
+      href="../themes/material-design/theme.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script type="text/javascript">
+      (function () {
+        function setupGuidesNavigation() {
+          var pageIds = [
+            "overview",
+            "quick-start",
+            "features",
+            "screenshots",
+            "settings",
+            "version-history",
+            "navigation",
+            "reading",
+            "contributing",
+          ];
+
+          var subPageMap = {
+            recents: "navigation",
+            "continue-reading": "navigation",
+            recommendations: "navigation",
+            favorites: "navigation",
+            labels: "navigation",
+            genres: "navigation",
+            opds: "navigation",
+            sort: "navigation",
+            search: "navigation",
+            find: "navigation",
+            "master-folders": "navigation",
+            servers: "navigation",
+            "local-artwork": "navigation",
+            "file-info": "navigation",
+            "reading-modes": "reading",
+            "page-layout": "reading",
+            "scroll-slide": "reading",
+            "tap-zones": "reading",
+            bookmarks: "reading",
+            tracking: "reading",
+            presets: "reading",
+            "ebook-layout": "reading",
+            "color-filters": "reading",
+            "image-interpolation": "reading",
+            "ai-tools": "reading",
+            shortcuts: "reading",
+          };
+
+          function getHash() {
+            return window.location.hash
+              ? window.location.hash.substring(1)
+              : "";
+          }
+
+          function showPageFromHash() {
+            var hash = getHash();
+            var pageId =
+              pageIds.indexOf(hash) !== -1
+                ? hash
+                : subPageMap[hash] || "overview";
+
+            document.querySelectorAll(".guides-page").forEach(function (page) {
+              page.classList.toggle(
+                "is-active",
+                page.getAttribute("data-page") === pageId,
+              );
+            });
+
+            document.querySelectorAll(".guides-nav a").forEach(function (link) {
+              var href = link.getAttribute("href") || "";
+              var id = href.replace("#", "");
+              var isActive = id === hash || id === pageId;
+              link.classList.toggle("is-active", isActive);
+            });
+
+            var main = document.querySelector(".guides-main");
+            if (!main) {
+              return;
+            }
+
+            if (hash && subPageMap[hash]) {
+              var target = document.getElementById(hash);
+              if (target) {
+                target.scrollIntoView({ behavior: "auto", block: "start" });
+              }
+            } else {
+              main.scrollTop = 0;
+            }
+          }
+
+          window.addEventListener("hashchange", showPageFromHash);
+          showPageFromHash();
+        }
+
+        function waitForGuides() {
+          if (document.querySelector(".guides-pages")) {
+            setupGuidesNavigation();
+            return;
+          }
+
+          var observer = new MutationObserver(function () {
+            if (document.querySelector(".guides-pages")) {
+              observer.disconnect();
+              setupGuidesNavigation();
+            }
+          });
+
+          observer.observe(document.body, { childList: true, subtree: true });
+        }
+
+        window.addEventListener("DOMContentLoaded", waitForGuides);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

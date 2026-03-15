@@ -16,6 +16,22 @@
 	<div class="tabs-content">
 		<div class="tabs-general{{#compare settingsTab '==' 'general'}} active{{/compare}}">
 
+			<h2 class="headline-small">Tutorial</h2>
+
+			<div class="menu-simple-text menu-simple-supporting-text gamepad-item">
+				<span>
+					<div>Restart Tutorial</div>
+					{{#if tutorialHasSample}}
+					<span class="body-medium">Walk through all OpenComic features with a guided tour</span>
+					{{else}}
+					<span class="body-medium">Pepper & Carrot sample not found. Open Help > Guides instead.</span>
+					{{/if}}
+				</span>
+				<div class="simple-button filled-tonal gamepad-item" onclick="tutorial.restart();" style="float: right;{{#unless tutorialHasSample}} pointer-events: none; opacity: 0.5;{{/unless}}">
+					<div class="touch-effect"><i class="icon-24 material-icon">school</i>Start Tutorial</div>
+				</div>
+			</div>
+
 			<h2 class="headline-small">{{language.settings.masterFolders.main}}</h2>
 
 			<div class="settings-master-folders">

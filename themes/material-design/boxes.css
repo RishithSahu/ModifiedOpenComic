@@ -11,7 +11,8 @@
 
 .boxes .box
 {
-	height: 334px;
+	height: auto;
+	min-height: 334px;
 	overflow: hidden;
 	width: 100%;
 	position: relative;
@@ -90,46 +91,82 @@
 	justify-content: flex-start;
 	align-items: flex-start;
 	gap: 8px;
-	overflow: hidden;
+	overflow-x: auto;
+	overflow-y: hidden;
 	padding-right: 0px;
+	padding-bottom: 6px;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in srgb, var(--md-sys-color-on-surface), transparent 70%) transparent;
+}
+
+.box-content .content-view-module::-webkit-scrollbar
+{
+	height: 5px;
+}
+
+.box-content .content-view-module::-webkit-scrollbar-track
+{
+	background: transparent;
+}
+
+.box-content .content-view-module::-webkit-scrollbar-thumb
+{
+	background: color-mix(in srgb, var(--md-sys-color-on-surface), transparent 70%);
+	border-radius: 4px;
+}
+
+.box-content .content-view-module::-webkit-scrollbar-thumb:hover
+{
+	background: color-mix(in srgb, var(--md-sys-color-on-surface), transparent 50%);
 }
 
 .box-content .content-view-module-100 > div
 {
 	width: 110px;
-	height: 260px;
+	overflow: hidden;
+	height: auto;
+	min-height: 334px;
 	contain-intrinsic-size: 110px 260px;
 	margin: 2px 0px 0px 0px;
 	padding: 6px 2px 0px 2px;
 	box-sizing: border-box;
 	flex: 0 0 110px;
+	display: flex;
+	flex-direction: column;
 }
 
-.box-content .content-view-module .v-folder,
-.box-content .content-view-module .v-img
+.box-content .content-view-module-100 .v-folder,
+.box-content .content-view-module-100 .v-img
 {
 	width: 106px;
 	height: 158px;
 	border-radius: 14px;
 }
 
-.box-content .content-view-module .v-img img,
-.box-content .content-view-module .v-folder:before,
-.box-content .content-view-module .v-folder:after,
-.box-content .content-view-module .folder-poster > img
+.box-content .content-view-module-100 .v-img img,
+.box-content .content-view-module-100 .v-folder:before,
+.box-content .content-view-module-100 .v-folder:after,
+.box-content .content-view-module-100 .folder-poster > img
 {
 	border-radius: 14px;
 }
 
-.box-content .content-view-module .v-text
+/* Pepper & Carrot: fit cover inside the thumbnail frame (no cropping) */
+.box-content .content-view-module > div[data-name="Pepper & Carrot"] .folder-poster > img,
+.box-content .content-view-module > div[data-name="Pepper & Carrot"] .v-img img
+{
+	object-fit: contain;
+}
+
+.box-content .content-view-module-100 .v-text
 {
 	width: 106px;
-	height: 44px;
+	height: 36px;
 	margin-top: 10px;
 	padding: 0px 1px;
 	box-sizing: border-box;
 	line-height: 18px;
-	text-align: left;
+	text-align: center;
 	white-space: normal;
 	word-break: break-word;
 	overflow: hidden;
@@ -140,7 +177,7 @@
 	font-weight: 600;
 }
 
-.box-content .content-view-module .v-secondary-text
+.box-content .content-view-module-100 .v-secondary-text
 {
 	width: 106px;
 	height: 17px;
@@ -148,14 +185,14 @@
 	padding: 0px 1px;
 	box-sizing: border-box;
 	line-height: 17px;
-	text-align: left;
+	text-align: center;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	opacity: 0.86;
 }
 
-.box-content .content-view-module .v-folder
+.box-content .content-view-module-100 .v-folder
 {
 	background-color: var(--md-sys-color-force-surface);
 }
@@ -270,6 +307,69 @@
 	overflow: hidden;
 }
 
+.boxes .box.box-recommended .content-view-module > div
+{
+	position: relative;
+}
+
+.boxes .box.box-recommended .content-view-module
+{
+	--recommended-feedback-button-size: 24px;
+	--recommended-feedback-font-size: 15px;
+	--recommended-feedback-offset: 8px;
+	--recommended-feedback-gap: 4px;
+}
+
+.boxes .box.box-recommended .content-view-module.content-view-module-150
+{
+	--recommended-feedback-button-size: 28px;
+	--recommended-feedback-font-size: 17px;
+	--recommended-feedback-offset: 10px;
+	--recommended-feedback-gap: 5px;
+}
+
+.boxes .box.box-recommended .content-view-module.content-view-module-200
+{
+	--recommended-feedback-button-size: 40px;
+	--recommended-feedback-font-size: 23px;
+	--recommended-feedback-offset: 11px;
+	--recommended-feedback-gap: 6px;
+}
+
+.boxes .box.box-recommended .content-view-module.content-view-module-250,
+.boxes .box.box-recommended .content-view-module.content-view-module-300
+{
+	--recommended-feedback-button-size: 48px;
+	--recommended-feedback-font-size: 27px;
+	--recommended-feedback-offset: 12px;
+	--recommended-feedback-gap: 7px;
+}
+
+.boxes .box.box-recommended .recommendation-feedback
+{
+	position: absolute;
+	top: var(--recommended-feedback-offset, 8px);
+	right: var(--recommended-feedback-offset, 8px);
+	z-index: 10;
+	width: auto;
+	height: auto;
+	min-height: 0;
+	padding: 2px;
+	gap: var(--recommended-feedback-gap, 4px);
+	border-radius: 10px;
+	background: color-mix(in srgb, var(--md-sys-color-surface-container), transparent 24%);
+	backdrop-filter: blur(2px);
+}
+
+.boxes .box.box-recommended .recommendation-feedback .recommendation-feedback-button
+{
+	min-width: var(--recommended-feedback-button-size, 24px);
+	width: var(--recommended-feedback-button-size, 24px);
+	height: var(--recommended-feedback-button-size, 24px);
+	line-height: var(--recommended-feedback-button-size, 24px);
+	font-size: var(--recommended-feedback-font-size, 15px);
+}
+
 .boxes .box.box-recommended .recommendation-feedback-controls
 {
 	position: absolute;
@@ -282,11 +382,11 @@
 
 .boxes .box.box-recommended .recommendation-feedback-button
 {
-	width: 24px;
-	height: 24px;
+	width: var(--recommended-feedback-button-size, 24px);
+	height: var(--recommended-feedback-button-size, 24px);
 	border: 0px;
 	border-radius: 8px;
-	background: color-mix(in srgb, #000, transparent 34%);
+	background: none;
 	color: rgba(255, 255, 255, 0.92);
 	display: inline-flex;
 	align-items: center;
@@ -304,7 +404,7 @@
 .boxes .box.box-recommended .recommendation-feedback-button:hover
 {
 	transform: translateY(-1px);
-	background: color-mix(in srgb, #000, transparent 18%);
+	background: none;
 }
 
 .boxes .box.box-recommended .recommendation-feedback-button.recommendation-feedback-up.active

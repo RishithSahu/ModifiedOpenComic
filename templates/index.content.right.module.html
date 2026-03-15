@@ -1,10 +1,51 @@
-{{> index.content.right.boxes.html}}
-{{> index.content.right.continue.reading.html}}
+{{> index.content.right.boxes.html}} {{>
+index.content.right.continue.reading.html}}
 
-<div class="content-view-module content-view-module-{{page.viewModuleSize}}">
-	{{#each comics}}
-		{{> index.content.right.module.item.html}}
-	{{else}}
-		{{> index.content.right.else.html}}
-	{{/each}}
+<div
+  class="library-module-layout{{#if internalRankingSidebar}} has-internal-ranking{{/if}}"
+>
+  <div class="library-module-main">
+    <div
+      class="content-view-module content-view-module-{{page.viewModuleSize}}"
+    >
+      {{#each comics}} {{> index.content.right.module.item.html}} {{else}} {{>
+      index.content.right.else.html}} {{/each}}
+    </div>
+  </div>
+
+  {{#if internalRankingSidebar}}
+  <div class="internal-ranking-sidebar gamepad-not-outside">
+    <div class="internal-ranking-title body-medium">Internal ranking</div>
+    <div class="internal-ranking-list">
+      {{#each internalRankingSidebar}}
+      <div
+        class="internal-ranking-item"
+        title="{{name}}{{#if author}} - {{author}}{{/if}}"
+      >
+        <div class="internal-ranking-item-top">
+          <div class="internal-ranking-rank">#{{rank}}</div>
+          <div class="internal-ranking-name body-small">{{name}}</div>
+        </div>
+        {{#if author}}
+        <div class="internal-ranking-author caption-small">{{author}}</div>
+        {{/if}}
+        <div class="internal-ranking-stats caption-small">
+          <span class="internal-ranking-chip internal-ranking-chip-anilist"
+            >AL {{anilistRating}}</span
+          >
+          <span class="internal-ranking-chip">👍 {{likes}}</span>
+          <span class="internal-ranking-chip">👎 {{dislikes}}</span>
+          <span class="internal-ranking-chip internal-ranking-chip-final"
+            >Final {{finalRanking}}</span
+          >
+        </div>
+      </div>
+      {{else}}
+      <div class="internal-ranking-empty body-small">
+        Not enough metadata to build rankings yet.
+      </div>
+      {{/each}}
+    </div>
+  </div>
+  {{/if}}
 </div>

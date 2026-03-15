@@ -486,19 +486,22 @@ const { webFrame } = require('electron');
 
 function clearMemory() {
 	try {
-		if (webFrame) {
-			webFrame.clearCache();
-		}
-		if (global.gc) {
-			global.gc();
+		if (typeof requestIdleCallback === 'function') {
+			requestIdleCallback(function() {
+				if (webFrame) webFrame.clearCache();
+				if (global.gc) global.gc();
+			}, { timeout: 5000 });
+		} else {
+			if (webFrame) webFrame.clearCache();
+			if (global.gc) global.gc();
 		}
 	} catch (e) {
 		console.log('Error clearing memory: ', e);
 	}
 }
 
-// Run memory cleanup every 2 minutes globally
-setInterval(clearMemory, 2 * 60 * 1000);
+// Run memory cleanup every 5 minutes globally
+setInterval(clearMemory, 5 * 60 * 1000);
 
 module.exports = {
 	event: event,

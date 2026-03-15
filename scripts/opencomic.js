@@ -43,6 +43,7 @@ document.addEventListener('keydown', function (event) {
 });
 
 var errorDialog = true;
+var errorDialogThrottle = 0;
 
 window.addEventListener('error', function (evt) {
 
@@ -52,6 +53,10 @@ window.addEventListener('error', function (evt) {
 		error = 'Error: ' + evt.message + ' at linenumber ' + evt.lineno + ':' + evt.colno + ' of file ' + evt.filename;
 
 	if (error !== false && errorDialog) {
+		const now = Date.now();
+		if (now - errorDialogThrottle < 2000) return; // Throttle error dialogs to avoid cascading popups
+		errorDialogThrottle = now;
+
 		if (electronRemote.dialog) {
 			electronRemote.dialog.showMessageBox({
 				type: 'error',
@@ -66,6 +71,10 @@ window.addEventListener('error', function (evt) {
 	}
 
 }, true);
+
+window.addEventListener('unhandledrejection', function (evt) {
+	console.error('Unhandled promise rejection in renderer:', evt.reason);
+});
 
 const electron = require('electron'),
 	electronRemote = require('@electron/remote'),
@@ -255,7 +264,8 @@ const app = require(p.join(appDir, '.dist/app.js')),
 	checkReleases = require(p.join(appDir, '.dist/check-releases.js')),
 	shortcuts = require(p.join(appDir, '.dist/shortcuts.js')),
 	tracking = require(p.join(appDir, '.dist/tracking.js')),
-	trackingSites = require(p.join(appDir, '.dist/tracking/tracking-sites.js'));
+	trackingSites = require(p.join(appDir, '.dist/tracking/tracking-sites.js')),
+	tutorial = require(p.join(appDir, '.dist/tutorial.js'));
 
 var tempFolder = settings.getTmpFolder();
 var macosMAS = false;
@@ -273,10 +283,30 @@ var appBaseLoaded = new Promise(function (resolve) {
 
 });
 
+const startupPerf = {
+	t0: (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(),
+};
+
+function startupMark(label) {
+	const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+	const elapsed = Math.round(now - startupPerf.t0);
+	startupPerf[label] = elapsed;
+	console.log('[startup]', label + ':', elapsed + 'ms');
+}
+
+function deferStartupTask(task, delay = 1200) {
+	if (typeof requestIdleCallback === 'function')
+		requestIdleCallback(task, { timeout: delay });
+	else
+		setTimeout(task, delay);
+}
+
 async function start() {
 	await electronRemote.app.whenReady();
+	startupMark('renderer-ready');
 
 	storage.start(function () {
+		startupMark('storage-ready');
 
 		config = storage.config();
 		_config = copy(config);
@@ -292,9 +322,11 @@ async function start() {
 
 		template.loadInQuery('body', 'body.html');
 		theme.systemNightMode();
+		startupMark('base-ui-ready');
 
 		titleBar.start();
 		titleBar.setColors();
+		startupMark('titlebar-ready');
 
 		appBaseLoadedResolve();
 		startApp();
@@ -316,11 +348,16 @@ electron.ipcRenderer.on('init-data', function (event, data) {
 });
 
 async function startApp() {
+	startupMark('startApp-begin');
 
-	if (config.checkReleases)
-		checkReleases.check();
+	deferStartupTask(function () {
+		if (config.checkReleases)
+			checkReleases.check();
+	}, 2000);
 
-	loadContextMenu();
+	deferStartupTask(function () {
+		loadContextMenu();
+	}, 1500);
 
 	handlebarsContext.indexHeaderTitle = language.global.library;
 
@@ -329,6 +366,14 @@ async function startApp() {
 	template.loadGlobalElement('global.elements.menus.html', 'global-menus');
 	template.loadGlobalElement('index.elements.menus.html', 'menus');
 	dom.loadIndexContentLeft(false);
+	startupMark('first-paint-ready');
+
+	// Launch first-time tutorial after the initial UI is ready
+	setTimeout(function() {
+		if (tutorial.shouldShow()) {
+			tutorial.start();
+		}
+	}, 800);
 
 	const args = [...process.argv, ...electronRemote.process.argv];
 
@@ -869,7 +914,7 @@ function generateAppMenu(force = false) {
 				label: language.menu.help.main,
 				submenu: [
 					{ label: language.menu.help.bug, click: function () { electron.shell.openExternal('https://github.com/ollm/OpenComic/issues'); } },
-					{ label: language.menu.help.guides, click: function () { electron.shell.openExternal('https://opencomic.app/docs/category/guides'); } },
+					{ label: language.menu.help.guides, click: function () { showGuidesWindow(); } },
 					{ type: 'separator' },
 					{ label: language.menu.help.funding, click: function () { electron.shell.openExternal('https://opencomic.app/docs/donate'); }, visible: !macosMAS },
 					{ label: language.menu.help.about, click: function () { showAboutWindow(); } },
@@ -889,6 +934,41 @@ function generateAppMenu(force = false) {
 
 		titleBar.setMenu(menuTemplate);
 	}
+}
+
+function showGuidesWindow() {
+	const guides = new electronRemote.BrowserWindow({
+		show: false,
+		title: language.menu.help.guides,
+		width: 1100,
+		height: 720,
+		minWidth: 420,
+		minHeight: 320,
+		modal: (process.platform == 'darwin') ? false : true,
+		parent: electronRemote.getCurrentWindow(),
+		webPreferences: {
+			contextIsolation: false,
+			nodeIntegration: true,
+			enableRemoteModule: true,
+		},
+	});
+
+	guides.removeMenu();
+	guides.setMenuBarVisibility(false);
+
+	const url = require('url');
+
+	guides.loadURL(url.format({
+		pathname: p.join(appDir, './templates/guides.html'),
+		protocol: 'file:',
+		slashes: true
+	}));
+
+	guides.once('ready-to-show', function () {
+		guides.webContents.executeJavaScript('document.querySelector(\'body\').innerHTML = `' + template.load('guides.body.html') + '`;', false).then(function () {
+			guides.show();
+		});
+	});
 }
 
 function showAboutWindow() {

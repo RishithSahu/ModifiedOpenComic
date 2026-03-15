@@ -8,10 +8,33 @@ const crypto = require('crypto');
 const windowStateKeeper = require('electron-window-state');
 const folderPortable = require(path.join(__dirname, 'folder-portable.js'));
 
+function writeStartupLog(message = '')
+{
+	try
+	{
+		const logsDir = path.join(app.getPath('userData'), 'logs');
+		if(!fs.existsSync(logsDir))
+			fs.mkdirSync(logsDir, { recursive: true });
+
+		const logFile = path.join(logsDir, 'startup.log');
+		const line = '['+new Date().toISOString()+'] '+String(message)+'\n';
+		fs.appendFileSync(logFile, line, 'utf8');
+	}
+	catch(error)
+	{
+		console.error('Startup log error:', error);
+	}
+}
+
+writeStartupLog('Process start. argv='+JSON.stringify(process.argv));
+writeStartupLog('Versions='+JSON.stringify(process.versions));
+
 require('@electron/remote/main').initialize();
 //remoteMain.enable(window.webContents);
 
-app.commandLine.appendSwitch('js-flags', '--expose-gc');
+app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=512 --optimize-for-size');
+app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -19,6 +42,14 @@ const windows = new Map();
 let firstWindowCreated = false;
 
 process.traceProcessWarnings = true;
+
+process.on('uncaughtException', function (error) {
+	console.error('Uncaught exception:', error);
+});
+
+process.on('unhandledRejection', function (reason) {
+	console.error('Unhandled rejection:', reason);
+});
 
 function getArgValue(args, flag, defaultValue = null) {
 	const arg = args.find(a => a.startsWith(flag + '='));
@@ -92,6 +123,8 @@ function createWindow(options = {}) {
 			enableRemoteModule: true,
 			backgroundThrottling: false,
 			nativeWindowOpen: false,
+			spellcheck: false,
+			v8CacheOptions: 'bypassHeatCheck',
 			additionalArguments: options.args ?? [],
 		},
 		titleBarStyle: (process.platform == 'linux' && !configInit.forceLinuxHiddenTitleBar) ? 'native' : 'hidden',
@@ -174,6 +207,15 @@ function createWindow(options = {}) {
 					win.close();
 				}, 500, win);
 
+			}).catch(function (error) {
+
+				console.error('Error during close cleanup:', error);
+				win.hide();
+
+				setTimeout(function (win) {
+					win.close();
+				}, 200, win);
+
 			});
 
 			event.preventDefault();
@@ -219,7 +261,7 @@ function createWindow(options = {}) {
 
 		wasInside = inside;
 
-	}, 100);
+	}, 250);
 
 	if (gotSingleInstanceLock && !newWindow)
 		mainWindowState.manage(win);

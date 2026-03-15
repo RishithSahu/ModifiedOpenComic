@@ -1,4 +1,4 @@
-setInterval(pollGamepads, 500);
+setInterval(pollGamepads, 2000);
 
 var hasGamepads = false;
 var gamepadAF = false;

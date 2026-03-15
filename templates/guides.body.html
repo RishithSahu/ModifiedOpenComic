@@ -1,0 +1,1297 @@
+<style type="text/css">
+  :root {
+    --guide-bg: #fbfbfc;
+    --guide-ink: #17181b;
+    --guide-muted: #616773;
+    --guide-accent: #e24b37;
+    --guide-card: #ffffff;
+    --guide-border: #edf0f4;
+    --guide-shadow: 0 8px 18px rgba(23, 24, 27, 0.06);
+    --guide-font: "Alegreya", "Georgia", serif;
+    --guide-sans: "Nunito Sans", "Segoe UI", sans-serif;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--guide-bg);
+  }
+
+  .guides {
+    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--guide-bg);
+    color: var(--guide-ink);
+    font-family: var(--guide-sans);
+    box-sizing: border-box;
+  }
+
+  .guides.night-mode {
+    --guide-bg: #141518;
+    --guide-ink: #f2f3f5;
+    --guide-muted: #a5abb3;
+    --guide-card: #1f2126;
+    --guide-border: #2a2d33;
+    --guide-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .guides * {
+    box-sizing: border-box;
+  }
+
+  .guides-layout {
+    display: flex;
+    height: 100%;
+  }
+
+  .guides-sidebar {
+    width: 240px;
+    min-width: 220px;
+    background: #f7f8fa;
+    border-right: 1px solid var(--guide-border);
+    padding: 20px 12px;
+    overflow-y: auto;
+  }
+
+  .guides.night-mode .guides-sidebar {
+    background: #17191d;
+  }
+
+  .guides-sidebar h4 {
+    margin: 18px 10px 8px;
+    font-size: 12px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--guide-muted);
+  }
+
+  .guides-nav {
+    list-style: none;
+    margin: 0;
+    padding: 0 8px 8px;
+  }
+
+  .guides-nav li {
+    margin-bottom: 8px;
+  }
+
+  .guides-nav a {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--guide-ink);
+    font-size: 14px;
+  }
+
+  .guides-nav a:hover {
+    background: rgba(23, 24, 27, 0.04);
+    color: var(--guide-accent);
+  }
+
+  .guides-nav a.is-active {
+    background: rgba(226, 75, 55, 0.16);
+    color: var(--guide-accent);
+    font-weight: 600;
+  }
+
+  .guides-main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 40px 44px;
+    background: var(--guide-bg);
+  }
+
+  .guides-header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .guides-header h1 {
+    margin: 0;
+    font-size: 36px;
+    font-family: var(--guide-font);
+  }
+
+  .guides-header .guides-badge {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(226, 75, 55, 0.12);
+    color: var(--guide-accent);
+  }
+
+  .guides-subtitle {
+    margin: 0 0 20px;
+    color: var(--guide-muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .guides-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .guides-card {
+    background: var(--guide-card);
+    border: 1px solid var(--guide-border);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--guide-shadow);
+    text-decoration: none;
+    color: var(--guide-ink);
+    display: block;
+  }
+
+  .guides-card:hover {
+    border-color: rgba(226, 75, 55, 0.35);
+  }
+
+  .guides-card h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+  }
+
+  .guides-card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--guide-muted);
+    line-height: 1.5;
+  }
+
+  .guides-pages {
+    position: relative;
+  }
+
+  .guides-page {
+    display: none;
+  }
+
+  .guides-page.is-active {
+    display: block;
+  }
+
+  .guides-section {
+    margin-top: 26px;
+  }
+
+  .guides-section + .guides-section {
+    border-top: 1px solid var(--guide-border);
+    padding-top: 24px;
+  }
+
+  .guides-section h2 {
+    font-size: 22px;
+    margin: 0 0 10px;
+    font-family: var(--guide-font);
+  }
+
+  .guides-section h3 {
+    margin: 18px 0 6px;
+    font-size: 17px;
+    color: var(--guide-ink);
+  }
+
+  .guides-section p {
+    margin: 0 0 12px;
+    color: var(--guide-muted);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .guides-section > section {
+    background: var(--guide-card);
+    border: 1px solid var(--guide-border);
+    border-radius: 14px;
+    padding: 14px 16px 8px;
+    margin: 12px 0;
+    box-shadow: var(--guide-shadow);
+  }
+
+  .guides-section > section h3 {
+    margin-top: 0;
+  }
+
+  .guides-list {
+    margin: 0 0 12px;
+    padding-left: 18px;
+    color: var(--guide-muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .guides-list li {
+    margin-bottom: 6px;
+  }
+
+  #version-history .guides-list {
+    columns: 2;
+    column-gap: 24px;
+  }
+
+  #version-history .guides-list li {
+    break-inside: avoid;
+  }
+
+  .guides-screenshots {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .guides-shot {
+    border: 1px dashed #d8dde4;
+    border-radius: 12px;
+    min-height: 140px;
+    background: #fbfcfe;
+    color: var(--guide-muted);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 12px;
+  }
+
+  .guides-shot-img {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid var(--guide-border);
+    box-shadow: var(--guide-shadow);
+    display: block;
+    background: #fff;
+  }
+
+  .guides-shot-img.is-hero {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .guides-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 28px;
+  }
+
+  .guides-footer a {
+    text-decoration: none;
+    color: var(--guide-accent);
+    font-weight: 600;
+  }
+
+  @media (max-width: 1000px) {
+    .guides-layout {
+      flex-direction: column;
+    }
+
+    .guides-sidebar {
+      width: 100%;
+      min-width: 0;
+      border-right: none;
+      border-bottom: 1px solid var(--guide-border);
+    }
+
+    .guides-main {
+      padding: 20px 20px 32px;
+    }
+  }
+
+  @media (max-width: 900px) {
+    #version-history .guides-list {
+      columns: 1;
+    }
+  }
+</style>
+
+<div class="guides{{#if config.nightMode}} night-mode{{/if}}">
+  <div class="guides-layout">
+    <aside class="guides-sidebar">
+      <h4>Guides</h4>
+      <ul class="guides-nav">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#quick-start">Quick start</a></li>
+        <li><a href="#features">Feature index</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#settings">Settings</a></li>
+        <li><a href="#version-history">Version history</a></li>
+        <li><a href="#navigation">Navigation</a></li>
+        <li><a href="#reading">Reading</a></li>
+        <li><a href="#contributing">Contributing</a></li>
+      </ul>
+      <h4>Navigation</h4>
+      <ul class="guides-nav">
+        <li><a href="#recents">Recents</a></li>
+        <li><a href="#continue-reading">Continue reading</a></li>
+        <li><a href="#recommendations">Recommended for you</a></li>
+        <li><a href="#favorites">Favorites</a></li>
+        <li><a href="#labels">Labels</a></li>
+        <li><a href="#genres">Genres</a></li>
+        <li><a href="#opds">OPDS</a></li>
+        <li><a href="#sort">Sort</a></li>
+        <li><a href="#search">Search</a></li>
+        <li><a href="#find">Find</a></li>
+        <li><a href="#master-folders">Master folders</a></li>
+        <li><a href="#servers">Servers</a></li>
+        <li><a href="#local-artwork">Local artwork assets</a></li>
+        <li><a href="#file-info">File info</a></li>
+      </ul>
+      <h4>Reading</h4>
+      <ul class="guides-nav">
+        <li><a href="#reading-modes">Reading modes</a></li>
+        <li><a href="#page-layout">Page layout</a></li>
+        <li><a href="#scroll-slide">Scroll and slide</a></li>
+        <li><a href="#tap-zones">Tap zones and gestures</a></li>
+        <li><a href="#bookmarks">Bookmarks</a></li>
+        <li><a href="#tracking">Tracking</a></li>
+        <li><a href="#presets">Presets</a></li>
+        <li><a href="#ebook-layout">eBook layout</a></li>
+        <li><a href="#color-filters">Color filters</a></li>
+        <li><a href="#image-interpolation">Image interpolation</a></li>
+        <li><a href="#ai-tools">AI tools</a></li>
+        <li><a href="#shortcuts">Shortcuts and gamepad</a></li>
+      </ul>
+    </aside>
+    <main class="guides-main">
+      <div class="guides-header">
+        <h1>{{language.menu.help.guides}}</h1>
+        <span class="guides-badge">Guides</span>
+      </div>
+      <p class="guides-subtitle">
+        Detailed, easy-to-read guide to every major feature in
+        {{language.appName}}, including changelog additions and README items.
+      </p>
+
+      <div class="guides-pages">
+        <div class="guides-page is-active" data-page="overview">
+          <div class="guides-card-grid">
+            <a class="guides-card" href="#overview">
+              <h3>Overview</h3>
+              <p>What OpenComic does and how to use this guide.</p>
+            </a>
+            <a class="guides-card" href="#features">
+              <h3>Feature index</h3>
+              <p>Every capability grouped by task and toolset.</p>
+            </a>
+            <a class="guides-card" href="#navigation">
+              <h3>Navigation</h3>
+              <p>Library, filters, sorting, recents, and metadata.</p>
+            </a>
+            <a class="guides-card" href="#reading">
+              <h3>Reading</h3>
+              <p>Modes, layout, tools, and shortcuts.</p>
+            </a>
+            <a class="guides-card" href="#settings">
+              <h3>Settings</h3>
+              <p>Inputs, storage, performance, and behavior controls.</p>
+            </a>
+            <a class="guides-card" href="#version-history">
+              <h3>Version history</h3>
+              <p>Every version feature from the changelog.</p>
+            </a>
+          </div>
+
+          <section class="guides-section" id="overview">
+            <h2>Overview</h2>
+            <p>
+              OpenComic is a comic, manga, and ebook reader built for mixed
+              libraries: local folders, compressed archives, PDFs, and EPUB
+              files. This guide explains every feature mentioned in the README,
+              screenshots, and changelog, so you can find and use each option
+              without guesswork.
+            </p>
+            <ul class="guides-list">
+              <li>Use the left navigation to jump to any topic.</li>
+              <li>
+                Each section lists what the feature does and where it lives.
+              </li>
+              <li>
+                Version history describes what changed and when it appeared.
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="guides-page" data-page="quick-start">
+          <section class="guides-section" id="quick-start">
+            <h2>Quick start</h2>
+            <p>Start reading in minutes with these steps.</p>
+            <ul class="guides-list">
+              <li>Add a master folder to index your library.</li>
+              <li>Open a folder, archive, PDF, or EPUB file.</li>
+              <li>
+                Pick a reading mode: manga, webtoon, single, or double page.
+              </li>
+              <li>Use bookmarks and continue reading to resume later.</li>
+              <li>
+                Optional: enable tracking and connect AniList or MyAnimeList.
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="guides-page" data-page="features">
+          <section class="guides-section" id="features">
+            <h2>Feature index</h2>
+            <p>
+              All features grouped by what you want to do: read, organize,
+              improve quality, or customize behavior.
+            </p>
+            <h3>Supported formats</h3>
+            <ul class="guides-list">
+              <li>
+                Images: JPG, JP2, JXR, JXL, PNG, APNG, AVIF, HEIC, WEBP, GIF,
+                SVG, BMP, ICO.
+              </li>
+              <li>
+                Compressed: RAR, ZIP, 7Z, TAR, LZH, ACE, CBR, CBZ, CBA, CB7,
+                CBT.
+              </li>
+              <li>Documents: PDF and EPUB (alpha).</li>
+              <li>
+                Background audio: MP3, M4A, MP4, WEBM, WEBA, OGG, OPUS, WAV,
+                FLAC.
+              </li>
+            </ul>
+            <h3>Library organization</h3>
+            <ul class="guides-list">
+              <li>Master folders to define your main library roots.</li>
+              <li>
+                Favorites and custom labels for grouping by status or genre.
+              </li>
+              <li>
+                Multi-layer labeling and folder-based labels in master folders.
+              </li>
+              <li>
+                Continue reading, recently added, and recommended sections.
+              </li>
+              <li>
+                Genre filtering for library and recents (from tracking
+                metadata).
+              </li>
+              <li>Search and quick find within the current page.</li>
+            </ul>
+            <h3>Reading modes and layout</h3>
+            <ul class="guides-list">
+              <li>Manga mode, webtoon mode, single page, double page.</li>
+              <li>Scroll and slide reading with optional global zoom.</li>
+              <li>
+                Page turn transitions, fade, and optional page shadow in double
+                page.
+              </li>
+              <li>Rotate horizontal images and PDF pages.</li>
+              <li>
+                Option to show page number, progress, and percentage overlays.
+              </li>
+            </ul>
+            <h3>Quality and viewing tools</h3>
+            <ul class="guides-list">
+              <li>
+                Color filters: brightness, saturation, contrast, sepia, invert,
+                negative, colorize.
+              </li>
+              <li>
+                Image interpolation methods: lanczos3, lanczos2, mitchell,
+                cubic, linear, nearest, and more.
+              </li>
+              <li>Magnifier tool with toggleable shortcuts.</li>
+              <li>
+                AI image tools: upscaling, descreen, and artifact removal.
+              </li>
+            </ul>
+            <h3>Tracking and metadata</h3>
+            <ul class="guides-list">
+              <li>
+                AniList and MyAnimeList tracking with automatic progress
+                updates.
+              </li>
+              <li>
+                Auto-prompt to track and inferred chapter/volume from filenames.
+              </li>
+              <li>Metadata display for ratings, genres, and search results.</li>
+            </ul>
+            <h3>Customization and control</h3>
+            <ul class="guides-list">
+              <li>Custom keyboard, mouse wheel, and gamepad shortcuts.</li>
+              <li>Configurable tap zones and optional disablement.</li>
+              <li>
+                Multi-window support, tabs, and open-in-new-window options.
+              </li>
+              <li>
+                Custom cache and temporary folder location with size limits.
+              </li>
+              <li>
+                Settings to control startup, fullscreen, and navigation
+                behavior.
+              </li>
+            </ul>
+            <div class="guides-screenshots">
+              <img
+                class="guides-shot-img is-hero"
+                src="../images/screenshots/guide/features/image.png"
+                alt="Features overview"
+              />
+              <img
+                class="guides-shot-img is-hero"
+                src="../images/screenshots/guide/features/image%20copy.png"
+                alt="Reading layout example"
+              />
+              <img
+                class="guides-shot-img is-hero"
+                src="../images/screenshots/guide/features/image%20copy%202.png"
+                alt="Settings overview"
+              />
+              <img
+                class="guides-shot-img is-hero"
+                src="../images/screenshots/guide/features/image%20copy%203.png"
+                alt="eBook layout and controls"
+              />
+            </div>
+          </section>
+        </div>
+
+        <div class="guides-page" data-page="screenshots">
+          <section class="guides-section" id="screenshots">
+            <h2>Screenshots</h2>
+            <p>
+              Key visual references for settings, navigation, and reading tools.
+            </p>
+            <div class="guides-screenshots">
+              <img
+                class="guides-shot-img is-hero"
+                src="../images/screenshots/guide/navigation/image.png"
+                alt="Navigation panel"
+              />
+              <img
+                class="guides-shot-img is-hero"
+                src="../images/screenshots/guide/screenshots/image%20copy.png"
+                alt="Catalogs view"
+              />
+              <img
+                class="guides-shot-img is-hero"
+                src="../images/screenshots/guide/screenshots/image%20copy%202.png"
+                alt="Theme settings"
+              />
+            </div>
+          </section>
+        </div>
+
+        <div class="guides-page" data-page="navigation">
+          <section class="guides-section" id="navigation">
+            <h2>Navigation</h2>
+            <p>
+              Browse, sort, and find content across your library and servers.
+              The navigation area is designed to keep big collections organized
+              with quick filters, search, and consistent sorting.
+            </p>
+            <section id="recents">
+              <h3>Recents</h3>
+              <p>
+                Quickly reopen recently accessed files or folders. Recents is a
+                lightweight history that keeps your active reading queue close.
+              </p>
+            </section>
+            <section id="continue-reading">
+              <h3>Continue reading</h3>
+              <p>
+                Shows what you were last reading with accurate progress and
+                thumbnails. Works for folders, archives, and tracked series. A
+                horizontal scrollbar keeps every entry accessible.
+              </p>
+            </section>
+            <section id="recommendations">
+              <h3>Recommended for you</h3>
+              <p>
+                Personalized recommendations based on tracking metadata, even
+                when the current folder has no directly tracked titles. Feedback
+                controls help tune suggestions.
+              </p>
+            </section>
+            <section id="favorites">
+              <h3>Favorites</h3>
+              <p>
+                Pin titles and folders for quick access. Favorites stay visible
+                across sessions so you can keep ongoing series in one place.
+              </p>
+            </section>
+            <section id="labels">
+              <h3>Labels</h3>
+              <p>
+                Create custom labels to group your library by status, genre, or
+                workflow. Labels can be reused for filtering and quick access.
+              </p>
+            </section>
+            <section id="genres">
+              <h3>Genres</h3>
+              <p>
+                Filter library and recents by genre using tracking metadata.
+                This is faster than text search when you only want certain types
+                of series.
+              </p>
+            </section>
+            <section id="opds">
+              <h3>OPDS</h3>
+              <p>
+                Connect to OPDS catalogs to browse remote libraries. OPDS is
+                useful for shared collections, self-hosted servers, and public
+                catalogs.
+              </p>
+            </section>
+            <section id="sort">
+              <h3>Sort</h3>
+              <p>
+                Sort by name, number, last added, or last reading. Numeric
+                sorting keeps chapter sequences in the right order.
+              </p>
+            </section>
+            <section id="search">
+              <h3>Search</h3>
+              <p>
+                Search through current folders and compatible files. This can
+                scan subfolders when you need a full-library lookup.
+              </p>
+            </section>
+            <section id="find">
+              <h3>Find</h3>
+              <p>
+                Filter within the current page without scanning subfolders. Use
+                it for fast narrowing when you already know the list you're in.
+              </p>
+            </section>
+            <section id="master-folders">
+              <h3>Master folders</h3>
+              <p>
+                Manage top-level library locations. Master folders define the
+                core roots for local content and make multi-drive libraries
+                easier.
+              </p>
+            </section>
+            <section id="servers">
+              <h3>Servers</h3>
+              <p>
+                Store smb, ftp, sftp, ssh, webdav, and s3 connections. Server
+                entries let you browse remote content like it is local.
+              </p>
+            </section>
+            <section id="local-artwork">
+              <h3>Local artwork assets</h3>
+              <p>
+                Manage assets used for covers and posters. Local artwork lets
+                you keep consistent series thumbnails or alternate covers.
+              </p>
+            </section>
+            <section id="file-info">
+              <h3>File info</h3>
+              <p>
+                Inspect metadata and file details. File info surfaces key
+                properties, formats, and file paths for troubleshooting.
+              </p>
+              <div class="guides-screenshots">
+                <img
+                  class="guides-shot-img is-hero"
+                  src="../images/screenshots/guide/navigation/image.png"
+                  alt="Navigation panel"
+                />
+              </div>
+            </section>
+          </section>
+        </div>
+
+        <div class="guides-page" data-page="reading">
+          <section class="guides-section" id="reading">
+            <h2>Reading</h2>
+            <p>
+              Customize how pages render and how you move through content.
+              Reading controls are designed to work equally well for manga,
+              comics, and long-form webtoons.
+            </p>
+            <section id="reading-modes">
+              <h3>Reading modes</h3>
+              <p>
+                Choose between manga, webtoon, single, and double page modes.
+                Each mode can be tuned for alignment, margins, and page turn
+                behavior.
+              </p>
+            </section>
+            <section id="bookmarks">
+              <h3>Bookmarks</h3>
+              <p>
+                Save pages and resume where you left off. Bookmarks help you
+                keep track of key moments, not just the last-read page.
+              </p>
+            </section>
+            <section id="tracking">
+              <h3>Tracking</h3>
+              <p>
+                Track progress and sync with AniList and MyAnimeList. Progress
+                can update automatically as you read.
+              </p>
+            </section>
+            <section id="presets">
+              <h3>Presets</h3>
+              <p>
+                Save and reuse reading configurations. Presets make it easy to
+                switch between manga, comics, and webtoon setups.
+              </p>
+            </section>
+            <section id="ebook-layout">
+              <h3>eBook layout</h3>
+              <p>
+                Adjust layout for PDF and EPUB. Use text-friendly settings for
+                long-form documents and structured chapters.
+              </p>
+            </section>
+            <section id="page-layout">
+              <h3>Page layout</h3>
+              <p>
+                Choose single, double, vertical, or smooth page turn. Layout
+                options control both navigation feel and how wide pages are
+                displayed.
+              </p>
+            </section>
+            <section id="scroll-slide">
+              <h3>Scroll and slide</h3>
+              <p>
+                Scroll reading supports vertical momentum and mouse wheel
+                paging. Slide reading gives clear page-to-page transitions with
+                optional global zoom.
+              </p>
+            </section>
+            <section id="tap-zones">
+              <h3>Tap zones and gestures</h3>
+              <p>
+                Configure tap zones, swipe gestures, and touchscreen zoom. You
+                can invert zones, disable them, and customize how page turns
+                behave.
+              </p>
+            </section>
+            <section id="color-filters">
+              <h3>Color filters</h3>
+              <p>
+                Adjust brightness, contrast, and colorize modes. Use filters for
+                night reading or to enhance scanned pages.
+              </p>
+            </section>
+            <section id="image-interpolation">
+              <h3>Image interpolation</h3>
+              <p>
+                Set scaling quality for crisp or smooth rendering. Different
+                interpolation methods help balance sharpness and speed.
+              </p>
+              <div class="guides-screenshots">
+                <img
+                  class="guides-shot-img is-hero"
+                  src="../images/screenshots/guide/ai/image.png"
+                  alt="Image interpolation and AI tools"
+                />
+              </div>
+            </section>
+            <section id="ai-tools">
+              <h3>AI tools</h3>
+              <p>
+                Use AI for image upscaling, descreening, and artifact removal to
+                clean and enhance scanned pages.
+              </p>
+            </section>
+            <section id="shortcuts">
+              <h3>Shortcuts and gamepad</h3>
+              <p>
+                Customize keyboard, mouse wheel, and gamepad shortcuts for
+                reading and navigation. Gamepad menus can be disabled or tuned
+                with sensitivity and dead zone settings.
+              </p>
+            </section>
+          </section>
+        </div>
+
+        <div class="guides-page" data-page="settings">
+          <section class="guides-section" id="settings">
+            <h2>Settings</h2>
+            <p>
+              Control integrations, shortcuts, and storage behavior. These
+              options shape how OpenComic behaves globally across all libraries.
+            </p>
+            <h3>General</h3>
+            <ul class="guides-list">
+              <li>
+                Start in last reading, start in fullscreen, or open in continue
+                reading.
+              </li>
+              <li>
+                Use tabs, open multiple windows, or open external files in new
+                windows.
+              </li>
+              <li>Discord Rich Presence for showing reading status.</li>
+              <li>Show page number, progress, and percentage overlays.</li>
+            </ul>
+            <h3>Input</h3>
+            <ul class="guides-list">
+              <li>Custom keyboard, gamepad, and mouse wheel shortcuts.</li>
+              <li>
+                Disable gamepad input, tune sensitivity, and set dead zone.
+              </li>
+              <li>Tap zones and touch gesture behavior for page turning.</li>
+            </ul>
+            <h3>Reading and visuals</h3>
+            <ul class="guides-list">
+              <li>
+                Reading mode defaults, page alignment, and double page shadow.
+              </li>
+              <li>Do not enlarge beyond original size, and adjust margins.</li>
+              <li>Image interpolation and color filter defaults.</li>
+              <li>
+                Force black background and blank white page in night mode.
+              </li>
+            </ul>
+            <h3>Tracking and metadata</h3>
+            <ul class="guides-list">
+              <li>
+                Enable AniList and MyAnimeList tracking with auto progress
+                updates.
+              </li>
+              <li>
+                Configure when to prompt tracking and when to update progress.
+              </li>
+              <li>Metadata display options for ratings and genres.</li>
+            </ul>
+            <h3>Storage and performance</h3>
+            <ul class="guides-list">
+              <li>Custom cache and temporary folder location.</li>
+              <li>
+                Maximum cache size, cache age, and per-file cache clearing.
+              </li>
+              <li>
+                Clear permanent 0/1 page states and wipe stale cache entries.
+              </li>
+              <li>Thumbnail and poster handling options for performance.</li>
+            </ul>
+            <div class="guides-screenshots">
+              <img
+                class="guides-shot-img is-hero"
+                src="../images/screenshots/guide/settings/image.png"
+                alt="Settings panel"
+              />
+            </div>
+          </section>
+        </div>
+
+        <div class="guides-page" data-page="version-history">
+          <section class="guides-section" id="version-history">
+            <h2>Version history (features)</h2>
+            <p>
+              Every version from the changelog, with each feature explained in
+              plain language.
+            </p>
+            <section id="v1-7-6">
+              <h3>v1.7.6</h3>
+              <ul class="guides-list">
+                <li>
+                  Added a guided tutorial to explain core features on first use.
+                </li>
+                <li>
+                  Horizontal scrollbars for Continue Reading, Recommended,
+                  Recently Added.
+                </li>
+                <li>
+                  Increase box section items from 6 to 20 for bigger libraries.
+                </li>
+                <li>
+                  Replace thumbs feedback buttons with emoji for simpler UI.
+                </li>
+                <li>
+                  AniList rating display and metadata backfill for older
+                  entries.
+                </li>
+                <li>
+                  EPUB open/read debug instrumentation and more reliable chapter
+                  loading.
+                </li>
+                <li>Guide updated to include new feature explanations.</li>
+              </ul>
+            </section>
+            <section id="v1-7-5">
+              <h3>v1.7.5</h3>
+              <ul class="guides-list">
+                <li>Dedicated genre filter menu for Library and Recents.</li>
+                <li>Recommendations now use full tracking metadata pool.</li>
+                <li>
+                  Recommendation feedback controls restored and persisted.
+                </li>
+                <li>
+                  Recommendation cards now show author/subname and thumbnails
+                  reliably.
+                </li>
+                <li>
+                  Genre display now shows all available genres in metadata
+                  panels.
+                </li>
+              </ul>
+            </section>
+            <section id="v1-7-1">
+              <h3>v1.7.1</h3>
+              <ul class="guides-list">
+                <li>Rename option in context menu for folders and files.</li>
+                <li>
+                  Folder rename updates display name without changing system
+                  folder name.
+                </li>
+                <li>Delete custom catalog tabs with right-click.</li>
+                <li>
+                  Tracking improvements with better chapter/volume detection and
+                  title hints.
+                </li>
+                <li>
+                  Manual tracking override requires modifier keys to lower
+                  progress safely.
+                </li>
+                <li>
+                  AniList search includes open-on-site icon and refreshes page
+                  for new tracking.
+                </li>
+              </ul>
+            </section>
+            <section id="v1-7-0">
+              <h3>v1.7.0</h3>
+              <ul class="guides-list">
+                <li>
+                  AI model categories: power efficient, balanced, quality.
+                </li>
+                <li>
+                  Option to wipe permanent 0/1 page states from the library
+                  cache.
+                </li>
+                <li>
+                  Open multiple OpenComic windows and open files in new windows.
+                </li>
+                <li>Custom folder for cache and temporary files.</li>
+                <li>AI image tools: upscaling, descreen, artifact removal.</li>
+                <li>Cache folder thumbnail lists to reduce disk I/O.</li>
+                <li>Hide file extensions by default.</li>
+                <li>Play background music on a specific page.</li>
+                <li>OPDS auto-download files option.</li>
+                <li>Tabs support.</li>
+              </ul>
+            </section>
+            <section id="v1-6-5">
+              <h3>v1.6.5</h3>
+              <ul class="guides-list">
+                <li>
+                  Go previous/next chapter with auto-scroll by cursor position.
+                </li>
+              </ul>
+            </section>
+            <section id="v1-6-4">
+              <h3>v1.6.4</h3>
+              <ul class="guides-list">
+                <li>
+                  No new features; stability update for Linux release behavior.
+                </li>
+              </ul>
+            </section>
+            <section id="v1-6-3">
+              <h3>v1.6.3</h3>
+              <ul class="guides-list">
+                <li>
+                  No new features; stability fixes for reading, cache, and
+                  metadata.
+                </li>
+              </ul>
+            </section>
+            <section id="v1-6-2">
+              <h3>v1.6.2</h3>
+              <ul class="guides-list">
+                <li>Change labels from the app bar.</li>
+                <li>Continue reading bar context menu.</li>
+                <li>Multi-layer folder labeling on servers.</li>
+              </ul>
+            </section>
+            <section id="v1-6-1">
+              <h3>v1.6.1</h3>
+              <ul class="guides-list">
+                <li>
+                  Tracking chapter/volume from image names and current page.
+                </li>
+                <li>Pick at random button for library discovery.</li>
+                <li>Separate browsing and reading order.</li>
+                <li>Sort option to list compressed files first.</li>
+                <li>Auto-prompt to track on first read.</li>
+                <li>
+                  Improved relative path support for folder portable mode.
+                </li>
+              </ul>
+            </section>
+            <section id="v1-6-0">
+              <h3>v1.6.0</h3>
+              <ul class="guides-list">
+                <li>Disable "Do not enlarge" in webtoon mode.</li>
+                <li>Improved rotation and PDF rotation support.</li>
+                <li>PDFs render to blob images for quality and speed.</li>
+                <li>Optimized sidebar thumbnails.</li>
+                <li>Discord Rich Presence support.</li>
+                <li>Calibre series metadata for PDF and EPUB.</li>
+                <li>Shortcuts to change horizontal margins.</li>
+                <li>Single-thread HDD extractions.</li>
+                <li>Auto-hide mouse cursor in fullscreen.</li>
+                <li>Progress bar, pages, and percentage in library view.</li>
+                <li>
+                  Progressive thumbnail generation based on scroll position.
+                </li>
+                <li>Mark as read and unread options.</li>
+                <li>Option to show page number in top right.</li>
+                <li>Support labels in master folders (auto config).</li>
+                <li>Shadow effect between pages in double page mode.</li>
+              </ul>
+            </section>
+            <section id="v1-5-0">
+              <h3>v1.5.0</h3>
+              <ul class="guides-list">
+                <li>Improved chapter detection for tracking.</li>
+                <li>Image formats: JP2, JXR, JXL, HEIC support.</li>
+                <li>Faster thumbnail generation.</li>
+                <li>Configuration profiles based on folder/file labels.</li>
+                <li>Disable align-with-next-horizontal in double page mode.</li>
+                <li>Gamepad sensitivity adjustment option.</li>
+                <li>Copy image to clipboard.</li>
+                <li>OPDS support and authentication (Basic/Digest).</li>
+                <li>Enable/disable fullscreen from more options menu.</li>
+                <li>Show package versions in About.</li>
+                <li>Custom mouse wheel shortcuts.</li>
+                <li>Mouse wheel sensitivity for zooming.</li>
+                <li>Ignore files/folders by regex or pattern.</li>
+                <li>Secure password/token storage via safeStorage.</li>
+                <li>
+                  Extraction improvements and expanded archive support (LZH,
+                  ACE, TAR.*).
+                </li>
+                <li>Support passworded compressed files.</li>
+                <li>Release notes in new version dialog.</li>
+                <li>Improved extract performance for big files.</li>
+                <li>MyAnimeList tracking support.</li>
+                <li>Multi-layer folder labeling and header bar filters.</li>
+                <li>Disable tap zones option.</li>
+                <li>Refactored navigation history (back/forward).</li>
+                <li>Count images/pages in file info when metadata missing.</li>
+              </ul>
+            </section>
+            <section id="v1-4-1">
+              <h3>v1.4.1</h3>
+              <ul class="guides-list">
+                <li>
+                  No new features; fixes for saving images and drag and drop.
+                </li>
+              </ul>
+            </section>
+            <section id="v1-4-0">
+              <h3>v1.4.0</h3>
+              <ul class="guides-list">
+                <li>Turn pages with mouse wheel.</li>
+                <li>Custom image saving names and save bookmarked images.</li>
+                <li>Improved file/folder opening behavior options.</li>
+                <li>Ignore single folders now works for images.</li>
+                <li>Scroll by screen percentage in webtoon mode.</li>
+                <li>Shortcuts for saving images.</li>
+                <li>Save image template and auto-save to custom folder.</li>
+                <li>Multiple poster and folder sizes.</li>
+                <li>Header scrolling functionality.</li>
+                <li>Clear cache for individual files.</li>
+                <li>Server settings to show files in subfolders.</li>
+                <li>Show only one page at a time in vertical reader.</li>
+                <li>Show files that lost access on macOS (Store).</li>
+              </ul>
+            </section>
+            <section id="v1-3-1">
+              <h3>v1.3.1</h3>
+              <ul class="guides-list">
+                <li>No new features; file type and open location fixes.</li>
+              </ul>
+            </section>
+            <section id="v1-3-0">
+              <h3>v1.3.0</h3>
+              <ul class="guides-list">
+                <li>Next/prev chapter shortcuts.</li>
+                <li>Rotate horizontal images option.</li>
+                <li>
+                  Force black background and white blank page in night mode.
+                </li>
+                <li>Disable gamepad input setting.</li>
+                <li>Page turn transitions and fade.</li>
+                <li>Improved search performance.</li>
+                <li>Force app color profile setting.</li>
+                <li>WebDAV server support.</li>
+                <li>Library navigation using side mouse buttons.</li>
+                <li>Move to trash and delete permanently options.</li>
+                <li>Improved reading load and memory usage.</li>
+                <li>Set an image from folder as poster.</li>
+                <li>Multiple configurable tap zones.</li>
+                <li>More shortcuts.</li>
+                <li>Custom gamepad dead zone.</li>
+                <li>Play background music from parent folder.</li>
+                <li>Show library and other context in header path.</li>
+                <li>
+                  Continue reading and recently added sections in library views.
+                </li>
+                <li>Sound effect on page turn.</li>
+                <li>Set number of items in recents.</li>
+                <li>Reading context menu and save images.</li>
+              </ul>
+            </section>
+            <section id="v1-2-0">
+              <h3>v1.2.0</h3>
+              <ul class="guides-list">
+                <li>Error message when continue reading file is missing.</li>
+                <li>
+                  Background music from folder support (MP3, M4A, WEBM, etc).
+                </li>
+                <li>Webtoon mode vertical margin set to 0.</li>
+                <li>Show current reading title in app window.</li>
+                <li>Open file location of current reading from file menu.</li>
+                <li>Enable/disable next/previous chapter via mouse scroll.</li>
+                <li>About this file dialog.</li>
+                <li>
+                  Auto-delete downloaded archives if tmp usage exceeds limit.
+                </li>
+                <li>
+                  Zip extraction via 7z for performance and partial extraction.
+                </li>
+                <li>S3 server support.</li>
+              </ul>
+            </section>
+            <section id="v1-1-0">
+              <h3>v1.1.0</h3>
+              <ul class="guides-list">
+                <li>
+                  Maximum temporary file size and preserve temp files on close.
+                </li>
+                <li>Label for displaying only one master folder contents.</li>
+                <li>Favorite label support.</li>
+                <li>Custom labels support.</li>
+                <li>Option to not enlarge images beyond original size.</li>
+                <li>New image interpolation methods.</li>
+                <li>Server connections: smb, ftp, ftps, scp, sftp, ssh.</li>
+                <li>Compress cache json files with zstd.</li>
+              </ul>
+            </section>
+            <section id="v1-0-0">
+              <h3>v1.0.0</h3>
+              <ul class="guides-list">
+                <li>Delete bookmarks from bookmark list.</li>
+                <li>
+                  Save and show current folder progress in addition to main
+                  folder.
+                </li>
+                <li>Use EPUB/PDF/ComicInfo.xml title instead of filename.</li>
+              </ul>
+            </section>
+            <section id="v1-0-0-beta-5">
+              <h3>v1.0.0-beta.5</h3>
+              <ul class="guides-list">
+                <li>EPUB format support (alpha).</li>
+                <li>Use first image as poster option.</li>
+                <li>
+                  Open folder/file directly in first image or continue reading.
+                </li>
+                <li>Change page using input range slider.</li>
+                <li>Go to page by typing the number.</li>
+                <li>Global zoom in slide reading.</li>
+                <li>Auto switch night/light mode with OS.</li>
+              </ul>
+            </section>
+            <section id="v1-0-0-beta-4">
+              <h3>v1.0.0-beta.4</h3>
+              <ul class="guides-list">
+                <li>Open directly in continue reading instead of file list.</li>
+                <li>Start reading in fullscreen.</li>
+                <li>Start OpenComic directly in last reading.</li>
+                <li>Recently opened page.</li>
+                <li>Move zoom and scroll with mouse.</li>
+                <li>
+                  Touchscreen navigation improvements (swipe, two-finger zoom,
+                  reset).
+                </li>
+                <li>Better image edge detection when zoomed.</li>
+                <li>Frameless window mode on Windows and macOS.</li>
+                <li>Translate page names in PDFs.</li>
+              </ul>
+            </section>
+            <section id="v1-0-0-beta-3">
+              <h3>v1.0.0-beta.3</h3>
+              <ul class="guides-list">
+                <li>Open file location from context menu.</li>
+                <li>Add and remove posters using local artwork assets.</li>
+                <li>Show image at original size.</li>
+                <li>First/last page buttons and scroll to next/prev comic.</li>
+                <li>
+                  Better detection for compressed files with wrong extension.
+                </li>
+                <li>Start OpenComic at system startup (Windows/macOS).</li>
+                <li>Library buttons for next/prev chapter.</li>
+                <li>
+                  Brightness, saturation, contrast, sepia, and colorize filters.
+                </li>
+                <li>Master folder support from settings.</li>
+                <li>Ignore single folders in browsing.</li>
+                <li>Search and filter in library/browsing.</li>
+                <li>Tracking at end of chapter/volume setting.</li>
+                <li>View size and clear cache/temp files from settings.</li>
+                <li>Max cache size and max cache age settings.</li>
+              </ul>
+            </section>
+            <section id="v1-0-0-beta-2">
+              <h3>v1.0.0-beta.2</h3>
+              <ul class="guides-list">
+                <li>Reload button in file list.</li>
+                <li>Check for new version on startup.</li>
+                <li>Custom keyboard and gamepad shortcuts.</li>
+                <li>
+                  Improved gamepad/keyboard navigation across settings and
+                  menus.
+                </li>
+              </ul>
+            </section>
+            <section id="v1-0-0-beta-1">
+              <h3>v1.0.0-beta.1</h3>
+              <ul class="guides-list">
+                <li>AVIF image support.</li>
+                <li>Improved PDF rendering performance and quality.</li>
+                <li>
+                  Rewrite for compressed file reading and faster thumbnails.
+                </li>
+                <li>Global zoom in vertical reader.</li>
+                <li>Gamepad support.</li>
+                <li>Keyboard navigation in library.</li>
+                <li>Clip image option while reading.</li>
+                <li>Updated theme to Material 3 and electron upgrade.</li>
+                <li>Settings page for default values.</li>
+                <li>Drag and drop support.</li>
+                <li>Local artwork assets support.</li>
+              </ul>
+            </section>
+          </section>
+        </div>
+
+        <div class="guides-page" data-page="contributing">
+          <section class="guides-section" id="contributing">
+            <h2>Contributing</h2>
+            <p>
+              Report issues, translate the app, or help improve documentation.
+              Documentation contributions are welcomed in the OpenComic website
+              repository.
+            </p>
+          </section>
+        </div>
+      </div>
+
+      <div class="guides-footer">
+        <a href="#version-history">Previous: Version history</a>
+        <a href="#features">Next: Features</a>
+      </div>
+    </main>
+  </div>
+</div>

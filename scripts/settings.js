@@ -11,6 +11,7 @@ function start() {
 	handlebarsContext.downloadOpdsFolder = relative.resolve(config.downloadOpdsFolder);
 	handlebarsContext.customCacheAndTmpFolder = relative.resolve(config.customCacheAndTmpFolder);
 	handlebarsContext.settingsTab = activeTab || 'general';
+	handlebarsContext.tutorialHasSample = (typeof tutorial !== 'undefined' && typeof tutorial.hasSample === 'function') ? tutorial.hasSample() : false;
 	activeTab = false;
 }
 
