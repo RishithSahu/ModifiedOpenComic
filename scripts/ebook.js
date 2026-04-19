@@ -135,9 +135,7 @@ var ebook = function(book, config = {}) {
 		iframe.style.zIndex = '1000';
 		iframe.style.backgroundColor = 'white';
 		iframe.style.visibility = 'hidden';
-		// WARNING: Using both allow-same-origin and allow-scripts enables DOM/CSS injection but triggers a browser security warning.
-		// Only use this if you trust the EPUB content.
-		iframe.sandbox = 'allow-same-origin allow-scripts';
+		iframe.sandbox = 'allow-same-origin';
 
 		let serializer = new XMLSerializer();
 		let htmlString = serializer.serializeToString(html);
@@ -210,7 +208,7 @@ var ebook = function(book, config = {}) {
 		iframe.style.zIndex = '1000';
 		iframe.style.backgroundColor = 'white';
 		iframe.style.visibility = 'hidden';
-		iframe.sandbox = 'allow-same-origin allow-scripts';
+		iframe.sandbox = 'allow-same-origin';
 
 		// Sanitizer API is not support yet and has a bug in MathML: https://bugs.chromium.org/p/chromium/issues/detail?id=1225606&q=Sanitizer%20API&can=2
 		//let sanitizer = new Sanitizer({allowCustomElements: true, allowElements: this.allowElements});
@@ -732,16 +730,61 @@ var ebook = function(book, config = {}) {
 		head.appendChild(style);
 	}
 
-	this.removeScripts = async function(html) {
+	this.sanitizeUnsafeDom = function(root) {
 
-		let items = html.querySelectorAll('script');
+		if(!root || !root.querySelectorAll)
+			return root;
 
-		for(let i = 0, len = items.length; i < len; i++)
+		const scripts = root.querySelectorAll('script');
+
+		for(let i = 0, len = scripts.length; i < len; i++)
 		{
-			items[i].remove();
+			scripts[i].remove();
 		}
 
-		return html;
+		const nodes = root.querySelectorAll('*');
+		const scriptProtocolRegex = /^\s*(?:javascript|vbscript)\s*:/iu;
+		const unsafeInlineStyleRegex = /expression\s*\(|url\s*\(\s*['"]?\s*javascript\s*:/iu;
+
+		for(let i = 0, len = nodes.length; i < len; i++)
+		{
+			const node = nodes[i];
+			const attrs = Array.from(node.attributes || []);
+
+			for(let a = 0, len2 = attrs.length; a < len2; a++)
+			{
+				const attr = attrs[a];
+				const name = (attr.name || '').toLowerCase();
+				const value = String(attr.value || '');
+
+				if(/^on/iu.test(name))
+					node.removeAttribute(attr.name);
+				else if(name === 'srcdoc')
+					node.removeAttribute(attr.name);
+				else if(/^(?:href|src|xlink:href|formaction|action)$/iu.test(name) && scriptProtocolRegex.test(value))
+					node.removeAttribute(attr.name);
+				else if(name === 'style' && unsafeInlineStyleRegex.test(value))
+					node.removeAttribute(attr.name);
+			}
+		}
+
+		return root;
+
+	}
+
+	this.sanitizeUnsafeHtmlString = function(htmlString = '') {
+
+		const template = document.createElement('template');
+		template.innerHTML = String(htmlString || '');
+		this.sanitizeUnsafeDom(template.content);
+
+		return template.innerHTML;
+
+	}
+
+	this.removeScripts = async function(html) {
+
+		return this.sanitizeUnsafeDom(html);
 
 	}
 
@@ -910,7 +953,7 @@ var ebook = function(book, config = {}) {
 
 	this.pageToIframe = function(html) {
 		let iframe = document.createElement('iframe');
-		html = String(html || '').replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/giu, '');
+		html = this.sanitizeUnsafeHtmlString(html);
 
 		iframe.style.width = '100%';
 		iframe.style.height = '100%';
@@ -919,12 +962,10 @@ var ebook = function(book, config = {}) {
 		iframe.style.backgroundColor = this.config.colors && this.config.colors.background ? this.config.colors.background : 'white';
 		iframe.style.pointerEvents = 'none';
 		// Remove transform scaling and allow overflow for one-page mode
-		// Always use Blob URL for iframe src and robust CSS injection
 		iframe.style.overflow = 'visible';
 		iframe.scrolling = 'no';
-		iframe.sandbox = 'allow-same-origin allow-scripts';
-		const blob = new Blob([html], { type: 'text/html' });
-		iframe.src = URL.createObjectURL(blob);
+		iframe.sandbox = 'allow-same-origin';
+		iframe.srcdoc = html;
 		if (iframe && typeof iframe.onload !== "undefined") {
 			iframe.onload = () => {
 				try {

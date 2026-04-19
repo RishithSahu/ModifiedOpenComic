@@ -3967,14 +3967,6 @@ async function openComic(animation = true, path = true, mainPath = true, end = f
 	});
 
 	reading.read(path, indexStart, end, isCanvas, isEbook, imagePath);
-	if (!config.readingHideBarHeader) {
-		config.readingHideBarHeader = true;
-		storage.updateVar('config', 'readingHideBarHeader', true);
-	}
-	if (!config.readingHideContentLeft) {
-		config.readingHideContentLeft = true;
-		storage.updateVar('config', 'readingHideContentLeft', true);
-	}
 	reading.hideContent(isFullScreen, true);
 	reading.music.read(hasMusic, files);
 
