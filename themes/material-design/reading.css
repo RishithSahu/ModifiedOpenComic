@@ -10,6 +10,24 @@
 	transition: opacity 0.2s;
 }
 
+.reading-header-toggle-zone
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 4cm;
+	height: 4cm;
+	transform: translate(-50%, -50%);
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	z-index: 12;
+	cursor: pointer;
+	user-select: none;
+	-webkit-app-region: no-drag;
+	opacity: 0;
+}
+
 .reading-left
 {
 	width: 100%;

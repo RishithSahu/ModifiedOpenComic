@@ -2160,6 +2160,7 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 
 	// PDF
 	this.pdf = false;
+	this.pdfFastRead = false;
 
 	this.openPdf = async function () {
 
@@ -2181,6 +2182,7 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 		if (!isServer(this.path)) {
 			pdfOptions.disableRange = true;
 			pdfOptions.disableStream = true;
+			pdfOptions.disableAutoFetch = true;
 		}
 
 		// For thumbnail generation, minimize memory by preventing pdfjs from pre-loading the entire PDF
@@ -2206,6 +2208,7 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 					cMapPacked: true,
 					disableRange: true,
 					disableStream: true,
+					disableAutoFetch: true,
 				};
 
 				if (this.config.fromThumbnailsGeneration) {
@@ -2221,6 +2224,74 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 		}
 
 		return this.pdf;
+
+	}
+
+	this.useFastPdfRead = async function (pdf = false) {
+
+		if (this.config.fromThumbnailsGeneration)
+			return false;
+
+		pdf = pdf || await this.openPdf();
+
+		if ((pdf?.numPages || 0) >= 120)
+			return true;
+
+		if (!isServer(this.path)) {
+			try {
+				if (fs.statSync(this.realPath).size >= 100 * 1024 * 1024)
+					return true;
+			}
+			catch (error) {}
+		}
+
+		return false;
+
+	}
+
+	this.updatePdfPageSizeCache = function (file, size = false) {
+
+		const width = Math.max(1, Math.round(size?.width || 0));
+		const height = Math.max(1, Math.round(size?.height || 0));
+
+		if (!file || !width || !height)
+			return false;
+
+		const nextSize = { width: width, height: height };
+		const status = this.getFileStatus(file) || {};
+		const prevSize = status.size || {};
+		const changed = status.sizeApproximate || prevSize.width !== width || prevSize.height !== height;
+
+		if (!changed)
+			return false;
+
+		this.setFileStatus(file, {
+			size: nextSize,
+			sizeApproximate: false,
+		});
+
+		if (Array.isArray(this.files)) {
+			const entry = this.files.find(function (current) {
+				return current?.name === file;
+			});
+
+			if (entry)
+				entry.size = nextSize;
+		}
+
+		const json = cache.readJson(this.cacheFile);
+		if (json && Array.isArray(json.files)) {
+			const entry = json.files.find(function (current) {
+				return current?.name === file;
+			});
+
+			if (entry) {
+				entry.size = nextSize;
+				cache.writeJson(this.cacheFile, json);
+			}
+		}
+
+		return true;
 
 	}
 
@@ -2244,6 +2315,48 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 		let pdf = await this.openPdf();
 		let pages = pdf.numPages;
 		let leadingZeros = Math.max(String(pages).length, 4);
+		this.pdfFastRead = await this.useFastPdfRead(pdf);
+
+		if (this.pdfFastRead) {
+			let firstPage;
+			let retries = 5;
+			while (retries > 0) {
+				try {
+					if (!this.pdf) pdf = await this.openPdf();
+					firstPage = await pdf.getPage(1);
+					break;
+				} catch (e) {
+					if (e.message && (e.message.includes('Invalid page request') || e.message.includes('Worker was destroyed') || e.message.includes('Transport destroyed'))) {
+						this.pdf = null;
+						retries--;
+						if (retries === 0) throw e;
+						await new Promise(r => setTimeout(r, 100));
+					} else {
+						throw e;
+					}
+				}
+			}
+
+			const viewport = firstPage.getViewport({ scale: 1 });
+			const defaultSize = {
+				width: viewport.width,
+				height: viewport.height,
+			};
+			firstPage.cleanup();
+
+			for (let i = 1; i <= pages; i++) {
+				let file = 'page-' + String(i).padStart(leadingZeros, '0') + '.jpg';
+				let size = {
+					width: defaultSize.width,
+					height: defaultSize.height,
+				};
+
+				files.push({ name: file, path: p.join(this.path, file), folder: false, compressed: false, size: size, page: i });
+				this.setFileStatus(file, { page: i, extracted: false, size: size, sizeApproximate: i !== 1 });
+			}
+
+			return this.files = files;
+		}
 
 		for (let i = 1; i <= pages; i++) {
 			let file = 'page-' + String(i).padStart(leadingZeros, '0') + '.jpg';
@@ -2567,13 +2680,26 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 				}
 			}
 
-			let scale = this.config.width / status.size.width;
+			const originalViewport = page.getViewport({ scale: 1 });
+			const originalSize = {
+				width: originalViewport.width,
+				height: originalViewport.height,
+			};
+
+			let scale = this.config.width / originalSize.width;
 			let viewport = page.getViewport({ scale: scale });
+			const renderWidth = Math.max(1, Math.round(viewport.width));
+			const renderHeight = Math.max(1, Math.round(viewport.height));
 
 			let canvas = document.createElement('canvas');
-			canvas.width = viewport.width = this.config.width;
-			canvas.height = viewport.height = this.config.height;
+			canvas.width = viewport.width = renderWidth;
+			canvas.height = viewport.height = renderHeight;
 			let context = canvas.getContext('2d');
+
+			if (this.pdfFastRead) {
+				context.fillStyle = '#ffffff';
+				context.fillRect(0, 0, canvas.width, canvas.height);
+			}
 
 			try {
 				await page.render({ canvasContext: context, viewport: viewport }).promise;
@@ -2594,8 +2720,11 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 				throw error;
 			}
 
-			const blob = await new Promise(function (resolve) {
-				canvas.toBlob(resolve, 'image/png');
+			const blob = await new Promise((resolve) => {
+				if (this.pdfFastRead)
+					canvas.toBlob(resolve, 'image/jpeg', 0.9);
+				else
+					canvas.toBlob(resolve, 'image/png');
 			});
 
 			// Free canvas immediately after blob creation to prevent memory accumulation
@@ -2604,11 +2733,20 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 			canvas = null;
 			context = null;
 
+			const sizeUpdated = this.updatePdfPageSizeCache(file, originalSize);
 			page.cleanup();
 
 			this.setFileStatus(file, { rendered: true, widthRendered: this.config.width });
 
-			return { blob: URL.createObjectURL(blob), width: viewport.width, height: viewport.height, size: blob.size };
+			return {
+				blob: URL.createObjectURL(blob),
+				width: renderWidth,
+				height: renderHeight,
+				size: blob.size,
+				originalWidth: originalSize.width,
+				originalHeight: originalSize.height,
+				sizeUpdated: sizeUpdated,
+			};
 		}
 
 		return false;

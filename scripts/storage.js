@@ -1,7 +1,7 @@
 const safe = require(p.join(appDir, '.dist/storage/safe.js')),
 	syncInstances = require(p.join(appDir, '.dist/storage/sync-instances.js'));
 
-const changes = 144; // Update this if readingPagesConfig is updated
+const changes = 145; // Update this if the storage schema is updated
 
 const readingPagesConfig = {
 	readingConfigName: '',
@@ -193,8 +193,8 @@ const storageDefault = {
 		readingMagnifyingGlassSize: 400,
 		readingMagnifyingGlassRatio: 1.25,
 		readingMagnifyingGlassRadius: 4,
-		readingHideContentLeft: false,
-		readingHideBarHeader: false,
+		readingHideContentLeft: true,
+		readingHideBarHeader: true,
 		readingShowPageNumber: false,
 		readingHideContentLeftFullScreen: true,
 		readingHideBarHeaderFullScreen: true,
@@ -425,16 +425,18 @@ const storageDefault = {
 	},
 	trackingFolderMetadata: {
 		wildcard: {
-			version: 1,
+			version: 2,
 			anilistId: 0,
 			title: '',
 			author: '',
+			seriesType: '',
 			demographic: '',
 			genres: [
 				'',
 			],
 			description: '',
 			serializationYear: 0,
+			rating: 0,
 			recommendation: {
 				readingTimeMinutes: 0,
 				genreClusters: [

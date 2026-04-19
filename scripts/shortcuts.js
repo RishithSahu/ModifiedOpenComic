@@ -52,6 +52,9 @@ function inputIsFocused()
 
 function clickTapZone(event, button)
 {
+	if(reading.consumeHeaderToggleZoneClick(event))
+		return false;
+
 	if(config.disableTapZones)
 		return false;
 

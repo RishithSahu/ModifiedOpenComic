@@ -126,10 +126,11 @@ const sanitized = folderMetadataSchema.sanitizeFolderMetadata({
 	updatedAt: 0,
 }, now);
 
-assert.equal(sanitized.version, 1);
+assert.equal(sanitized.version, 2);
 assert.equal(sanitized.anilistId, 1234);
 assert.equal(sanitized.title, 'Aho Girl');
 assert.equal(sanitized.author, 'Hiroyuki');
+assert.equal(sanitized.seriesType, '');
 assert.equal(sanitized.demographic, 'seinen');
 assert.deepEqual(sanitized.genres, ['Comedy', 'Slice of Life']);
 assert.equal(sanitized.serializationYear, 2012);
@@ -144,15 +145,37 @@ const validation = folderMetadataSchema.validateFolderMetadata(sanitized);
 assert.equal(validation.valid, true);
 assert.deepEqual(validation.errors, []);
 
+const sanitizedSeriesType = folderMetadataSchema.sanitizeFolderMetadata({
+	version: 2,
+	anilistId: 10,
+	title: 'Solo Leveling',
+	author: 'Chugong',
+	seriesType: 'Manhwa',
+	demographic: 'Shonen',
+	genres: ['Action'],
+	description: 'Dungeon hunters',
+	serializationYear: 2018,
+	recommendation: {
+		readingTimeMinutes: 10,
+		genreClusters: ['action'],
+	},
+	source: 'anilist',
+	confidence: 90,
+}, now);
+
+assert.equal(sanitizedSeriesType.version, 2);
+assert.equal(sanitizedSeriesType.seriesType, 'manhwa');
+
 const requiredValidation = folderMetadataSchema.validateRequiredFolderMetadata(sanitized);
 assert.equal(requiredValidation.valid, true);
 assert.deepEqual(requiredValidation.errors, []);
 
 const invalidValidation = folderMetadataSchema.validateFolderMetadata({
-	version: 1,
+	version: 2,
 	anilistId: -1,
 	title: '',
 	author: '',
+	seriesType: 'webcomic',
 	demographic: 'unknown',
 	genres: 'bad',
 	description: '',

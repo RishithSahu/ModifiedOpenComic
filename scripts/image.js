@@ -42,10 +42,12 @@ async function _resize(fromImage, toImage, config = {}, deep = 0)
 
 	await loadSharp();
 
-	let options = {}
+	let options = {
+		sequentialRead: true,
+	};
 
-	if(deep > 2)
-		options = {failOn: 'none'};
+	if(deep > 0)
+		options = {...options, failOn: 'none', unlimited: true};
 
 	try
 	{
@@ -55,9 +57,17 @@ async function _resize(fromImage, toImage, config = {}, deep = 0)
 	}
 	catch(error)
 	{
+		const message = error?.message || '';
+		const isCorruptJpeg = /VipsJpeg|Corrupt JPEG|premature end of JPEG|Invalid SOS/iu.test(message);
+
 		if(error && /unsupported image format/iu.test(error?.message || ''))
 		{
 			throw error;
+		}
+		else if(isCorruptJpeg && deep === 0)
+		{
+			await app.sleep(60);
+			return _resize(fromImage, toImage, config, 1);
 		}
 		else if(error)
 		{

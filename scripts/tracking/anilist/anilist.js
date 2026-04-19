@@ -289,6 +289,20 @@ function extractPrimaryAuthor(staffEdges = [])
 	return first?.node?.name?.full || '';
 }
 
+function normalizeSeriesType(countryOfOrigin = '')
+{
+	const country = String(countryOfOrigin || '').trim().toUpperCase();
+
+	if(country === 'JP')
+		return 'manga';
+	if(country === 'KR')
+		return 'manhwa';
+	if(country === 'CN' || country === 'TW' || country === 'HK')
+		return 'manhua';
+
+	return '';
+}
+
 async function getComicMetadata(siteId)
 {
 	const query = `
@@ -305,6 +319,7 @@ async function getComicMetadata(siteId)
 			synonyms
 			description(asHtml: false)
 			genres
+			countryOfOrigin
 			tags {
 				name
 				rank
@@ -357,6 +372,7 @@ async function getComicMetadata(siteId)
 			titleUserPreferred: media?.title?.userPreferred || '',
 			synonyms: Array.isArray(media?.synonyms) ? media.synonyms : [],
 			author: extractPrimaryAuthor(staffEdges),
+			seriesType: normalizeSeriesType(media?.countryOfOrigin),
 			demographic: normalizeDemographic(media?.tags || []),
 			genres: Array.isArray(media?.genres) ? media.genres : [],
 			description: String(media?.description || ''),

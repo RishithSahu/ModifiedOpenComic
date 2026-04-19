@@ -1574,6 +1574,12 @@ a:hover
 	transition: opacity 0.2s;
 }
 
+.content-view-module .progress-pages > span.progress-pages-read,
+.content-view-module .progress-pages > span.progress-pages-percent
+{
+	display: none;
+}
+
 .content-view-module .v-folder
 {
 	width: 150px;
@@ -1657,23 +1663,22 @@ a:hover
 	justify-content: center;
 }
 
-.content-view-module .v-img img
-{
-	max-width: 150px;
-	max-height: 225px;
+.content-view-module .v-img img {
+	width: 150px;
+	height: 225px;
 	display: block;
 	border-radius: 12px;
 	background-color: #fff;
+	object-fit: cover;
 	overflow: hidden;
-	background-size: 100%;
+	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: 50%;
+	/* Remove any debug border */
+	border: none;
 }
 
-.content-view-module .v-img img.border
-{
-	border: 1px solid var(--md-sys-color-surface-variant);
-}
+
 
 .content-view-module .v-img picture
 {
@@ -1686,22 +1691,7 @@ a:hover
 	transform: scale(1.04);
 }
 
-.content-view-module .v-img picture:after
-{
-	content: '';
-	display: block;
-	background-color: transparent;
-	position: absolute;
-	top: -2px;
-	left: -2px;
-	width: calc(100% + 4px);
-	height: calc(100% + 4px);
-	box-sizing: border-box;
-	border: 4px solid rgba(180, 180, 180, 1);
-	border-radius: 14px;
-	opacity: 0;
-	transition: opacity 0.2s;
-}
+
 
 
 .content-view-module .v-img picture:before
@@ -1982,13 +1972,22 @@ a:hover
 
 .content-view-module-100 > div
 {
-	width: 100px;
-	height: 198px;
+	width: 100%;
+	height: auto;
+	min-height: 226px;
 	margin: 16px 0px 16px 16px;
 	margin: 8px -8px 8px 8px;
 	padding: 8px;
 	content-visibility: auto;
-	contain-intrinsic-size: 100px 198px;
+	contain-intrinsic-size: 100px 226px;
+	display: flex;
+	flex-direction: column;
+}
+
+.content-view-module-100 > div > div:first-child
+{
+	position: relative;
+	width: 100px;
 }
 
 .content-view-module-100 .v-folder
@@ -2016,14 +2015,9 @@ a:hover
 
 .content-view-module-100 .v-img img
 {
-	max-width: 100px;
-	max-height: 150px;
+	width: 100px;
+	height: 150px;
 	border-radius: 12px;
-}
-
-.content-view-module-100 .v-img picture:after
-{
-	border-radius: 14px;
 }
 
 .content-view-module-100 .v-img picture:before
@@ -2034,11 +2028,11 @@ a:hover
 .content-view-module-100 .v-text
 {
 	width: 100px;
-	height: 34px;
-	margin-top: 6px;
+	height: 36px;
+	margin-top: 8px;
 	padding: 0px 2px;
 	box-sizing: border-box;
-	line-height: 16px;
+	line-height: 17px;
 	text-align: left;
 	white-space: normal;
 	word-break: break-word;
@@ -2052,8 +2046,8 @@ a:hover
 .content-view-module-100 .v-secondary-text
 {
 	width: 100px;
-	height: 18px;
-	margin-top: 2px;
+	height: 20px;
+	margin-top: 4px;
 	padding: 0px 2px;
 	box-sizing: border-box;
 	line-height: 18px;
@@ -2198,17 +2192,65 @@ a:hover
 
 .content-view-module-100 .progress-bar
 {
-	border-radius: 12px;
+	height: 24px;
+	width: 100px;
+	bottom: 0px;
+	left: 0px;
+	border-radius: 0px 0px 12px 12px;
+}
+
+.content-view-module-100 .progress-bar > span
+{
+	height: 24px;
 }
 
 .content-view-module-100 .progress-pages
 {
+	width: 100px;
+	left: 0px;
+	bottom: 0px;
+	padding: 0px 6px 4px 6px;
+	align-items: flex-end;
 	border-radius: 0px 0px 10px 10px;
 }
 
 .content-view-module-100 .progress-pages svg
 {
 	height: 22px;
+}
+
+.content-view-module-100 .progress-pages > span.progress-pages-read,
+.content-view-module-100 .progress-pages > span.progress-pages-percent
+{
+	display: block;
+	position: relative;
+	z-index: 1;
+	min-width: 0px;
+	line-height: 12px;
+	font-size: 10px;
+	font-weight: 600;
+	text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.9);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.content-view-module-100 .progress-pages > span.progress-pages-read
+{
+	flex: 1 1 auto;
+	text-align: left;
+}
+
+.content-view-module-100 .progress-pages > span.progress-pages-percent
+{
+	flex: 0 0 auto;
+	text-align: right;
+	margin-left: 6px;
+}
+
+.content-view-module-100 .progress-pages svg
+{
+	display: none;
 }
 
 .content-view-module-100 .progress-pages svg text textPath
@@ -2429,14 +2471,9 @@ a:hover
 
 .content-view-module-200 .v-img img
 {
-	max-width: 200px;
-	max-height: 300px;
+	width: 200px;
+	height: 300px;
 	border-radius: 15px;
-}
-
-.content-view-module-200 .v-img picture:after
-{
-	border-radius: 17px;
 }
 
 .content-view-module-200 .v-img picture:before
@@ -2548,14 +2585,9 @@ a:hover
 
 .content-view-module-250 .v-img img
 {
-	max-width: 250px;
-	max-height: 375px;
+	width: 250px;
+	height: 375px;
 	border-radius: 18px;
-}
-
-.content-view-module-250 .v-img picture:after
-{
-	border-radius: 20px;
 }
 
 .content-view-module-250 .v-img picture:before
@@ -2667,14 +2699,9 @@ a:hover
 
 .content-view-module-300 .v-img img
 {
-	max-width: 300px;
-	max-height: 450px;
+	width: 300px;
+	height: 450px;
 	border-radius: 22px;
-}
-
-.content-view-module-300 .v-img picture:after
-{
-	border-radius: 24px;
 }
 
 .content-view-module-300 .v-img picture:before

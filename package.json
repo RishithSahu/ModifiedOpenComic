@@ -1,7 +1,7 @@
 {
 	"name": "opencomic",
 	"productName": "OpenComic",
-	"version": "1.7.6",
+	"version": "1.7.7",
 	"main": ".dist/main.js",
 	"type": "commonjs",
 	"keywords": [
@@ -142,7 +142,7 @@
 		"appId": "org.opencomic.app",
 		"productName": "OpenComic",
 		"executableName": "opencomic",
-		"buildVersion": "1.7.6",
+		"buildVersion": "1.7.7",
 		"asar": true,
 		"compression": "maximum",
 		"publish": null,

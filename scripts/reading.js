@@ -2693,7 +2693,146 @@ async function resized() {
 	// getPreviusContentSize();
 }
 
-var hiddenContentLeft = false, hiddenBarHeader = false, hideContentDisableTransitionsST = false, hideContentST = false, hideContentRunningST = false, shownContentLeft = false, shownBarHeader = false;
+var hiddenContentLeft = false, hiddenBarHeader = false, hideContentDisableTransitionsST = false, hideContentST = false, hideContentRunningST = false, shownContentLeft = false, shownBarHeader = false, sidebarPinnedOpen = false, barHeaderPinnedOpen = false;
+
+function updateHeaderToggleZone() {
+	const contentRight = template._contentRight();
+	const zone = contentRight ? contentRight.querySelector('.reading-header-toggle-zone') : false;
+
+	if (!zone)
+		return;
+
+	const canToggleHeader = onReading && hiddenBarHeader;
+
+	zone.style.display = canToggleHeader ? '' : 'none';
+	zone.classList[shownBarHeader ? 'add' : 'remove']('open');
+	zone.setAttribute('aria-expanded', shownBarHeader ? 'true' : 'false');
+}
+
+function updateSidebarToggleButton() {
+	const barHeader = template._barHeader();
+	const toggle = barHeader ? barHeader.querySelector('.button-sidebar-toggle') : false;
+
+	if (!toggle)
+		return;
+
+	const canToggleSidebar = onReading;
+
+	toggle.style.display = canToggleSidebar ? '' : 'none';
+	toggle.classList[shownContentLeft ? 'add' : 'remove']('fill');
+	toggle.setAttribute('aria-expanded', shownContentLeft ? 'true' : 'false');
+	toggle.setAttribute('hover-text', 'Toggle page sidebar');
+	toggle.innerHTML = shownContentLeft ? 'menu_open' : 'menu';
+}
+
+function setShownContentLeftState(value, pinned = false) {
+	shownContentLeft = !!value;
+	sidebarPinnedOpen = shownContentLeft ? !!pinned : false;
+	updateSidebarToggleButton();
+}
+
+function setShownBarHeaderState(value, pinned = false) {
+	shownBarHeader = !!value;
+	barHeaderPinnedOpen = shownBarHeader ? !!pinned : false;
+	updateHeaderToggleZone();
+}
+
+function isInsideHeaderToggleZone(event) {
+	if (!onReading || !hiddenBarHeader)
+		return false;
+
+	const contentRight = template._contentRight();
+	const zone = contentRight ? contentRight.querySelector('.reading-header-toggle-zone') : false;
+
+	if (!zone || zone.style.display === 'none')
+		return false;
+
+	const source = event && event.originalEvent ? event.originalEvent : event;
+
+	let clientX = Number.isFinite(source?.clientX) ? source.clientX : false;
+	let clientY = Number.isFinite(source?.clientY) ? source.clientY : false;
+
+	if (source?.touches && source.touches.length) {
+		clientX = source.touches[0].clientX;
+		clientY = source.touches[0].clientY;
+	}
+	else if (source?.changedTouches && source.changedTouches.length) {
+		clientX = source.changedTouches[0].clientX;
+		clientY = source.changedTouches[0].clientY;
+	}
+
+	if (!Number.isFinite(clientX) || !Number.isFinite(clientY))
+		return false;
+
+	const rect = zone.getBoundingClientRect();
+
+	return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+}
+
+function consumeHeaderToggleZoneClick(event) {
+	if (!isInsideHeaderToggleZone(event))
+		return false;
+
+	const source = event && event.originalEvent ? event.originalEvent : event;
+
+	if (Number.isFinite(source?.button) && source.button !== 0)
+		return false;
+
+	if (event?.preventDefault) event.preventDefault();
+	if (event?.stopPropagation) event.stopPropagation();
+	if (source?.preventDefault) source.preventDefault();
+	if (source?.stopPropagation) source.stopPropagation();
+
+	toggleBarHeaderPanel();
+	return true;
+}
+
+function toggleBarHeaderPanel(force = null) {
+	if (!onReading)
+		return;
+
+	if (!hiddenBarHeader)
+		hideBarHeader(true);
+
+	const barHeaderElement = document.querySelector('.bar-header');
+	const showStateByDom = barHeaderElement ? barHeaderElement.classList.contains('show') : false;
+	const showPanel = force === null ? !(shownBarHeader || showStateByDom) : !!force;
+
+	clearTimeout(hideContentST);
+	hideContentRunningST = false;
+
+	if (showPanel)
+		dom.queryAll('.bar-header, .tabs-bar').addClass('show');
+	else if (!document.querySelector('.menu-simple.a'))
+		dom.queryAll('.bar-header, .tabs-bar').removeClass('show');
+
+	setShownBarHeaderState(showPanel, showPanel);
+}
+
+function toggleSidebarPanel(force = null) {
+	if (!onReading)
+		return;
+
+	if (!hiddenContentLeft)
+		hideContentLeft(true);
+
+	const contentLeft = document.querySelector('.content-left');
+
+	if (!contentLeft)
+		return;
+
+	const showPanel = force === null ? !shownContentLeft : !!force;
+
+	clearTimeout(hideContentST);
+	hideContentRunningST = false;
+
+	if (showPanel)
+		contentLeft.classList.add('show');
+	else
+		contentLeft.classList.remove('show');
+
+	setShownContentLeftState(showPanel, showPanel);
+}
 
 function hideContent(fullScreen = false, first = false) {
 	if (!onReading) {
@@ -2720,6 +2859,10 @@ function hideContent(fullScreen = false, first = false) {
 	});
 
 	var app = $('.app');
+	$('.content-left').removeClass('show');
+	setShownContentLeftState(false);
+	$('.bar-header, .tabs-bar').removeClass('show');
+	setShownBarHeaderState(false);
 
 	if (_hideContentLeft) {
 		app.addClass('hide-content-left');
@@ -2727,7 +2870,6 @@ function hideContent(fullScreen = false, first = false) {
 	}
 	else {
 		app.removeClass('hide-content-left');
-		$('.content-left').removeClass('show');
 		hiddenContentLeft = false;
 	}
 
@@ -2737,11 +2879,12 @@ function hideContent(fullScreen = false, first = false) {
 	}
 	else {
 		app.removeClass('hide-bar-header hide-tabs-bar');
-		$('.bar-header, .tabs-bar').removeClass('show');
 		hiddenBarHeader = false;
 	}
 
 	dom.this(template._contentRight()).find('.reading-progress').class(fullScreen ? config.readingShowPageNumberFullScreen : config.readingShowPageNumber, 'active');
+	updateSidebarToggleButton();
+	updateHeaderToggleZone();
 
 	if (!first && onReading)
 		resized();
@@ -2827,9 +2970,10 @@ function setReadingDragScroll(dragScroll) {
 
 function updateReadingPagesConfig(key, value) {
 	_config[key] = value;
+	const readingPagesConfigPath = getReadingPagesConfigPath();
 
 	if (currentReadingConfigKey === false) {
-		var readingPagesConfig = storage.getKey('readingPagesConfig', dom.history.mainPath);
+		var readingPagesConfig = storage.getKey('readingPagesConfig', readingPagesConfigPath);
 		if (!readingPagesConfig || readingPagesConfig.configKey > 0) {
 			if (readingPagesConfig && readingPagesConfig.configKey > 0) {
 				var readingShortcutPagesConfig = storage.getKey('readingShortcutPagesConfig', readingPagesConfig.configKey);
@@ -2849,7 +2993,7 @@ function updateReadingPagesConfig(key, value) {
 		readingPagesConfig.configKey = false;
 		readingPagesConfig[key] = value;
 
-		storage.updateVar('readingPagesConfig', dom.history.mainPath, readingPagesConfig);
+		storage.updateVar('readingPagesConfig', readingPagesConfigPath, readingPagesConfig);
 	}
 	else if (currentReadingConfigKey > 0) {
 		var readingShortcutPagesConfig = storage.getKey('readingShortcutPagesConfig', currentReadingConfigKey);
@@ -3214,6 +3358,68 @@ function getReadingMainPath(fallbackPath = false) {
 	return '';
 }
 
+function getReadingPagesConfigPath(fallbackPath = false) {
+	const mainPath = getReadingMainPath(fallbackPath);
+
+	if (!mainPath)
+		return '';
+
+	if (typeof tracking === 'undefined' || !tracking || typeof tracking.getFolderMetadataPath !== 'function' || typeof tracking.getFolderMetadata !== 'function')
+		return mainPath;
+
+	const metadataPath = tracking.getFolderMetadataPath(mainPath);
+	const metadata = metadataPath ? tracking.getFolderMetadata(metadataPath) : false;
+
+	if (metadata && (metadata.seriesType || metadata.anilistId || metadata.source === 'anilist'))
+		return p.normalize(metadataPath);
+
+	return mainPath;
+}
+
+function applyTrackedSeriesReadingDefaults(readingPagesConfigPath = '', hasStoredReadingConfig = false) {
+	if (!readingPagesConfigPath || hasStoredReadingConfig || currentReadingConfigKey !== false)
+		return false;
+
+	if (typeof tracking === 'undefined' || !tracking || typeof tracking.getFolderMetadata !== 'function')
+		return false;
+
+	const metadata = tracking.getFolderMetadata(readingPagesConfigPath);
+	const seriesType = metadata?.seriesType || '';
+
+	if (!seriesType)
+		return false;
+
+	const readingPagesConfig = copy(_config);
+	delete readingPagesConfig.key;
+
+	readingPagesConfig.configKey = false;
+
+	if (seriesType === 'manga') {
+		if (readingPagesConfig.readingView === 'scroll')
+			readingPagesConfig.readingView = 'slide';
+
+		readingPagesConfig.readingManga = true;
+		readingPagesConfig.readingWebtoon = false;
+		readingPagesConfig.readingDoublePage = true;
+	}
+	else if (seriesType === 'manhwa' || seriesType === 'manhua') {
+		readingPagesConfig.readingView = 'scroll';
+		readingPagesConfig.readingManga = false;
+		readingPagesConfig.readingWebtoon = true;
+		readingPagesConfig.readingDoublePage = false;
+	}
+	else {
+		return false;
+	}
+
+	storage.updateVar('readingPagesConfig', readingPagesConfigPath, readingPagesConfig);
+
+	currentReadingConfigKey = false;
+	_config = { ...readingPagesConfig, key: false };
+
+	return true;
+}
+
 function getBookmarks() {
 	const mainPath = getReadingMainPath();
 	if (!mainPath)
@@ -3510,10 +3716,23 @@ var currentReadingConfigKey = false;
 function loadReadingConfig(key = false) {
 	_config = copy(config);
 
+	const useActiveReadingConfig = (key === false);
 	currentReadingConfigKey = key;
+	const readingMainPath = getReadingMainPath();
+	const readingPagesConfigPath = getReadingPagesConfigPath();
+	let storedReadingPagesConfig = readingPagesConfigPath ? storage.getKey('readingPagesConfig', readingPagesConfigPath) : false;
+
+	if (!storedReadingPagesConfig && readingMainPath && readingPagesConfigPath && readingMainPath !== readingPagesConfigPath) {
+		const legacyReadingPagesConfig = storage.getKey('readingPagesConfig', readingMainPath);
+
+		if (legacyReadingPagesConfig) {
+			storedReadingPagesConfig = copy(legacyReadingPagesConfig);
+			storage.updateVar('readingPagesConfig', readingPagesConfigPath, storedReadingPagesConfig);
+		}
+	}
 
 	if (key === false) {
-		var readingPagesConfig = storage.getKey('readingPagesConfig', dom.history.mainPath);
+		var readingPagesConfig = storedReadingPagesConfig;
 
 		if (readingPagesConfig) {
 			if (readingPagesConfig.configKey)
@@ -3538,6 +3757,9 @@ function loadReadingConfig(key = false) {
 	else if (key === 0) {
 		_config.key = 0;
 	}
+
+	if (useActiveReadingConfig)
+		applyTrackedSeriesReadingDefaults(readingPagesConfigPath, !!storedReadingPagesConfig);
 
 	_config = copy(_config);
 
@@ -3639,21 +3861,23 @@ function loadReadingPages(key = false, edit = false, tab = 'page-layout') {
 }
 
 function setReadingShortcutPagesConfig(key = 0, desactiveMenu = true) {
+	const readingPagesConfigPath = getReadingPagesConfigPath();
+
 	if (key == 0) {
 		const labelConfigKey = getLabelConfigKey();
 
 		if (labelConfigKey)
-			storage.updateVar('readingPagesConfig', dom.history.mainPath, { configKey: 0 });
+			storage.updateVar('readingPagesConfig', readingPagesConfigPath, { configKey: 0 });
 		else
-			storage.deleteVar('readingPagesConfig', dom.history.mainPath);
+			storage.deleteVar('readingPagesConfig', readingPagesConfigPath);
 	}
 	else {
-		var readingPagesConfig = storage.getKey('readingPagesConfig', dom.history.mainPath);
+		var readingPagesConfig = storage.getKey('readingPagesConfig', readingPagesConfigPath);
 
 		if (!readingPagesConfig) readingPagesConfig = {};
 		readingPagesConfig.configKey = key;
 
-		storage.updateVar('readingPagesConfig', dom.history.mainPath, readingPagesConfig);
+		storage.updateVar('readingPagesConfig', readingPagesConfigPath, readingPagesConfig);
 	}
 
 	changePagesView(0);
@@ -4040,6 +4264,8 @@ var onLoadCallback = false, onLoadPromise = false, isLoaded = false;
 async function isLoad() {
 	let readingHeaderLoading = template._barHeader().querySelector('.reading-header-loading');
 	if (readingHeaderLoading) readingHeaderLoading.classList.remove('reading-header-loading');
+	updateSidebarToggleButton();
+	updateHeaderToggleZone();
 
 	if (onLoadCallback) onLoadCallback();
 	onLoadCallback = false;
@@ -4098,6 +4324,15 @@ async function getEbookConfig(configReadingEbook = false) {
 		width = renderZone.width;
 		height = renderZone.height;
 	}
+
+	// Add a right-side safety margin to prevent text cutoff at the edge.
+	// Make the page visibly wider: only subtract a right-edge safety margin for clipping protection
+	const widthSafetyInset = doublePage.active() ? 4 : 8; // minimal
+	const rightEdgeSafetyMargin = 48; // px, prevents right-edge clipping
+	const heightSafetyInset = readingViewIs('scroll') ? 2 : 8;
+	width = Math.max(1, width - widthSafetyInset - rightEdgeSafetyMargin);
+	height = Math.max(1, height - heightSafetyInset);
+	// Debug border for pagination viewport removed as requested
 
 	let maxWidth = configReadingEbook.maxWidth;
 	let minMargin = configReadingEbook.minMargin;
@@ -4572,54 +4807,28 @@ function pointermove(event) {
 
 	if (hiddenContentLeft || hiddenBarHeader) // Show content left and header bar when they are hidden
 	{
-		if (pageY < 96) {
-			if (hiddenBarHeader && !shownBarHeader && !shownContentLeft && !hideContentRunningST) {
-				hideContentST = setTimeout(function () {
-
-					dom.queryAll('.bar-header, .tabs-bar').addClass('show');
-					reading.setShownBarHeader(true);
-
-				}, 300);
-
-				hideContentRunningST = true;
-			}
-		}
-		else if (pageX < 192) {
-			if (hiddenContentLeft && !shownContentLeft && !shownBarHeader && !hideContentRunningST) {
-				hideContentST = setTimeout(function () {
-
-					dom.query('.content-left').addClass('show');
-					reading.setShownContentLeft(true);
-
-				}, 300);
-
-				hideContentRunningST = true;
-			}
-		}
-		else {
-			clearTimeout(hideContentST);
-			hideContentRunningST = false;
-		}
+		clearTimeout(hideContentST);
+		hideContentRunningST = false;
 
 		if (contentLeftRect === false) {
 			barHeaderRect = template._barHeader().getBoundingClientRect();
 			contentLeftRect = template._contentLeft().getBoundingClientRect();
 		}
 
-		if (shownBarHeader && pageY > barHeaderRect.height + titleBar.height() + 48 && !document.querySelector('.menu-simple.a')) {
+		if (shownBarHeader && !barHeaderPinnedOpen && pageY > barHeaderRect.height + titleBar.height() + 48 && !document.querySelector('.menu-simple.a')) {
 			clearTimeout(hideContentST);
 
 			dom.queryAll('.bar-header, .tabs-bar').removeClass('show');
-			reading.setShownBarHeader(false);
+			setShownBarHeaderState(false);
 
 			hideContentRunningST = false;
 		}
 
-		if (shownContentLeft && pageX > contentLeftRect.width + 48) {
+		if (shownContentLeft && !sidebarPinnedOpen && pageX > contentLeftRect.width + 48) {
 			clearTimeout(hideContentST);
 
 			dom.query('.content-left').removeClass('show');
-			reading.setShownContentLeft(false);
+			setShownContentLeftState(false);
 
 			hideContentRunningST = false;
 		}
@@ -4711,14 +4920,17 @@ function hideContentLeftAndHeader() {
 		clearTimeout(hideContentST);
 		hideContentRunningST = false;
 
-		if (shownBarHeader && !document.querySelector('.menu-simple.a')) {
-			dom.queryAll('.bar-header, .tabs-header').removeClass('show');
-			reading.setShownBarHeader(false);
+		if (shownBarHeader && !barHeaderPinnedOpen && !document.querySelector('.menu-simple.a')) {
+			dom.queryAll('.bar-header, .tabs-bar').removeClass('show');
+			setShownBarHeaderState(false);
 		}
 
 		if (shownContentLeft) {
-			dom.query('.content-left').removeClass('show');
-			reading.setShownContentLeft(false);
+			// Keep user-pinned sidebar open; only auto-close temporary reveals.
+			if (!sidebarPinnedOpen) {
+				dom.query('.content-left').removeClass('show');
+				setShownContentLeftState(false);
+			}
 		}
 	}
 }
@@ -5547,8 +5759,11 @@ module.exports = {
 	hideContentLeft: hideContentLeft,
 	hideBarHeader: hideBarHeader,
 	showPageNumber: showPageNumber,
-	setShownContentLeft: function (value) { shownContentLeft = value },
-	setShownBarHeader: function (value) { shownBarHeader = value },
+	toggleBarHeaderPanel: toggleBarHeaderPanel,
+	toggleSidebarPanel: toggleSidebarPanel,
+	consumeHeaderToggleZoneClick: consumeHeaderToggleZoneClick,
+	setShownContentLeft: function (value) { setShownContentLeftState(value) },
+	setShownBarHeader: function (value) { setShownBarHeaderState(value) },
 	loadReadingMoreOptions: loadReadingMoreOptions,
 	currentScale: function () { return currentScale },
 	rightSize: function () { return rightSize },

@@ -18,6 +18,8 @@ var epub = function(path, config = {}) {
 	this.opfRelativePath = '';
 	this.opfPromise = false;
 	this.openEpubPromise = false;
+	this.makeAvailableChain = Promise.resolve();
+	this.extractAllPromise = false;
 
 	this.debug = function(stage = '', payload = {}) {
 		try {
@@ -35,9 +37,32 @@ var epub = function(path, config = {}) {
 
 		if(this.zip) return;
 		this.debug('zip:open:begin');
-		this.zip = fileManager.file(this.path);
+		this.zip = fileManager.fileCompressed(this.path, false, '7z', {epub: 'epub-zip'}, {log: true});
 		this.zip.updateConfig({progress: {multiply: 0.5}});
 		this.debug('zip:open:ok');
+
+	}
+
+	this.extractAllEpubZip = async function() {
+
+		if(this.extracted) return true;
+		if(this.extractAllPromise) return this.extractAllPromise;
+
+		const _this = this;
+
+		this.extractAllPromise = (async function() {
+			await _this.openEpubZip();
+			_this.debug('zip:extract:all:begin');
+			await _this.zip.extract();
+			_this.extracted = true;
+			_this.debug('zip:extract:all:ok');
+
+			return true;
+		})().finally(function(){
+			_this.extractAllPromise = false;
+		});
+
+		return this.extractAllPromise;
 
 	}
 
@@ -61,15 +86,19 @@ var epub = function(path, config = {}) {
 	}
 
 	this.makeAvailableOne = async function(relativePath) {
-		await this.openEpubZip();
+		await this.extractAllEpubZip();
 		const normalizedRelativePath = this.normalizeRelativeArchivePath(relativePath);
-		const virtualPath = p.join(this.path, ...normalizedRelativePath.split('/'));
 
-		this.debug('zip:extract:one:begin', {relativePath: normalizedRelativePath});
-		await this.zip.makeAvailable([{path: virtualPath}]);
-		this.debug('zip:extract:one:ok', {relativePath: normalizedRelativePath});
+		const _this = this;
+		const extractOne = async function() {
+			_this.debug('zip:extract:one:skip-all-extracted', {relativePath: normalizedRelativePath});
 
-		return true;
+			return true;
+		};
+
+		this.makeAvailableChain = this.makeAvailableChain.then(extractOne, extractOne);
+
+		return this.makeAvailableChain;
 
 	}
 
@@ -448,8 +477,41 @@ var epub = function(path, config = {}) {
 
 		this.epubFiles = [];
 
-		if(this.epub.cover)
-			this.epubFiles.push('cover.tbn');
+
+		   // Always generate 'cover.tbn' for EPUBs
+		   let coverPath = this.epub.cover;
+		   if (!coverPath) {
+			   // Fallback: try to find the first image in the EPUB
+			   try {
+				   const opfPath = this.opf;
+				   if (opfPath && fs.existsSync(opfPath)) {
+					   const opfXml = fs.readFileSync(opfPath, 'utf8');
+					   const parser = new DOMParser();
+					   const opf = parser.parseFromString(opfXml, 'text/xml');
+					   // Find first image in manifest
+					   const manifest = opf.getElementsByTagName('item');
+					   let firstImageHref = '';
+					   for (let i = 0; i < manifest.length; i++) {
+						   const item = manifest[i];
+						   const mediaType = item.getAttribute('media-type') || '';
+						   if (mediaType.startsWith('image/')) {
+							   firstImageHref = item.getAttribute('href');
+							   break;
+						   }
+					   }
+					   if (firstImageHref) {
+						   // Build the full path to the image inside the EPUB zip extraction
+						   const opfDir = this.opfRelativePath ? p.posix.dirname(this.opfRelativePath) : '';
+						   const relPath = opfDir && opfDir !== '.' ? p.posix.join(opfDir, firstImageHref) : firstImageHref;
+						   coverPath = p.join(this.realPathZip, relPath);
+					   }
+				   }
+			   } catch (e) {}
+		   }
+		   if (coverPath && fs.existsSync(coverPath)) {
+			   this.epubFiles.push('cover.tbn');
+			   this._epubCoverPath = coverPath; // Save for renderFiles
+		   }
 
 		let hrefNames = this.getHrefNames(this.toc?.toc || []);
 
@@ -674,25 +736,18 @@ var epub = function(path, config = {}) {
 
 			try
 			{
-				if(sectionRelativePath)
+				if(section.render)
 				{
-					await this.makeAvailableOne(sectionRelativePath);
-					extractedSectionPath = p.join(this.realPathZip, ...sectionRelativePath.split('/'));
-				}
+					html = await this.withTimeout(
+						section.render(this.epub.load.bind(this.epub)),
+						this.getChapterLoadTimeout(),
+						'section.render.'+index
+					);
 
-				if(extractedSectionPath)
-				{
-					const ready = await this.waitForFileReady(extractedSectionPath, 1500);
+					loaded = !!(html && html.trim());
 
-					if(ready)
-					{
-						html = await this.withTimeout(fsp.readFile(extractedSectionPath, 'utf8'), 3000, 'section.readFile.extracted.'+index);
-						loaded = !!(html && html.trim());
-					}
-					else
-					{
-						this.debug('chapter:extract:not-ready', {index: index, sectionRelativePath: sectionRelativePath});
-					}
+					if(loaded)
+						this.debug('chapter:render:ok', {index: index, sectionRelativePath: sectionRelativePath});
 				}
 
 				const sectionPath = this.removeFileScheme(section.url || '');
@@ -710,6 +765,13 @@ var epub = function(path, config = {}) {
 				this.debug('chapter:load:fallback', {index: index, error: 'local-chapter-missing-or-empty'});
 				html = this.createFallbackChapterHtml(section.idref || ('Chapter '+(index + 1)));
 			}
+
+			try
+			{
+				if(section.unload)
+					section.unload();
+			}
+			catch(error) {}
 
 			if(typeof html !== 'string')
 			{
@@ -755,30 +817,31 @@ var epub = function(path, config = {}) {
 
 		let chapters = [];
 
-		for(let i = 0, len = files.length; i < len; i++)
-		{
-			let file = files[i];
 
-			if(file.name == 'cover.tbn')
-			{
-				await fsp.copyFile(this.removeFileScheme(this.epub.cover), file.path);
-				if(callback) callback(file.name);
-			}
-			else
-			{
-				let index = this.getFileIndex(file.name);
-				let chapter = await this.chapterHtml(index);
-
-				let dirname = p.dirname(this.removeFileScheme(chapter.section.url));
-
-				chapters.push({
-					name: file.name,
-					path: file.path,
-					html: chapter.html,
-					basePath: dirname,
-				});
-			}
-		}
+		   for(let i = 0, len = files.length; i < len; i++) {
+			   let file = files[i];
+			   if(file.name == 'cover.tbn') {
+				   // Use the robust cover path (actual cover or fallback first image)
+				   let coverPath = this._epubCoverPath || this.epub.cover;
+				   if (coverPath && fs.existsSync(coverPath)) {
+					   await fsp.copyFile(this.removeFileScheme(coverPath), file.path);
+				   } else {
+					   // If for some reason coverPath is missing, create a blank file
+					   await fsp.writeFile(file.path, '');
+				   }
+				   if(callback) callback(file.name);
+			   } else {
+				   let index = this.getFileIndex(file.name);
+				   let chapter = await this.chapterHtml(index);
+				   let dirname = p.dirname(this.removeFileScheme(chapter.section.url));
+				   chapters.push({
+					   name: file.name,
+					   path: file.path,
+					   html: chapter.html,
+					   basePath: dirname,
+				   });
+			   }
+		   }
 
 		if(chapters.length > 0)
 		{
@@ -866,6 +929,7 @@ var epub = function(path, config = {}) {
 			});
 
 			const pages = this.ebook.pagesToOnedimension(this.ebook.chaptersPages);
+			this.ebook.pages = pages;
 
 			let toc = [];
 			try

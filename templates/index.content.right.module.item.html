@@ -1,28 +1,30 @@
-<div class="sha-{{sha}} gamepad-item{{#if @first}}{{#unless noHighlight}} gamepad-to-highlight{{/unless}}{{/if}}" data-name="{{name}}" onclick="{{#if folder}}dom.loadIndexPage(true, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', false, false, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}');{{else}}dom.openComic(true, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}');{{/if}}{{onclick}}" oncontextmenu="dom.comicContextMenu.call(this, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}', {{#if @root.comicsIndex}}{{#unless fromRecentlyOpened}}true{{else}}false{{/unless}}{{else}}false{{/if}}, {{#if @root.comicsIndex}}{{#unless fromMasterFolder}}true{{else}}false{{/unless}}{{else}}false{{/if}}, {{#if folder}}true{{else}}false{{/if}}, fromGamepad)" onmousedown="tabs.middleClickOpen(event, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}')">
+<div class="sha-{{sha}} gamepad-item{{#if @first}}{{#unless noHighlight}} gamepad-to-highlight{{/unless}}{{/if}}" data-name="{{name}}" data-path="{{chain 'escapeQuotesDoubles' path}}" data-folder="{{#if folder}}true{{else}}false{{/if}}" data-force-size="{{#if parent.size}}{{parent.size}}{{else}}{{@root.page.viewModuleSize}}{{/if}}" onclick="{{#if folder}}dom.loadIndexPage(true, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', false, false, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}');{{else}}dom.openComic(true, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}');{{/if}}{{onclick}}" oncontextmenu="dom.comicContextMenu.call(this, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}', {{#if @root.comicsIndex}}{{#unless fromRecentlyOpened}}true{{else}}false{{/unless}}{{else}}false{{/if}}, {{#if @root.comicsIndex}}{{#unless fromMasterFolder}}true{{else}}false{{/unless}}{{else}}false{{/if}}, {{#if folder}}true{{else}}false{{/if}}, fromGamepad)" onmousedown="tabs.middleClickOpen(event, '{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}', '{{chain 'escapeBackSlash' 'escapeQuotesSimples' mainPath}}')">
 	{{#if folder}}
 	<div>
 		<div class="v-folder item-image">
 			{{#if poster}}
 				<div class="folder-poster">
-					<img{{#if poster.path}} class="has-poster{{#compare name '==' 'Pepper & Carrot'}} pepper-cover{{/compare}}" src="{{poster.path}}"{{else}} class="sha-image-{{poster.sha}} folder-poster-img{{#compare name '==' 'Pepper & Carrot'}} pepper-cover{{/compare}}"{{/if}}>
+					<img class="sha-image-{{poster.sha}} folder-poster-img{{#if poster.path}} has-poster active border{{/if}}{{#compare name '==' 'Pepper & Carrot'}} pepper-cover{{/compare}}"{{#if poster.path}} src="{{chain 'shortWindowsPath' 'encodeSrcURI' poster.path}}"{{/if}}>
 				</div>
 				{{#if images}}
 					{{#each images}}
 					<div class="folder-images">
-						<img class="sha-image-{{sha}}" src="{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}">
+						<img class="sha-image-{{sha}}{{#if path}} active border{{/if}}"{{#if path}} src="{{chain 'shortWindowsPath' 'encodeSrcURI' path}}"{{/if}}>
 					</div>
 					{{/each}}
 				{{/if}}
 			{{else}}
 				{{#each images}}
 				<div class="folder-images">
-					<img class="sha-image-{{sha}}" src="{{chain 'escapeBackSlash' 'escapeQuotesSimples' path}}">
+					<img class="sha-image-{{sha}}{{#if path}} active border{{/if}}"{{#if path}} src="{{chain 'shortWindowsPath' 'encodeSrcURI' path}}"{{/if}}>
 				</div>
 				{{/each}}
 			{{/if}}
 		</div>
 		{{#if poster}}
 		<div class="progress-pages{{#if progress}} show{{/if}}">
+			<span class="progress-pages-read"{{#unless @root.page.progressPages}} style="display: none;"{{/unless}}>{{progress.read}}/{{progress.total}}</span>
+			<span class="progress-pages-percent"{{#unless @root.page.progressPercent}} style="display: none;"{{/unless}}>{{progress.percentRound}}%</span>
 			<svg>
 				<text{{#unless @root.page.progressPages}} style="opacity: 0;"{{/unless}}>
 					<textPath href="#progress-pages-{{#if parent.size}}{{parent.size}}{{else}}{{@root.page.viewModuleSize}}{{/if}}" startoffset="0">{{progress.read}} / {{progress.total}}</textPath>
@@ -43,7 +45,9 @@
 	</div>
 	{{else}}
 	<div class="v-img">
-		<picture><img class="sha-image-{{sha}} item-image{{#if thumbnail}} border{{/if}}" src="{{chain 'escapeBackSlash' 'escapeQuotesSimples' thumbnail}}"></picture>
+		<picture>
+			<img class="sha-image-{{sha}} item-image{{#if thumbnail}} active border{{/if}}"{{#if thumbnail}} src="{{chain 'shortWindowsPath' 'encodeSrcURI' thumbnail}}"{{/if}}>
+		</picture>
 	</div>
 	{{/if}}
 	<div class="v-text body-small">{{name}}</div>

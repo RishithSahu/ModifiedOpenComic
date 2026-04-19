@@ -85,6 +85,7 @@ function orderBy(a, b, mode, key = false, key2 = false) {
 
 function addImageToDom(sha, path, animation = true) {
 	const src = dom.queryAll('img.sha-image-' + sha).setAttribute('src', app.encodeSrcURI(app.shortWindowsPath(path, true)));
+	bindThumbnailRecovery(src._this);
 
 	if (animation) {
 		src.addClass('a', 'active', 'border');
@@ -92,6 +93,153 @@ function addImageToDom(sha, path, animation = true) {
 	else {
 		src.addClass('active', 'border');
 		src.filter('.folder-poster-img').addClass('has-poster');
+	}
+}
+
+function getThumbnailCardInfo(image) {
+	if (!image)
+		return false;
+
+	const item = image.closest('.gamepad-item[data-path]');
+
+	if (!item)
+		return false;
+
+	return {
+		item,
+		path: item.dataset.path || '',
+		folder: item.dataset.folder === 'true',
+		forceSize: +(item.dataset.forceSize || handlebarsContext.page.viewModuleSize || 150),
+	};
+}
+
+function handleThumbnailLoad(event) {
+	const image = event?.currentTarget || event;
+
+	if (!image)
+		return;
+
+	image.dataset.thumbnailState = 'loaded';
+	image.classList.remove('thumbnail-load-error');
+
+	const info = getThumbnailCardInfo(image);
+
+	if (info?.folder && info.path)
+		scroll.clearRetryStateByPath(info.path);
+}
+
+async function retryStandaloneThumbnail(path, forceSize = false) {
+	const normalizedPath = p.normalize(path || '');
+
+	if (!normalizedPath || !compatible.image(normalizedPath))
+		return false;
+
+	const viewModuleSize = +(forceSize || handlebarsContext.page.viewModuleSize || 150);
+
+	try {
+		await cache.deleteInCache(normalizedPath);
+	}
+	catch {}
+
+	const file = fileManager.file(normalizedPath, { fromThumbnailsGeneration: true, subtask: true, log: false, sort: { extraKey: 'Reading' } });
+
+	try {
+		const imageData = {
+			path: normalizedPath,
+			forceSize: viewModuleSize,
+		};
+
+		const thumbnail = cache.returnThumbnailsImages(imageData, function (data) {
+			addImageToDom(data.sha, data.path, false);
+		}, file);
+
+		if (thumbnail?.cache && thumbnail.path)
+			addImageToDom(thumbnail.sha, thumbnail.path, false);
+
+		return true;
+	}
+	catch (error) {
+		console.error(error);
+		fileManager.requestFileAccess.check(normalizedPath, error);
+		return false;
+	}
+	finally {
+		file.destroy();
+	}
+}
+
+function handleThumbnailError(event) {
+	const image = event?.currentTarget || event;
+
+	if (!image)
+		return;
+
+	const src = image.getAttribute('src');
+
+	if (!src)
+		return;
+
+	const info = getThumbnailCardInfo(image);
+
+	if (!info?.path)
+		return;
+
+	image.dataset.thumbnailState = 'error';
+	image.classList.add('thumbnail-load-error');
+	image.classList.remove('a', 'active', 'has-poster');
+	image.removeAttribute('src');
+
+	const throttleKey = 'thumbnail-recovery-' + sha1(info.path + '|' + info.forceSize + '|' + (info.folder ? 'folder' : 'image'));
+
+	app.setThrottle(throttleKey, async function () {
+		if (info.folder) {
+			await scroll.retryByPath(info.path, { invalidateCache: true });
+			scroll.check();
+		}
+		else {
+			await retryStandaloneThumbnail(info.path, info.forceSize);
+		}
+	}, 80, 240);
+}
+
+function bindThumbnailRecovery(scope = false) {
+	const root = scope || template._contentRight();
+
+	if (!root)
+		return;
+
+	let images = [];
+
+	if (Array.isArray(root))
+		images = root;
+	else if ((typeof NodeList !== 'undefined' && root instanceof NodeList) || (typeof HTMLCollection !== 'undefined' && root instanceof HTMLCollection))
+		images = Array.from(root);
+	else if (root.tagName === 'IMG')
+		images = [root];
+	else if (root.querySelectorAll)
+		images = Array.from(root.querySelectorAll('img[class*="sha-image-"]'));
+
+	for (let i = 0, len = images.length; i < len; i++) {
+		const image = images[i];
+
+		if (!image || image.dataset.thumbnailRecoveryBound === '1')
+			continue;
+
+		image.dataset.thumbnailRecoveryBound = '1';
+		image.addEventListener('load', handleThumbnailLoad);
+		image.addEventListener('error', handleThumbnailError);
+
+		const src = image.getAttribute('src');
+
+		if (!src)
+			continue;
+
+		if (image.complete) {
+			if (image.naturalWidth > 0)
+				handleThumbnailLoad(image);
+			else
+				handleThumbnailError(image);
+		}
 	}
 }
 
@@ -117,12 +265,15 @@ async function addProgressToDom(sha, progress, animation = true) {
 		dom.this(src).find('.progress-pages').addClass('show');
 
 	// Pages
-	if (handlebarsContext.page.progressPages)
-		dom.this(src).find('.progress-pages > svg text:first-child textPath, .progress-pages > span', true).html(progress.read + ' / ' + progress.total);
+	if (handlebarsContext.page.progressPages) {
+		dom.this(src).find('.progress-pages > svg text:first-child textPath, .progress-pages > span:not([class])', true).html(progress.read + ' / ' + progress.total);
+		dom.this(src).find('.progress-pages > span.progress-pages-read', true).html(progress.read + '/' + progress.total);
+	}
 
 	// percent
 	if (handlebarsContext.page.progressPercent) {
 		dom.this(src).find('.progress-pages > svg text:nth-child(2) textPath, .progress-percent > span', true).html(progress.percentRound + '%');
+		dom.this(src).find('.progress-pages > span.progress-pages-percent', true).html(progress.percentRound + '%');
 		dom.this(src).find('.progress-percent', true).addClass('show');
 	}
 
@@ -1208,6 +1359,7 @@ async function loadIndexPage(animation = true, path = false, content = false, ke
 	shortcuts.register(isOpds || _indexLabel.opds ? 'opds' : 'browse');
 	mountRecommendationFeedbackControls();
 	restoreRecommendationFeedbackStates();
+	bindThumbnailRecovery();
 	gamepad.updateBrowsableItems(path ? sha1(path) : 'library');
 	reading.discord.update();
 	scroll.event();
@@ -1838,9 +1990,9 @@ function calculateVisibleItems(view, scrollTop = false) {
 			},
 		};
 
-		const size = sizes[viewModuleSize];
+		const size = sizes[viewModuleSize] || sizes[150];
 
-		const itemsPerLine = Math.floor((rect.width - 16) / size.width);
+		const itemsPerLine = Math.max(1, Math.floor((rect.width - 16) / size.width));
 		const lines = Math.ceil(rect.height / size.height);
 		const line = Math.floor(scrollTop / size.height);
 
@@ -3815,6 +3967,14 @@ async function openComic(animation = true, path = true, mainPath = true, end = f
 	});
 
 	reading.read(path, indexStart, end, isCanvas, isEbook, imagePath);
+	if (!config.readingHideBarHeader) {
+		config.readingHideBarHeader = true;
+		storage.updateVar('config', 'readingHideBarHeader', true);
+	}
+	if (!config.readingHideContentLeft) {
+		config.readingHideContentLeft = true;
+		storage.updateVar('config', 'readingHideContentLeft', true);
+	}
 	reading.hideContent(isFullScreen, true);
 	reading.music.read(hasMusic, files);
 
@@ -3908,4 +4068,3 @@ module.exports = {
 	query: domManager.query,
 	queryAll: domManager.queryAll,
 };
-

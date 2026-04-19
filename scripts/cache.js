@@ -55,9 +55,25 @@ async function processTheImageQueue(img = false)
 			storage.setThrottle('cache', data);
 			resolve();
 
-		}).catch(function(){
+		}).catch(async function(error){
 
-			img.callback({cache: true, path: escapeBackSlash(realPath), sha: sha}, img.vars);
+			// Ensure cache path remains stable even when resize fails on malformed files.
+			try {
+				await fsp.copyFile(realPath, toImage);
+
+				if(typeof data[sha] === 'undefined') data[sha] = {lastAccess: app.time()};
+				data[sha].size = img.size;
+
+				img.callback({cache: true, path: escapeBackSlash(addCacheVars(toImage, img.size, img.sha)), sha: sha}, img.vars);
+				storage.setThrottle('cache', data);
+			}
+			catch(copyError)
+			{
+				if(error)
+					console.warn('Warning: Thumbnail resize fallback copy failed | '+realPath, error);
+
+				img.callback({cache: true, path: escapeBackSlash(realPath), sha: sha}, img.vars);
+			}
 
 			resolve();
 

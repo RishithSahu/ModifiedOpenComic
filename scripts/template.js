@@ -1,3 +1,10 @@
+// Flush template/theme cache
+function flushTemplateCache() {
+	if (typeof templates !== 'undefined') {
+		templates.templatesCache = {};
+		templates.templatesCacheTheme = {};
+	}
+}
 //Load template
 
 function loadTemplate(file)
@@ -214,4 +221,5 @@ module.exports = {
 	_contentRight: function(){return _contentRight},
 	_barHeader: function(){return _barHeader},
 	_globalElement: function(){return _globalElement},
+	flushTemplateCache: flushTemplateCache,
 };

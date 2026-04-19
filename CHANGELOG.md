@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.7.7 (25-03-2026)
+
+##### New Features
+
+- Add rich folder metadata header in Continue Reading pages (series title, subname, genres as clickable chips, and description).
+- Improve Continue Reading presentation with updated card/list styling and better metadata prominence.
+- Add AniList-format-aware reading defaults per tracked series folder: manga now defaults to manga reading + double page, while manhwa/manhua now default to webtoon reading.
+- Add per-series folder reading-mode memory so each series keeps its own last-used reading options instead of sharing one global state across different titles.
+
+##### Bug Fixes
+
+- Fix cache/temporary clear not fully resetting session data: now clears Continue Reading/recommendation-related state, tracked folder metadata, reading progress/pages, recents, and stored comics paths.
+- Fix stale template rendering after storage cleanup by flushing template/theme caches during temporary file cleanup.
+- Fix intermittent unstyled Continue Reading/metadata area after cleanup by hardening theme stylesheet reload/re-attachment logic.
+- Fix critical CSS parse break in theme styles caused by malformed `.content-view-module-* .v-img img` blocks; this restored later CSS rules (including Continue Reading and folder metadata styles) from being ignored.
+- Fix grid-size slider regressions where module-card frames resized but cover images and folder poster slots did not scale with them.
+- Fix preloaded library card covers using raw local file paths instead of the same encoded image path flow used by async thumbnail updates, which could leave cards stuck on broken-image placeholders.
+- Fix folder poster placeholder binding in module cards (`poster.sha` vs `sha`) that prevented async thumbnail updates from reaching the correct DOM node.
+- Fix persistent blank folder thumbnails while scrolling by hardening virtualized queue state transitions and allowing proper retry when background jobs are interrupted.
+- Fix repeated broken-image requests from empty module-card `img src` placeholders by avoiding empty `src` emission until a real thumbnail path exists.
+- Fix thumbnail fallback instability when image resize fails (e.g. malformed JPEG): fallback now stores a stable cache file path instead of relying on transient temp paths.
+- Fix reader preload starvation where focus changes repeatedly cleared the render queue, causing near-future pages to stay blank while scrolling/turning pages.
+- Fix intermittent next-page blank states by deduplicating in-flight page renders and reliably clearing render-in-progress flags after completion/failure.
+- Fix insufficient nearby prefetching by enforcing a symmetric around-focus preload window (at least 10 pages before and 10 pages after) in reading queues.
+
+##### Optimizations & Stability
+
+- Harden renderer startup stylesheet path handling for `theme.css` to reduce stale stylesheet state after cache/temp operations.
+- Add safer fallback behavior around theme stylesheet availability after cleanup and reload.
+- Improve thumbnail queue robustness for large folders with background warmup loading, visible-card self-healing requeue, and in-folder poster rehydration while browsing.
+- Add thumbnail load recovery for library cards so visible broken posters/covers clear bad `src` state, invalidate stale folder thumbnail cache entries when needed, and automatically requeue/regenerate with throttled retries.
+- Improve module-view virtualization accuracy after resize/style drift by calculating visible ranges from live DOM geometry instead of only fixed size presets.
+- Improve image resize resilience for corrupted JPEG streams by using safer Sharp retry options (`sequentialRead`, tolerant retries with `failOn: none`).
+- Improve reading smoothness on large chapters/PDFs with stronger source priming and queue stability changes that reduce visible loading gaps without increasing startup overhead.
+
 ## v1.7.6 (05-03-2026)
 
 ##### New Features

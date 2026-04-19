@@ -301,6 +301,31 @@ function deferStartupTask(task, delay = 1200) {
 		setTimeout(task, delay);
 }
 
+function ensureRendererThemeStylesheetLink() {
+	try {
+		const { pathToFileURL } = require('url');
+		const themePath = p.join(appDir, 'themes', 'material-design', 'theme.css');
+		const themeUrl = pathToFileURL(themePath).href + '?v=20260325';
+
+		let link = document.querySelector('link[rel="stylesheet"][href*="theme.css"]');
+
+		if (!link) {
+			link = document.createElement('link');
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			document.head.appendChild(link);
+		}
+
+		if (link.href !== themeUrl)
+			link.href = themeUrl;
+
+		link.setAttribute('data-opencomic-theme', '1');
+	}
+	catch (error) {
+		console.error('Failed to ensure theme stylesheet link:', error);
+	}
+}
+
 async function start() {
 	await electronRemote.app.whenReady();
 	startupMark('renderer-ready');
@@ -321,6 +346,7 @@ async function start() {
 		loadLanguage(config.language);
 
 		template.loadInQuery('body', 'body.html');
+		ensureRendererThemeStylesheetLink();
 		theme.systemNightMode();
 		startupMark('base-ui-ready');
 

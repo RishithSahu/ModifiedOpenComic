@@ -1,4 +1,4 @@
-const METADATA_SCHEMA_VERSION = 1;
+const METADATA_SCHEMA_VERSION = 2;
 
 const ALLOWED_SOURCES = new Set([
 	'',
@@ -14,6 +14,13 @@ const ALLOWED_DEMOGRAPHICS = new Set([
 	'shojo',
 	'josei',
 	'kodomomuke',
+]);
+
+const ALLOWED_SERIES_TYPES = new Set([
+	'',
+	'manga',
+	'manhwa',
+	'manhua',
 ]);
 
 function normalizeString(value, maxLength = 0)
@@ -94,6 +101,12 @@ function normalizeDemographic(value)
 	return ALLOWED_DEMOGRAPHICS.has(demographic) ? demographic : '';
 }
 
+function normalizeSeriesType(value)
+{
+	const seriesType = normalizeString(value, 20).toLowerCase();
+	return ALLOWED_SERIES_TYPES.has(seriesType) ? seriesType : '';
+}
+
 function createDefaultFolderMetadata()
 {
 	return {
@@ -101,6 +114,7 @@ function createDefaultFolderMetadata()
 		anilistId: 0,
 		title: '',
 		author: '',
+		seriesType: '',
 		demographic: '',
 		genres: [],
 		description: '',
@@ -134,6 +148,7 @@ function sanitizeFolderMetadata(input = {}, now = Date.now())
 	metadata.anilistId = normalizeInteger(input.anilistId, 0);
 	metadata.title = normalizeString(input.title, 256);
 	metadata.author = normalizeString(input.author, 120);
+	metadata.seriesType = normalizeSeriesType(input.seriesType);
 	metadata.demographic = normalizeDemographic(input.demographic);
 	metadata.genres = normalizeStringArray(input.genres, 20, 48);
 	metadata.description = normalizeString(input.description, 8000);
@@ -164,7 +179,7 @@ function validateFolderMetadata(input = {})
 	}
 
 	if(input.version !== METADATA_SCHEMA_VERSION)
-		errors.push('version must be 1');
+		errors.push('version must be 2');
 
 	if(!Number.isInteger(input.anilistId) || input.anilistId < 0)
 		errors.push('anilistId must be a non-negative integer');
@@ -174,6 +189,9 @@ function validateFolderMetadata(input = {})
 
 	if(typeof input.author !== 'string')
 		errors.push('author must be a string');
+
+	if(typeof input.seriesType !== 'string' || !ALLOWED_SERIES_TYPES.has(input.seriesType))
+		errors.push('seriesType must be one of the allowed values');
 
 	if(typeof input.demographic !== 'string' || !ALLOWED_DEMOGRAPHICS.has(input.demographic))
 		errors.push('demographic must be one of the allowed values');

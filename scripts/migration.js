@@ -531,7 +531,7 @@ function start(data)
 	if(changes < 143) // Change default models to OpenComic AI models
 		data = migrateDefaultModelsToOpenComicAiModels(data);
 
-	if(changes < 144) // Add folder metadata schema for tracking enrichment
+	if(changes < 145) // Refresh folder metadata schema for AniList series typing
 		data = migrateTrackingFolderMetadataSchema(data);
 
 	data = opds.addNewDefaultCatalogs(data, changes);

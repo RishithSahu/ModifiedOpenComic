@@ -1,4 +1,11 @@
+// Ensure tempFolder is always defined and up to date
+let tempFolder = null;
+
+// Initialize tempFolder immediately at startup
+tempFolder = getTmpFolder ? getTmpFolder() : null;
 function start() {
+		// Also ensure tempFolder is initialized at app start
+		tempFolder = getTmpFolder();
 	const configInit = storage.get('configInit');
 
 	handlebarsContext.readingImageInterpolationMethodDownscaling = getInterpolationMethodName(config.readingImageInterpolationMethodDownscaling);
@@ -63,17 +70,164 @@ async function clearCache() {
 	getStorageSize();
 }
 
+// Utility to ensure theme CSS is always present, with diagnostics and fallback
+var ensureThemeCSSRetryAttempts = 0;
+var ensureThemeCSSRetryST = false;
+const ensureThemeCSSMaxRetries = 5;
+
+function clearEnsureThemeCSSRetry() {
+	ensureThemeCSSRetryAttempts = 0;
+
+	if (ensureThemeCSSRetryST) {
+		clearTimeout(ensureThemeCSSRetryST);
+		ensureThemeCSSRetryST = false;
+	}
+}
+
+function scheduleEnsureThemeCSSRetry() {
+	if (ensureThemeCSSRetryST || ensureThemeCSSRetryAttempts >= ensureThemeCSSMaxRetries) {
+		if (ensureThemeCSSRetryAttempts >= ensureThemeCSSMaxRetries)
+			console.error('Theme CSS still missing after maximum retry attempts.');
+
+		return;
+	}
+
+	const delay = Math.min(2000, 250 * Math.pow(2, ensureThemeCSSRetryAttempts));
+	ensureThemeCSSRetryAttempts++;
+	ensureThemeCSSRetryST = setTimeout(function () {
+		ensureThemeCSSRetryST = false;
+		ensureThemeCSS();
+	}, delay);
+}
+
+function ensureThemeCSS() {
+	var themeHref = '../themes/material-design/theme.css?v=20260325';
+    var found = false;
+    var links = document.querySelectorAll('link[rel="stylesheet"]');
+    for (var i = 0; i < links.length; i++) {
+		if (links[i].href && (links[i].href.indexOf('/themes/material-design/theme.css') !== -1)) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        // Try to use absolute path if running in Electron
+        if (typeof require !== 'undefined' && typeof __dirname !== 'undefined') {
+            try {
+                const path = require('path');
+                const { remote } = require('electron');
+                const appPath = remote.app.getAppPath();
+				link.href = path.join(appPath, 'themes/material-design/theme.css') + '?v=20260325';
+            } catch (e) {
+                link.href = themeHref;
+            }
+        } else {
+            link.href = themeHref;
+        }
+        link.onerror = function() {
+            console.error('Theme CSS failed to load:', link.href);
+            // Fallback: fetch and inject as <style>
+            fetch(link.href).then(function(resp) {
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                return resp.text();
+            }).then(function(css) {
+                var style = document.createElement('style');
+                style.type = 'text/css';
+                style.innerHTML = css;
+                document.head.appendChild(style);
+                console.warn('Theme CSS injected as <style> fallback.');
+            }).catch(function(err) {
+                console.error('Theme CSS fallback fetch failed:', err);
+            });
+        };
+        document.head.appendChild(link);
+        setTimeout(function() {
+            logAllStylesheets();
+            // Fallback: log if still not present
+            var again = false;
+            var links2 = document.querySelectorAll('link[rel="stylesheet"]');
+            for (var j = 0; j < links2.length; j++) {
+				if (links2[j].href && (links2[j].href.indexOf('/themes/material-design/theme.css') !== -1)) {
+                    again = true;
+                    break;
+                }
+            }
+            if (!again) {
+                console.error('Theme CSS still missing after injection. Scheduling retry...');
+                scheduleEnsureThemeCSSRetry();
+            }
+			else {
+				clearEnsureThemeCSSRetry();
+            }
+        }, 500);
+    } else {
+		clearEnsureThemeCSSRetry();
+        logAllStylesheets();
+    }
+}
+
+function logAllStylesheets() {
+    var links = document.querySelectorAll('link[rel="stylesheet"]');
+    console.log('All <link rel="stylesheet"> elements:');
+    for (var i = 0; i < links.length; i++) {
+        console.log(i + ':', links[i].href, links[i].sheet ? 'LOADED' : 'NOT LOADED');
+    }
+    var styles = document.querySelectorAll('style');
+    console.log('All <style> elements:', styles.length);
+}
+
 function removeTemporaryFiles(onClose = false) {
+	setTimeout(ensureThemeCSS, 100);
 	try {
 		storage.set('tmpUsage', {});
 		fse.emptyDirSync(tempFolder);
-	}
-	catch (error) {
+
+		// Clear all progress, recommendations, and metadata
+		storage.set('tracking', {});
+		storage.set('trackingFolderMetadata', {});
+		storage.set('recommendationFeedback', {});
+		storage.set('recentlyOpened', {});
+		storage.set('comics', []);
+		storage.set('readingProgress', {});
+		storage.set('readingPages', {});
+		if (typeof dom !== 'undefined' && dom.boxes && dom.boxes.reset) {
+			dom.boxes.reset();
+		}
+		if (typeof template !== 'undefined' && template.flushTemplateCache) {
+			template.flushTemplateCache();
+		}
+		if (typeof template !== 'undefined' && template.flushTemplateCache) {
+			template.flushTemplateCache();
+		}
+	} catch (error) {
 		console.error(error);
 	}
-
-	if (!onClose)
+	if (!onClose) {
 		getStorageSize();
+		if (typeof dom !== 'undefined' && dom.showNotification) {
+			dom.showNotification(language.settings.storage.clearFileCacheSuccessfully || 'Temporary files cleared successfully.');
+		} else {
+			alert('Temporary files cleared successfully.');
+		}
+		if (typeof location !== 'undefined' && location.reload) {
+			setTimeout(() => {
+				ensureThemeCSS();
+				try {
+					if (typeof require !== 'undefined') {
+						const { remote } = require('electron');
+						if (remote && remote.getCurrentWindow && remote.getCurrentWindow().webContents) {
+							remote.getCurrentWindow().webContents.reloadIgnoringCache();
+							return;
+						}
+					}
+				} catch (e) { /* fallback to normal reload */ }
+				location.reload();
+			}, 100);
+		}
+	}
 }
 
 function removeUnreferencedTemporaryFiles(tmpUsage, dir, first = true) {
@@ -1289,7 +1443,7 @@ function changedCustomCacheAndTmpFolder(options = {}) {
 	}
 
 	// Update paths
-	tempFolder = newTmpFolder;
+	tempFolder = newTmpFolder; // Ensure tempFolder is always updated
 	cache.setCacheFolder(newCacheFolder);
 
 }
@@ -1298,9 +1452,11 @@ function getTabState() {
 	const contentRight = template._contentRight();
 	const activeTab = contentRight.querySelector('.tabs .active').dataset.name;
 
-	const data = {
-		activeTab,
-	};
+	       const data = {
+		       // Always update tempFolder before clearing
+		       tempFolder: settings.getTmpFolder(),
+		       activeTab,
+	       };
 
 	return data;
 }
@@ -1519,61 +1675,64 @@ function getCacheFolder(options = {}) {
 	return cacheFolder;
 }
 
-module.exports = {
-	start: start,
-	startSecond: startSecond,
-	set: set,
-	setInit: setInit,
-	setMaxMargin: setMaxMargin,
-	setGlobalZoom: setGlobalZoom,
-	setMoveZoomWithMouse: setMoveZoomWithMouse,
-	setScrollWithMouse: setScrollWithMouse,
-	setStartReadingInFullScreen: setStartReadingInFullScreen,
-	setTrackingAtTheEnd: setTrackingAtTheEnd,
-	setIgnoreSingleFoldersLibrary: setIgnoreSingleFoldersLibrary,
-	setShowFullPathLibrary: setShowFullPathLibrary,
-	setShowFullPathOpened: setShowFullPathOpened,
-	setStartInFullScreen: setStartInFullScreen,
-	setStartInContinueReading: setStartInContinueReading,
-	setStartOnlyFromLibrary: setStartOnlyFromLibrary,
-	setStartOnStartup: setStartOnStartup,
-	setCheckReleases: setCheckReleases,
-	setCheckPreReleases: setCheckPreReleases,
-	setTurnPagesWithMouseWheelShortcut: setTurnPagesWithMouseWheelShortcut,
-	changeShortcut: changeShortcut,
-	removeShortcut: removeShortcut,
-	changeButton: changeButton,
-	removeButton: removeButton,
-	restoreShortcuts: restoreShortcuts,
-	restoreTapZones: restoreTapZones,
-	changeTapZone: changeTapZone,
-	setTapZone: setTapZone,
-	getTapZoneActions: getTapZoneActions,
-	addMasterFolder: addMasterFolder,
-	removeMasterFolder: removeMasterFolder,
-	addServer: addServer,
-	editServer: editServer,
-	removeServer: removeServer,
-	addIgnoreFilesRegex: addIgnoreFilesRegex,
-	editIgnoreFilesRegex: editIgnoreFilesRegex,
-	removeIgnoreFilesRegex: removeIgnoreFilesRegex,
-	showOnLibrary: showOnLibrary,
-	filesInSubfolders: filesInSubfolders,
-	getImageInterpolationMethods: getImageInterpolationMethods,
-	getColorProfiles: getColorProfiles,
-	getOpeningBehavior: getOpeningBehavior,
-	changeSaveImageFolder: changeSaveImageFolder,
-	changeDownloadOpdsFolder: changeDownloadOpdsFolder,
-	changeCustomCacheAndTmpFolder: changeCustomCacheAndTmpFolder,
-	setCacheMaxSize: setCacheMaxSize,
-	setCacheMaxOld: setCacheMaxOld,
-	clearCache: clearCache,
-	removeTemporaryFiles: removeTemporaryFiles,
-	purgeTemporaryFiles: purgeTemporaryFiles,
-	purgeTemporaryFilesEveryTimes: purgeTemporaryFilesEveryTimes,
-	generateShortcutsTable: generateShortcutsTable,
-	getTabState,
-	setTabState,
-	getTmpFolder,
-	getCacheFolder,
-};
+// Only export in Node/CommonJS (not in browser)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        start: start,
+        startSecond: startSecond,
+        set: set,
+        setInit: setInit,
+        setMaxMargin: setMaxMargin,
+        setGlobalZoom: setGlobalZoom,
+        setMoveZoomWithMouse: setMoveZoomWithMouse,
+        setScrollWithMouse: setScrollWithMouse,
+        setStartReadingInFullScreen: setStartReadingInFullScreen,
+        setTrackingAtTheEnd: setTrackingAtTheEnd,
+        setIgnoreSingleFoldersLibrary: setIgnoreSingleFoldersLibrary,
+        setShowFullPathLibrary: setShowFullPathLibrary,
+        setShowFullPathOpened: setShowFullPathOpened,
+        setStartInFullScreen: setStartInFullScreen,
+        setStartInContinueReading: setStartInContinueReading,
+        setStartOnlyFromLibrary: setStartOnlyFromLibrary,
+        setStartOnStartup: setStartOnStartup,
+        setCheckReleases: setCheckReleases,
+        setCheckPreReleases: setCheckPreReleases,
+        setTurnPagesWithMouseWheelShortcut: setTurnPagesWithMouseWheelShortcut,
+        changeShortcut: changeShortcut,
+        removeShortcut: removeShortcut,
+        changeButton: changeButton,
+        removeButton: removeButton,
+        restoreShortcuts: restoreShortcuts,
+        restoreTapZones: restoreTapZones,
+        changeTapZone: changeTapZone,
+        setTapZone: setTapZone,
+        getTapZoneActions: getTapZoneActions,
+        addMasterFolder: addMasterFolder,
+        removeMasterFolder: removeMasterFolder,
+        addServer: addServer,
+        editServer: editServer,
+        removeServer: removeServer,
+        addIgnoreFilesRegex: addIgnoreFilesRegex,
+        editIgnoreFilesRegex: editIgnoreFilesRegex,
+        removeIgnoreFilesRegex: removeIgnoreFilesRegex,
+        showOnLibrary: showOnLibrary,
+        filesInSubfolders: filesInSubfolders,
+        getImageInterpolationMethods: getImageInterpolationMethods,
+        getColorProfiles: getColorProfiles,
+        getOpeningBehavior: getOpeningBehavior,
+        changeSaveImageFolder: changeSaveImageFolder,
+        changeDownloadOpdsFolder: changeDownloadOpdsFolder,
+        changeCustomCacheAndTmpFolder: changeCustomCacheAndTmpFolder,
+        setCacheMaxSize: setCacheMaxSize,
+        setCacheMaxOld: setCacheMaxOld,
+        clearCache: clearCache,
+        removeTemporaryFiles: removeTemporaryFiles,
+        purgeTemporaryFiles: purgeTemporaryFiles,
+        purgeTemporaryFilesEveryTimes: purgeTemporaryFilesEveryTimes,
+        generateShortcutsTable: generateShortcutsTable,
+        getTabState,
+        setTabState,
+        getTmpFolder,
+        getCacheFolder,
+    };
+}

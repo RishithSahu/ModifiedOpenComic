@@ -3,6 +3,7 @@
 	display: flex;
 	flex-direction: row;
 	flex-wrap: nowrap;
+	align-items: flex-start;
 	gap: 10px;
 	padding: 16px 8px 20px 8px;
 	width: calc(100% + 12px);
@@ -125,8 +126,8 @@
 	width: 110px;
 	overflow: hidden;
 	height: auto;
-	min-height: 334px;
-	contain-intrinsic-size: 110px 260px;
+	min-height: 232px;
+	contain-intrinsic-size: 110px 232px;
 	margin: 2px 0px 0px 0px;
 	padding: 6px 2px 0px 2px;
 	box-sizing: border-box;

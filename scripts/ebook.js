@@ -135,7 +135,9 @@ var ebook = function(book, config = {}) {
 		iframe.style.zIndex = '1000';
 		iframe.style.backgroundColor = 'white';
 		iframe.style.visibility = 'hidden';
-		iframe.sandbox = 'allow-same-origin';
+		// WARNING: Using both allow-same-origin and allow-scripts enables DOM/CSS injection but triggers a browser security warning.
+		// Only use this if you trust the EPUB content.
+		iframe.sandbox = 'allow-same-origin allow-scripts';
 
 		let serializer = new XMLSerializer();
 		let htmlString = serializer.serializeToString(html);
@@ -147,6 +149,48 @@ var ebook = function(book, config = {}) {
 		let _this = this;
 
 		return iframe;
+
+	}
+
+	this.waitForLayoutStability = async function(iframe, timeout = 1500) {
+
+		const doc = iframe?.contentDocument;
+		if(!doc) return;
+
+		const tasks = [];
+
+		if(doc.fonts && doc.fonts.ready)
+			tasks.push(doc.fonts.ready.catch(function(){}));
+
+		const images = doc.images ? Array.from(doc.images) : [];
+
+		for(let i = 0, len = images.length; i < len; i++)
+		{
+			const image = images[i];
+
+			if(image.complete) continue;
+
+			tasks.push(new Promise(function(resolve){
+
+				const done = function() {
+					image.removeEventListener('load', done);
+					image.removeEventListener('error', done);
+					resolve();
+				}
+
+				image.addEventListener('load', done, {once: true});
+				image.addEventListener('error', done, {once: true});
+
+			}));
+		}
+
+		await Promise.race([
+			Promise.all(tasks),
+			new Promise(function(resolve){ setTimeout(resolve, timeout); }),
+		]);
+
+		await new Promise(function(resolve){ requestAnimationFrame(resolve); });
+		await new Promise(function(resolve){ requestAnimationFrame(resolve); });
 
 	}
 
@@ -166,7 +210,7 @@ var ebook = function(book, config = {}) {
 		iframe.style.zIndex = '1000';
 		iframe.style.backgroundColor = 'white';
 		iframe.style.visibility = 'hidden';
-		iframe.sandbox = 'allow-same-origin';
+		iframe.sandbox = 'allow-same-origin allow-scripts';
 
 		// Sanitizer API is not support yet and has a bug in MathML: https://bugs.chromium.org/p/chromium/issues/detail?id=1225606&q=Sanitizer%20API&can=2
 		//let sanitizer = new Sanitizer({allowCustomElements: true, allowElements: this.allowElements});
@@ -213,6 +257,7 @@ var ebook = function(book, config = {}) {
 
 				try
 				{
+					await _this.waitForLayoutStability(iframe, Math.min(timeout, 1500));
 					//console.timeEnd('Load iframe');
 					const pages = await _this.calculateAndSplit(iframe, path);
 					clearTimeout(timeoutST);
@@ -298,6 +343,9 @@ var ebook = function(book, config = {}) {
 	}
 
 	this._calculateAndSplit = async function(parent, childs, len, hasToSplit = false, isSeparateWords = false, index = 0) {
+		// --- Line counting logic ---
+		if (typeof this._currentLineCount !== 'number') this._currentLineCount = 0;
+		const MAX_LINES_PER_PAGE = 100;
 
 		this._chaptersPage.push({
 			index: index,
@@ -308,93 +356,85 @@ var ebook = function(book, config = {}) {
 
 		let elementI = 0;
 
-		for(let i = 0; i < len; i++)
-		{
+		for(let i = 0; i < len; i++) {
 			if(elementI !== 0)
 				this._chaptersPageFirst = false;
 
 			let child = childs[i];
 			let nodeType = child.nodeType;
 
-			if(nodeType == Node.TEXT_NODE)
-			{
-				let textContent = child.textContent;
+			// Count lines for this node (text or element)
+			let lineRects = 0;
+			try {
+				if (child.nodeType === Node.TEXT_NODE) {
+					// Wrap text node in a span to measure lines
+					let range = parent.ownerDocument.createRange();
+					range.selectNodeContents(child);
+					let rects = range.getClientRects();
+					lineRects = rects.length;
+				} else if (child.nodeType === Node.ELEMENT_NODE) {
+					let rects = child.getClientRects();
+					lineRects = rects.length;
+				}
+			} catch (e) { lineRects = 0; }
+			if (lineRects < 1) lineRects = 1;
+			this._currentLineCount += lineRects;
 
-				if(textContent.trim())
-				{
-					if(isSeparateWords || !hasToSplit)
-					{
+			// If line limit reached, split page
+			if (this._currentLineCount > MAX_LINES_PER_PAGE) {
+				await this.splitDocumentHere();
+				this._currentLineCount = lineRects; // Start new page with this node's lines
+			}
+
+			if(nodeType == Node.TEXT_NODE) {
+				let textContent = child.textContent;
+				if(textContent.trim()) {
+					if(isSeparateWords || !hasToSplit) {
 						if(hasToSplit)
 							await this.splitDocumentHere(hasToSplit);
-
 						this._chaptersPage.push({
 							index: index + 1,
 							node: child.cloneNode(false),
 						});
-					}
-					else
-					{
+					} else {
 						let span = document.createElement('span');
 						span.className = 'opencomic-separate-words';
 						span.innerHTML = textContent.replace(/(\s*[^\s]+\s*)/ug, '<span>$1</span>');
 						child.parentElement.replaceChild(span, child);
-
 						let _childs = span.childNodes;
 						let _len = _childs.length;
-
 						await this._calculateAndSplit(span, _childs, _len, hasToSplit, true, index + 1, true);
 					}
 				}
-			}
-			else if(nodeType != Node.COMMENT_NODE) // Not process this nodes
-			{
+			} else if(nodeType != Node.COMMENT_NODE) { // Not process this nodes
 				let _hasToSplit = hasToSplit ? this.checkIfNodeHasToSplit(child) : false;
-
 				let _childs = child.childNodes;
 				let _len = _childs.length;
-
-				if(_len === 0)
-				{
+				if(_len === 0) {
 					if(_hasToSplit && !this._chaptersPageFirst)
 						await this.splitDocumentHere(_hasToSplit);
-
 					this._chaptersPage.push({
 						index: index + 1,
 						node: child.cloneNode(false),
 					});
-
-					//if(_hasToSplit && this._chaptersPageFirst)
-					//	await this.splitDocumentHere(_hasToSplit);
-				}
-				else
-				{
-					if(_hasToSplit && !this.notSplitElements[child.tagName.toLowerCase()])
-					{
+				} else {
+					if(_hasToSplit && !this.notSplitElements[child.tagName.toLowerCase()]) {
 						await this._calculateAndSplit(child, _childs, _len, _hasToSplit, isSeparateWords, index + 1);
-					}
-					else
-					{
+					} else {
 						if(_hasToSplit && !this._chaptersPageFirst)
 							await this.splitDocumentHere(_hasToSplit);
-
 						this._chaptersPage.push({
 							index: index + 1,
 							node: child.cloneNode(true),
 						});
-
-						//if(_hasToSplit && this._chaptersPageFirst)
-						//	await this.splitDocumentHere(_hasToSplit);
 					}
 				}
-
 				elementI++;
 			}
 		}
 
 		this.calculateAndSplitParents.pop();
-
 		return this._chaptersPage;
-
 	}
 
 	this.calculateAndSplit = async function(iframe, path) {
@@ -867,19 +907,51 @@ var ebook = function(book, config = {}) {
 
 	}
 
+
 	this.pageToIframe = function(html) {
-
 		let iframe = document.createElement('iframe');
+		html = String(html || '').replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/giu, '');
 
-		iframe.style.width = this.config.width+'px';
-		iframe.style.height = this.config.height+'px';
+		iframe.style.width = '100%';
+		iframe.style.height = '100%';
+		iframe.style.display = 'block';
+		iframe.style.border = '0';
 		iframe.style.backgroundColor = this.config.colors && this.config.colors.background ? this.config.colors.background : 'white';
 		iframe.style.pointerEvents = 'none';
-		iframe.sandbox = 'allow-same-origin';
-		iframe.srcdoc = html;
-
+		// Remove transform scaling and allow overflow for one-page mode
+		// Always use Blob URL for iframe src and robust CSS injection
+		iframe.style.overflow = 'visible';
+		iframe.scrolling = 'no';
+		iframe.sandbox = 'allow-same-origin allow-scripts';
+		const blob = new Blob([html], { type: 'text/html' });
+		iframe.src = URL.createObjectURL(blob);
+		if (iframe && typeof iframe.onload !== "undefined") {
+			iframe.onload = () => {
+				try {
+					const doc = iframe.contentDocument;
+					if (doc && doc.head && doc.body && doc.documentElement) {
+						const style = doc.createElement('style');
+						style.innerHTML = `
+							html, body {
+								box-sizing: border-box !important;
+								padding-left: 48px !important;
+								padding-right: 48px !important;
+								margin: 0 !important;
+								width: 100vw !important;
+								min-width: 0 !important;
+								max-width: 100vw !important;
+								overflow-x: hidden !important;
+							}
+							body * {
+								box-sizing: inherit !important;
+							}
+						`;
+						doc.head.appendChild(style);
+					}
+				} catch (e) {}
+			};
+		}
 		return iframe;
-
 	}
 
 	this.pagesToOnedimension = function(pages) {

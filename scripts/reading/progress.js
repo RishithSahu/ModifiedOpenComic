@@ -333,20 +333,73 @@ async function countPages(path = false, cache = true, cacheOnly = false) {
 	return pages;
 }
 
-async function _getCompleted(path, file, first = false) // TODO: unfinished function
-{
+async function _getCompleted(path, file, first = false) {
 	const readingProgress = relative.get('readingProgress');
 	const progress = readingProgress[path];
 
-	if (progress && progress.pages)
-		return (progress.pages === progress.page) ? true : false;
+	const isCompleted = function(item) {
+		if (!item) return false;
+		if (item.completed) return true;
+		if (item.pages && item.page >= item.pages) return true;
+		return false;
+	};
 
-	/*if(first)
-	{
+	if (isCompleted(progress))
+		return true;
 
-	}*/
+	const regex = new RegExp('^\\s*' + pregQuote(path) + '(?:[\\\\/]|$)');
+	let hasTrackedChildren = false;
 
-	return false;
+	for (const key in readingProgress) {
+		if (key === path || !regex.test(key))
+			continue;
+
+		const item = readingProgress[key];
+
+		if (item && item.pages && fileManager.simpleExists(key, true)) {
+			hasTrackedChildren = true;
+
+			if (!isCompleted(item))
+				return false;
+		}
+	}
+
+	if (hasTrackedChildren)
+		return true;
+
+	// Avoid deep file reads on recursive calls; direct parents can resolve from descendants.
+	if (!first)
+		return false;
+
+	let files = [];
+
+	try {
+		files = await file.read({}, path);
+	}
+	catch (error) {
+		return false;
+	}
+
+	let hasChildren = false;
+
+	for (let i = 0, len = files.length; i < len; i++) {
+		const _file = files[i];
+
+		if (_file.folder || _file.compressed) {
+			hasChildren = true;
+
+			if (!(await _getCompleted(_file.path, file, false)))
+				return false;
+		}
+		else {
+			hasChildren = true;
+
+			if (!isCompleted(readingProgress[_file.path]))
+				return false;
+		}
+	}
+
+	return hasChildren;
 }
 
 async function getCompleted(path) {
