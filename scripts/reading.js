@@ -11,7 +11,7 @@ const render = require(p.join(appDir, '.dist/reading/render.js')),
 	doublePage = require(p.join(appDir, '.dist/reading/double-page.js'));
 
 
-var images = {}, imagesData = {}, imagesDataClip = {}, imagesPath = {}, imagesNum = 0, contentNum = 0, imagesNumLoad = 0, currentIndex = 1, imagesPosition = {}, imagesFullPosition = {}, prevImagesFullPosition = {}, foldersPosition = {}, indexNum = 0, imagesDistribution = [], currentPageXY = { x: 0, y: 0 }, currentMousePosition = { pageX: 0, pageY: 0 }, currentPage = 0;
+var images = {}, imagesData = {}, imagesDataClip = {}, imagesPath = {}, imagesNum = 0, contentNum = 0, imagesNumLoad = 0, currentIndex = 1, imagesPosition = {}, imagesFullPosition = {}, prevImagesFullPosition = {}, imagesScrollRanges = [], foldersPosition = {}, indexNum = 0, imagesDistribution = [], currentPageXY = { x: 0, y: 0 }, currentMousePosition = { pageX: 0, pageY: 0 }, currentPage = 0;
 
 //Calculates whether to add a blank image (If the reading is in double page and do not apply to the horizontals)
 function blankPage(index) {
@@ -648,6 +648,7 @@ function calculateView(first = false) {
 
 		imagesPosition = [];
 		imagesFullPosition = [];
+		imagesScrollRanges = [];
 
 		const scale = config.readingGlobalZoom ? scalePrevData.scale : 1;
 		const margin = readingMargin();
@@ -657,6 +658,9 @@ function calculateView(first = false) {
 		for (let key1 in imagesDistribution) {
 			if (typeof imagesPosition[key1] === 'undefined') imagesPosition[key1] = [];
 			if (typeof imagesFullPosition[key1] === 'undefined') imagesFullPosition[key1] = [];
+
+			let minTop = false;
+			let maxBottom = false;
 
 			for (let key2 in imagesDistribution[key1]) {
 				const image = contentRight.querySelector('.image-position' + key1 + '-' + key2);
@@ -686,8 +690,37 @@ function calculateView(first = false) {
 					bottom: top + height + scrollTop,
 					height: height,
 				};
+
+				const rangeTop = top + scrollTop;
+				const rangeBottom = top + height + scrollTop;
+
+				if (minTop === false || rangeTop < minTop)
+					minTop = rangeTop;
+
+				if (maxBottom === false || rangeBottom > maxBottom)
+					maxBottom = rangeBottom;
 			}
+
+			if (minTop === false)
+				minTop = 0;
+
+			if (maxBottom === false)
+				maxBottom = minTop;
+
+			imagesScrollRanges.push({
+				index: +key1,
+				top: minTop,
+				bottom: maxBottom,
+				center: minTop + (maxBottom - minTop) / 2,
+			});
 		}
+
+		imagesScrollRanges.sort(function (a, b) {
+			if (a.top === b.top)
+				return a.index - b.index;
+
+			return a.top - b.top;
+		});
 
 		if (first)
 			prevImagesFullPosition = imagesFullPosition;
@@ -825,7 +858,8 @@ function goToImageCL(index, animation = true, fromScroll = false, fromPageRange 
 		music.focusIndex(index);
 	}
 
-	let animationDurationMS = ((animation) ? _config.readingViewSpeed : 0) * 1000;
+	const sidebarAnimation = animation && !fromScroll && !readingViewIs('scroll');
+	let animationDurationMS = (sidebarAnimation ? _config.readingViewSpeed : 0) * 1000;
 	let contentLeft = template._contentLeft();
 
 	let leftScroll = contentLeft.firstElementChild;
@@ -842,27 +876,27 @@ function goToImageCL(index, animation = true, fromScroll = false, fromPageRange 
 
 		leftItem = contentLeft.querySelector('.reading-toc-page-' + closest + ' .reading-toc-title');
 
-		if (animation)
+		if (sidebarAnimation)
 			dom.this(contentLeft).find('.reading-toc-title.s', true).removeClass('s');
 		else
 			dom.this(contentLeft).find('.reading-toc-title.s', true).removeClass('s', 'transition');
 
 		if (leftItem) {
 			leftItem.classList.add('s');
-			if (animation && _config.readingViewSpeed > 0.2) leftItem.classList.add('transition');
+			if (sidebarAnimation && _config.readingViewSpeed > 0.2) leftItem.classList.add('transition');
 		}
 	}
 	else {
 		leftItem = contentLeft.querySelector('.r-l-i' + index);
 
-		if (animation)
+		if (sidebarAnimation)
 			dom.this(contentLeft).find('.reading-left.s', true).removeClass('s');
 		else
 			dom.this(contentLeft).find('.reading-left.s', true).removeClass('s', 'transition');
 
 		if (leftItem) {
 			leftItem.classList.add('s');
-			if (animation && _config.readingViewSpeed > 0.2) leftItem.classList.add('transition');
+			if (sidebarAnimation && _config.readingViewSpeed > 0.2) leftItem.classList.add('transition');
 		}
 	}
 
@@ -874,19 +908,19 @@ function goToImageCL(index, animation = true, fromScroll = false, fromPageRange 
 		let scrollHeight = leftScroll.scrollHeight;
 
 		if (scrollTop > 0 && scrollTop < (scrollHeight - rectScroll.height)) {
-			if (animation)
+			if (sidebarAnimation)
 				$(leftScroll).stop(true).animate({ scrollTop: scrollTop + 'px' }, animationDurationMS);
 			else
 				leftScroll.scrollTop = scrollTop;
 		}
 		else if (scrollTop > 0) {
-			if (animation)
+			if (sidebarAnimation)
 				$(leftScroll).stop(true).animate({ scrollTop: (scrollHeight - rectScroll.height) + 'px' }, animationDurationMS);
 			else
 				leftScroll.scrollTop = (scrollHeight - rectScroll.height);
 		}
 		else {
-			if (animation)
+			if (sidebarAnimation)
 				$(leftScroll).stop(true).animate({ scrollTop: '0px' }, animationDurationMS);
 			else
 				leftScroll.scrollTop = 0;
@@ -910,7 +944,14 @@ function goToImageCL(index, animation = true, fromScroll = false, fromPageRange 
 	const readingLeft = contentLeft.querySelector('.reading-left-images');
 	if (readingLeft) readingLeft.style.opacity = 1;
 
-	sidebar.goToImage(index);
+	if (fromScroll) {
+		app.setThrottle('reading-sidebar-go-to-image', function () {
+			sidebar.goToImage(index);
+		}, 80, 220);
+	}
+	else {
+		sidebar.goToImage(index);
+	}
 
 	// Change header buttons
 	if (!fromPageRange && (!readingViewIs('scroll') || !fromScroll))
@@ -1466,97 +1507,156 @@ function scrollNextOrPrevComic(prev = false, delay = false) {
 	return false;
 }
 
+function findScrollDistributionIndex(center) {
+	const ranges = imagesScrollRanges;
+	const len = ranges.length;
+
+	if (!len)
+		return false;
+
+	let low = 0;
+	let high = len - 1;
+
+	while (low <= high) {
+		const mid = (low + high) >> 1;
+		const range = ranges[mid];
+
+		if (center < range.top)
+			high = mid - 1;
+		else if (center > range.bottom)
+			low = mid + 1;
+		else
+			return range.index;
+	}
+
+	let selected = false;
+	let closestDiff = false;
+
+	if (high >= 0 && ranges[high]) {
+		const diff = Math.abs(center - ranges[high].center);
+		selected = ranges[high].index;
+		closestDiff = diff;
+	}
+
+	if (low < len && ranges[low]) {
+		const diff = Math.abs(center - ranges[low].center);
+		if (closestDiff === false || diff < closestDiff)
+			selected = ranges[low].index;
+	}
+
+	return selected;
+}
+
+function processOnScroll(scrollElement) {
+	if (!isLoaded || !onReading || !activeOnScroll || !readingViewIs('scroll'))
+		return;
+
+	const scrollTop = scrollElement.scrollTop;
+
+	let center = 0;
+
+	const availableScroll = rightSize.scrollHeight - rightSize.height;
+	const centerOffset = (availableScroll < rightSize.height ? availableScroll : rightSize.height) / 2;
+
+	if (centerOffset <= 0)
+		center = scrollTop;
+	else if (scrollTop < centerOffset)
+		center = scrollTop + (centerOffset * (scrollTop / centerOffset));
+	else if (scrollTop + centerOffset > availableScroll)
+		center = scrollTop + centerOffset + (centerOffset * (1 - (availableScroll - scrollTop) / centerOffset));
+	else
+		center = scrollTop + centerOffset;
+
+	const selIndex = findScrollDistributionIndex(center);
+	if (selIndex === false || !imagesFullPosition[selIndex] || !imagesFullPosition[selIndex][0])
+		return;
+
+	const marginTop = readingMargin().top;
+	const basePosition = imagesFullPosition[selIndex][0];
+	const imgHeight = basePosition.bottom - basePosition.top + (marginTop * 2);
+	const pageVisibility = Math.floor(imgHeight / rightSize.height);
+
+	maxPageVisibility = pageVisibility;
+
+	if (pageVisibility > 0) {
+		const contentHeightRes = ((rightSize.height * pageVisibility) - imgHeight) / pageVisibility;
+		const scrollPart = ((rightSize.height - contentHeightRes) - rightSize.height / pageVisibility);
+
+		if (scrollPart)
+			currentPageVisibility = Math.round((scrollTop - (basePosition.top - marginTop)) / scrollPart);
+		else
+			currentPageVisibility = 0;
+	}
+	else {
+		currentPageVisibility = 0;
+	}
+
+	if (currentPageVisibility < 0)
+		currentPageVisibility = 0;
+
+	if (currentIndex != selIndex + 1) {
+		if (currentScale != 1 && !(config.readingGlobalZoom && readingViewIs('scroll')))
+			reading.resetZoom();
+
+		let isBookmarkTrue = false;
+
+		eachImagesDistribution(selIndex, ['image'], function (image) {
+
+			if (!isBookmarkTrue && images[image.index] && isBookmark(p.normalize(images[image.index].path)))
+				isBookmarkTrue = true;
+
+		});
+
+		let imageIndex = false;
+
+		eachImagesDistribution(selIndex, ['image', 'folder'], function (image) {
+
+			if (!imageIndex)
+				imageIndex = image.index
+
+		});
+
+		currentIndex = selIndex + 1;
+
+		if (imageIndex) {
+			progress.activeSave();
+
+			// Keep sidebar sync cheap while scrolling (no jQuery animation per index jump).
+			goToImageCL(imageIndex, false, true);
+		}
+	}
+
+	previousScrollTop = scrollTop;
+
+	scrollInStart = scrollTop <= 1 ? true : false;
+	scrollInEnd = scrollTop >= availableScroll - 1 ? true : false;
+
+	changeHeaderButtons(scrollInStart, scrollInEnd, true);
+}
+
+var onScrollRafPending = false;
+var onScrollLastElement = false;
+
 function onScroll(event) {
 	if (!isLoaded || !onReading) return;
 
 	if (activeOnScroll && readingViewIs('scroll')) {
-		let scrollTop = this.scrollTop;
+		onScrollLastElement = this;
 
-		let center = 0;
+		if (!onScrollRafPending) {
+			onScrollRafPending = true;
 
-		let availableScroll = rightSize.scrollHeight - rightSize.height;
-		let centerOffset = (availableScroll < rightSize.height ? availableScroll : rightSize.height) / 2;
+			window.requestAnimationFrame(function () {
 
-		if (scrollTop < centerOffset)
-			center = scrollTop + (centerOffset * (scrollTop / centerOffset));
-		else if (scrollTop + centerOffset > availableScroll)
-			center = scrollTop + centerOffset + (centerOffset * (1 - (availableScroll - scrollTop) / centerOffset));
-		else
-			center = scrollTop + centerOffset;
+				onScrollRafPending = false;
 
-		let selIndex = false;
-		let closest = false;
+				if (onScrollLastElement)
+					processOnScroll(onScrollLastElement);
 
-		toBreak:
-		for (let key1 in imagesFullPosition) {
-			for (let key2 in imagesFullPosition[key1]) {
-				let position = imagesFullPosition[key1][key2];
-
-				if (position.top < center && position.bottom > center) {
-					selIndex = +key1;
-					break toBreak;
-				}
-				else {
-					let diff = Math.abs(position.center - center);
-
-					if (closest === false || diff < closest.diff) {
-						selIndex = +key1;
-						closest = { center: position.center, diff: diff };
-					}
-				}
-			}
-		}
-
-		let imgHeight = imagesFullPosition[selIndex][0].bottom - imagesFullPosition[selIndex][0].top + (readingMargin().top * 2);
-
-		let pageVisibility = Math.floor(imgHeight / rightSize.height);
-
-		maxPageVisibility = pageVisibility;
-
-		let contentHeightRes = pageVisibility > 0 ? ((rightSize.height * pageVisibility) - imgHeight) / pageVisibility : 0;
-
-		const scrollPart = ((rightSize.height - contentHeightRes) - rightSize.height / pageVisibility);
-
-		currentPageVisibility = Math.round((scrollTop - (imagesFullPosition[selIndex][0].top - readingMargin().top)) / scrollPart);
-		if (currentPageVisibility < 0) currentPageVisibility = 0;
-
-		if (currentIndex != selIndex + 1) {
-			if (currentScale != 1 && !(config.readingGlobalZoom && readingViewIs('scroll')))
-				reading.resetZoom();
-
-			var isBookmarkTrue = false;
-
-			eachImagesDistribution(selIndex, ['image'], function (image) {
-
-				if (!isBookmarkTrue && images[image.index] && isBookmark(p.normalize(images[image.index].path)))
-					isBookmarkTrue = true;
+				onScrollLastElement = false;
 
 			});
-
-			var imageIndex = false;
-
-			eachImagesDistribution(selIndex, ['image', 'folder'], function (image) {
-
-				if (!imageIndex)
-					imageIndex = image.index
-
-			});
-
-			currentIndex = selIndex + 1;
-
-			if (imageIndex) {
-				progress.activeSave();
-
-				goToImageCL(imageIndex, true, true);
-			}
 		}
-
-		previousScrollTop = scrollTop;
-
-		scrollInStart = scrollTop <= 1 ? true : false;
-		scrollInEnd = scrollTop >= availableScroll - 1 ? true : false;
-
-		changeHeaderButtons(scrollInStart, scrollInEnd, true);
 	}
 
 	if (onReading && config.readingMagnifyingGlass)
@@ -2695,18 +2795,84 @@ async function resized() {
 
 var hiddenContentLeft = false, hiddenBarHeader = false, hideContentDisableTransitionsST = false, hideContentST = false, hideContentRunningST = false, shownContentLeft = false, shownBarHeader = false, sidebarPinnedOpen = false, barHeaderPinnedOpen = false;
 
+function getHeaderToggleViewport(contentRight = false) {
+	contentRight = contentRight || template._contentRight();
+
+	if (!contentRight)
+		return false;
+
+	return contentRight.firstElementChild || contentRight;
+}
+
+function setHeaderToggleCursor(active = false, contentRight = false) {
+	contentRight = contentRight || template._contentRight();
+
+	if (!contentRight)
+		return;
+
+	const cursor = active ? 'pointer' : '';
+	contentRight.style.cursor = cursor;
+
+	const viewport = getHeaderToggleViewport(contentRight);
+
+	if (viewport && viewport !== contentRight)
+		viewport.style.cursor = cursor;
+}
+
+function getHeaderToggleZoneRect(contentRight = false, zone = false) {
+	contentRight = contentRight || template._contentRight();
+
+	if (!contentRight)
+		return false;
+
+	const viewport = getHeaderToggleViewport(contentRight);
+	zone = zone || contentRight.querySelector('.reading-header-toggle-zone');
+
+	if (!zone || !viewport)
+		return false;
+
+	const viewportRect = viewport.getBoundingClientRect();
+	const zoneRect = zone.getBoundingClientRect();
+	let zoneWidth = zoneRect.width;
+	let zoneHeight = zoneRect.height;
+
+	if (!Number.isFinite(zoneWidth) || zoneWidth <= 0 || !Number.isFinite(zoneHeight) || zoneHeight <= 0) {
+		const computed = window.getComputedStyle(zone);
+		zoneWidth = parseFloat(computed.width) || zone.offsetWidth || 152;
+		zoneHeight = parseFloat(computed.height) || zone.offsetHeight || 152;
+	}
+
+	const viewportWidth = viewport.clientWidth || viewportRect.width;
+	const viewportHeight = viewport.clientHeight || viewportRect.height;
+	const left = viewportRect.left + ((viewportWidth - zoneWidth) / 2);
+	const top = viewportRect.top + ((viewportHeight - zoneHeight) / 2);
+
+	return {
+		left: left,
+		right: left + zoneWidth,
+		top: top,
+		bottom: top + zoneHeight,
+	};
+}
+
 function updateHeaderToggleZone() {
 	const contentRight = template._contentRight();
 	const zone = contentRight ? contentRight.querySelector('.reading-header-toggle-zone') : false;
 
-	if (!zone)
+	if (!zone) {
+		setHeaderToggleCursor(false, contentRight);
+
 		return;
+	}
 
 	const canToggleHeader = onReading && hiddenBarHeader;
 
 	zone.style.display = canToggleHeader ? '' : 'none';
 	zone.classList[shownBarHeader ? 'add' : 'remove']('open');
 	zone.setAttribute('aria-expanded', shownBarHeader ? 'true' : 'false');
+
+	if (!canToggleHeader)
+		setHeaderToggleCursor(false, contentRight);
 }
 
 function updateSidebarToggleButton() {
@@ -2764,7 +2930,10 @@ function isInsideHeaderToggleZone(event) {
 	if (!Number.isFinite(clientX) || !Number.isFinite(clientY))
 		return false;
 
-	const rect = zone.getBoundingClientRect();
+	const rect = getHeaderToggleZoneRect(contentRight, zone);
+
+	if (!rect)
+		return false;
 
 	return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
 }
@@ -2785,6 +2954,15 @@ function consumeHeaderToggleZoneClick(event) {
 
 	toggleBarHeaderPanel();
 	return true;
+}
+
+function updateHeaderToggleCursor(event = false) {
+	const contentRight = template._contentRight();
+
+	if (!contentRight)
+		return;
+
+	setHeaderToggleCursor(!!(event && isInsideHeaderToggleZone(event)), contentRight);
 }
 
 function toggleBarHeaderPanel(force = null) {
@@ -3376,8 +3554,30 @@ function getReadingPagesConfigPath(fallbackPath = false) {
 	return mainPath;
 }
 
-function applyTrackedSeriesReadingDefaults(readingPagesConfigPath = '', hasStoredReadingConfig = false) {
-	if (!readingPagesConfigPath || hasStoredReadingConfig || currentReadingConfigKey !== false)
+function hasCustomTrackedSeriesMode(storedReadingPagesConfig = false) {
+	if (!storedReadingPagesConfig || typeof storedReadingPagesConfig !== 'object')
+		return false;
+
+	if (+storedReadingPagesConfig.configKey > 0)
+		return true;
+
+	const modeKeys = ['readingView', 'readingManga', 'readingWebtoon', 'readingDoublePage'];
+
+	for (let i = 0, len = modeKeys.length; i < len; i++) {
+		const key = modeKeys[i];
+
+		if (typeof storedReadingPagesConfig[key] !== 'undefined' && storedReadingPagesConfig[key] !== config[key])
+			return true;
+	}
+
+	return false;
+}
+
+function applyTrackedSeriesReadingDefaults(readingPagesConfigPath = '', storedReadingPagesConfig = false) {
+	if (!readingPagesConfigPath || currentReadingConfigKey !== false)
+		return false;
+
+	if (hasCustomTrackedSeriesMode(storedReadingPagesConfig))
 		return false;
 
 	if (typeof tracking === 'undefined' || !tracking || typeof tracking.getFolderMetadata !== 'function')
@@ -3759,7 +3959,7 @@ function loadReadingConfig(key = false) {
 	}
 
 	if (useActiveReadingConfig)
-		applyTrackedSeriesReadingDefaults(readingPagesConfigPath, !!storedReadingPagesConfig);
+		applyTrackedSeriesReadingDefaults(readingPagesConfigPath, storedReadingPagesConfig || false);
 
 	_config = copy(_config);
 
@@ -4657,6 +4857,8 @@ function pointermove(event) {
 		pageY: pageY,
 	};
 
+	updateHeaderToggleCursor(event);
+
 	if (haveZoom) // Drag Image zoom
 	{
 		if (contentRightRect === false) {
@@ -4933,6 +5135,8 @@ function hideContentLeftAndHeader() {
 			}
 		}
 	}
+
+	updateHeaderToggleCursor(false);
 }
 
 function pointerleave() {
@@ -4940,6 +5144,7 @@ function pointerleave() {
 		return;
 
 	hideContentLeftAndHeader();
+	updateHeaderToggleCursor(false);
 }
 
 function cursorleave() {
@@ -4947,6 +5152,7 @@ function cursorleave() {
 		return;
 
 	hideContentLeftAndHeader();
+	updateHeaderToggleCursor(false);
 }
 
 electron.ipcRenderer.on('cursorleave', cursorleave);
@@ -5011,7 +5217,7 @@ var touchTimeout, mouseleave = { lens: false, body: false, window: false }, isMo
 
 //It starts with the reading of a comic, events, argar images, counting images ...
 async function read(path, index = 1, end = false, isCanvas = false, isEbook = false, imagePath = false) {
-	images = {}, imagesData = {}, imagesDataClip = {}, imagesPath = {}, imagesNum = 0, contentNum = 0, imagesNumLoad = 0, currentIndex = index, foldersPosition = {}, currentScale = 1, currentZoomIndex = false, previousScrollTop = 0, scalePrevData = { tranX: 0, tranX2: 0, tranY: 0, tranY2: 0, scale: 1, scrollTop: 0 }, originalRect = false, scrollInStart = false, scrollInEnd = false, prevChangeHeaderButtons = {}, trackingCurrent = false, pageRangeHistory = [], showComicSkip = false;
+	images = {}, imagesData = {}, imagesDataClip = {}, imagesPath = {}, imagesPosition = {}, imagesFullPosition = {}, prevImagesFullPosition = {}, imagesScrollRanges = [], imagesNum = 0, contentNum = 0, imagesNumLoad = 0, currentIndex = index, foldersPosition = {}, currentScale = 1, currentZoomIndex = false, previousScrollTop = 0, scalePrevData = { tranX: 0, tranX2: 0, tranY: 0, tranY2: 0, scale: 1, scrollTop: 0 }, originalRect = false, scrollInStart = false, scrollInEnd = false, prevChangeHeaderButtons = {}, trackingCurrent = false, pageRangeHistory = [], showComicSkip = false;
 
 	isLoaded = false;
 	magnifyingGlassPosition.mode = false;

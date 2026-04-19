@@ -28,6 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix reader preload starvation where focus changes repeatedly cleared the render queue, causing near-future pages to stay blank while scrolling/turning pages.
 - Fix intermittent next-page blank states by deduplicating in-flight page renders and reliably clearing render-in-progress flags after completion/failure.
 - Fix insufficient nearby prefetching by enforcing a symmetric around-focus preload window (at least 10 pages before and 10 pages after) in reading queues.
+- Fix AniList tracked-series reading defaults being skipped when a folder had saved reading config with only unrelated overrides; defaults now still apply unless reading mode was explicitly customized.
+- Fix hidden top-bar center toggle not triggering in webtoon/scroll reading so the same center tap/click zone works across all reading modes.
+- Fix webtoon center-zone cursor feedback/hit-area mismatch by aligning pointer-hover geometry with the same effective area used in other reading modes.
 
 ##### Optimizations & Stability
 

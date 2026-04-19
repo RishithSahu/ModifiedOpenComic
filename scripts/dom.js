@@ -476,19 +476,17 @@ async function readFilesIndexPage(path, mainPath, fromGoBack, notAutomaticBrowsi
 	}
 	else if (openFirstPage && !fromGoBack && !fromGoForwards && !notAutomaticBrowsing) {
 		let first;
-		const firstImageFile = fileManager.file(path, { fromThumbnailsGeneration: true, subtask: true, log: false, sort: { extraKey: 'Reading' } });
 
 		try {
-			first = await firstImageFile.images(1);
+			// Reuse the file we already fully read above. Using thumbnail-mode reads here can
+			// leak a synthetic 1-page state into the first reading session.
+			first = await file.images(1, false, false, files, path, isCompressed);
 		}
 		catch (error) {
 			console.error(error);
 			dom.compressedError(error);
 
 			return basic;
-		}
-		finally {
-			firstImageFile.destroy();
 		}
 
 		if (first) {
