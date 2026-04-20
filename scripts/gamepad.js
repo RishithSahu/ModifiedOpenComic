@@ -829,7 +829,8 @@ function goBack(fromKeyboard = false)
 	if(barBack)
 	{
 		fromGoBack = true;
-		eval(barBack.getAttribute('onclick'));
+		if(typeof barBack.click === 'function')
+			barBack.click();
 	}
 }
 

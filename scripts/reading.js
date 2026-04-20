@@ -727,7 +727,7 @@ function calculateView(first = false) {
 	}
 }
 
-var previousScrollTop = 0, previousScrollHeight = 0, previousContentHeight = 0, stayInLineData = { scrollTop: false, scrollHeight: false, heigth: false, position: {}, setTimeout: false };
+var previousScrollTop = 0, previousScrollHeight = 0, previousContentHeight = 0, stayInLineData = { scrollTop: false, scrollHeight: false, height: false, position: {}, setTimeout: false };
 
 function getPreviusContentSize() {
 	if (!readingViewIs('scroll')) return;
@@ -772,7 +772,7 @@ function stayInLine(resize = false) {
 		clearTimeout(stayInLineData.setTimeout);
 		stayInLineData.setTimeout = setTimeout(function () {
 
-			stayInLineData = { scrollTop: false, scrollHeight: false, heigth: false, position: {}, setTimeout: false };
+			stayInLineData = { scrollTop: false, scrollHeight: false, height: false, position: {}, setTimeout: false };
 
 			disableOnScroll(false);
 
@@ -1777,10 +1777,15 @@ function showNextComic(mode, animation = true, invert = false) {
 			skip.find('circle').css('animation-duration', _config.readingDelayComicSkip + 's').removeClass('a').delay(10).queue(function (next) { $(this).addClass('a'); next(); });
 		}
 
-		if (invert)
-			showComicSkip = setTimeout('reading.progress.save(); reading.setFromSkip(); dom.openComic(true, "' + escapeQuotes(escapeBackSlash(dom.previousComic()), 'doubles') + '", "' + escapeQuotes(escapeBackSlash(dom.history.mainPath), 'doubles') + '", true, false, true);', _config.readingDelayComicSkip * 1000);
-		else
-			showComicSkip = setTimeout('reading.progress.save(); reading.setFromSkip(); dom.openComic(true, "' + escapeQuotes(escapeBackSlash(dom.nextComic()), 'doubles') + '", "' + escapeQuotes(escapeBackSlash(dom.history.mainPath), 'doubles') + '", false, false, true);', _config.readingDelayComicSkip * 1000);
+		const skipComicPath = invert ? dom.previousComic() : dom.nextComic();
+		const skipMainPath = dom.history.mainPath;
+		const skipIsPrevious = invert ? true : false;
+
+		showComicSkip = setTimeout(function () {
+			reading.progress.save();
+			reading.setFromSkip();
+			dom.openComic(true, skipComicPath, skipMainPath, skipIsPrevious, false, true);
+		}, _config.readingDelayComicSkip * 1000);
 
 		currentIndex = indexNum + 1;
 	}
@@ -1867,10 +1872,15 @@ function showPreviousComic(mode, animation = true, invert = false) {
 			skip.find('circle').css('animation-duration', _config.readingDelayComicSkip + 's').removeClass('a').delay(10).queue(function (next) { $(this).addClass('a'); next(); });
 		}
 
-		if (invert)
-			showComicSkip = setTimeout('reading.progress.save(); reading.setFromSkip(); dom.openComic(true, "' + escapeQuotes(escapeBackSlash(dom.nextComic()), 'doubles') + '", "' + escapeQuotes(escapeBackSlash(dom.history.mainPath), 'doubles') + '", false, false, true);', _config.readingDelayComicSkip * 1000);
-		else
-			showComicSkip = setTimeout('reading.progress.save(); reading.setFromSkip(); dom.openComic(true, "' + escapeQuotes(escapeBackSlash(dom.previousComic()), 'doubles') + '", "' + escapeQuotes(escapeBackSlash(dom.history.mainPath), 'doubles') + '", true, false, true);', _config.readingDelayComicSkip * 1000);
+		const skipComicPath = invert ? dom.nextComic() : dom.previousComic();
+		const skipMainPath = dom.history.mainPath;
+		const skipIsPrevious = invert ? false : true;
+
+		showComicSkip = setTimeout(function () {
+			reading.progress.save();
+			reading.setFromSkip();
+			dom.openComic(true, skipComicPath, skipMainPath, skipIsPrevious, false, true);
+		}, _config.readingDelayComicSkip * 1000);
 
 		currentIndex = 0;
 	}
@@ -5236,7 +5246,6 @@ async function read(path, index = 1, end = false, isCanvas = false, isEbook = fa
 	$(window).off('keydown touchstart touchend mouseup mousemove touchmove mouseleave click');
 	template.contentRight().off('mousewheel');
 	$('.reading-body, .reading-lens').off('mousemove');
-	$('.reading-lens').off('mousemove');
 	$('.reading-body').off('mouseleave mouseenter mousedown touchstart touchmove');
 	$('.content-right > div > div').off('scroll');
 
@@ -5485,7 +5494,9 @@ async function read(path, index = 1, end = false, isCanvas = false, isEbook = fa
 
 			clearTimeout(touchTimeout);
 			readingTouchEvent = true;
-			touchTimeout = setTimeout('readingTouchEvent = false;', 500);
+			touchTimeout = setTimeout(function () {
+				readingTouchEvent = false;
+			}, 500);
 		}
 
 	});

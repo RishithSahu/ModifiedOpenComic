@@ -1491,6 +1491,11 @@ function addComicsToLibrary(files, reload = true) {
 			}
 
 			path = relative.path(path);
+
+			if (typeof storage.isPepperCarrotPath === 'function' && storage.isPepperCarrotPath(path)) {
+				storage.updateVar('config', 'pepperCarrotDeleted', false);
+			}
+
 			let comics = storage.get('comics');
 			let exists = false;
 

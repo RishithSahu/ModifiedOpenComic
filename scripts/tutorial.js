@@ -14,345 +14,1117 @@ var tutorial = {
 	_actionPoll: null,
 
 	steps: function() {
+		return []
+			.concat(tutorial._introSteps())
+			.concat(tutorial._libraryToolSteps())
+			.concat(tutorial._settingsMissionSteps())
+			.concat(tutorial._sampleEntrySteps())
+			.concat(tutorial._readingNavigationSteps())
+			.concat(tutorial._readingLayoutSteps())
+			.concat(tutorial._readingEnhancementSteps())
+			.concat(tutorial._readingWrapUpSteps());
+	},
+
+	_introSteps: function() {
 		return [
-			// === WELCOME ===
 			{
 				id: 'welcome',
+				chapter: 'Home Base',
 				title: 'Welcome to OpenComic!',
-				text: 'This quick tour will walk you through every feature so you can get the most out of OpenComic. You can skip at any time.',
+				text: 'This walkthrough is fully interactive. You will click real controls and see each feature in context.\n\nWe will finish in the Pepper & Carrot sample so every reading tool is explained on a real comic.',
+				mission: 'Mission: Learn every major area of the app, then complete a full reading lab.',
 				selector: null,
 				position: 'center',
 				icon: 'auto_stories',
 			},
-
-			// === SIDEBAR / CONTENT LEFT ===
 			{
+				chapter: 'Home Base',
+				title: 'How This Tour Works',
+				text: '• Steps with a highlighted action auto-advance when you click the requested control.\n• Use Back anytime to review a step.\n• Skip Tour exits immediately and marks this tutorial as completed.',
+				selector: null,
+				position: 'center',
+				icon: 'school',
+			},
+			{
+				chapter: 'Home Base',
 				title: 'Library',
-				text: 'This is your Library — the home screen. All your added comics, manga, and ebooks appear here as a browsable grid or list.',
+				text: 'Your Library is the main hub. Added comics, manga, archives, PDFs, and ebooks appear here as cards or lists.',
 				selector: '.content-left .menu-item-library',
 				position: 'right',
 				icon: 'book',
 			},
 			{
+				chapter: 'Home Base',
 				title: 'Recents',
-				text: 'Recents shows files you\'ve opened recently, so you can quickly jump back into whatever you were reading.',
+				text: 'Recents tracks what you opened recently so you can resume in one click.',
 				selector: '.content-left .menu-item-recently-opened',
 				position: 'right',
 				icon: 'history',
 			},
 			{
+				chapter: 'Home Base',
 				title: 'Favorites',
-				text: 'Mark any comic or manga as a Favorite with a right-click and it will show up here for quick access.',
+				text: 'Mark titles as favorites from the context menu. They show up here for fast access.',
 				selector: '.content-left .menu-item-favorites',
 				position: 'right',
 				icon: 'favorite',
 			},
 			{
+				chapter: 'Home Base',
 				title: 'OPDS Catalogs',
-				text: 'OpenComic supports OPDS catalogs — online comic/ebook libraries you can browse and download from directly inside the app.',
+				text: 'Browse online OPDS catalogs directly in OpenComic and download titles from remote libraries.',
 				selector: '.content-left .menu-item-opds',
 				position: 'right',
 				icon: 'local_library',
 			},
 			{
-				title: 'Language Settings',
-				text: 'Change the app\'s display language here. OpenComic supports over 20 languages.',
+				chapter: 'Home Base',
+				title: 'Language And Theme',
+				text: 'OpenComic supports many languages and configurable themes. You can switch both from the left menu.',
 				selector: '.content-left .menu-item-language',
 				position: 'right',
 				icon: 'language',
 			},
 			{
-				title: 'Theme',
-				text: 'Customize the look of OpenComic. Choose accent colors and switch between light and dark modes.',
+				chapter: 'Home Base',
+				title: 'Theme Controls',
+				text: 'Use theme options to customize accent colors and light/dark appearance.',
 				selector: '.content-left .menu-item-theme',
 				position: 'right',
 				icon: 'palette',
 			},
 			{
-				title: 'Settings',
-				text: 'Access all configuration options: master folders, server connections, reading behavior, keyboard shortcuts, tap zones, gamepad settings, and more.',
+				chapter: 'Home Base',
+				title: 'Settings Entry Point',
+				text: 'Settings is where global behavior, navigation, image processing, shortcuts, and tap zones are configured.',
 				selector: '.content-left .menu-item-settings',
 				position: 'right',
 				icon: 'settings',
 			},
+		];
+	},
 
-			// === HEADER BAR BUTTONS ===
+	_libraryToolSteps: function() {
+		return [
 			{
-				title: 'Sort',
-				text: 'Sort your comics by name, number, date added, last reading, and more. You can also choose folders-first or compressed-first ordering.',
+				chapter: 'Library Power Tools',
+				title: 'Open Sort Menu',
+				text: 'Click Sort to open library sorting controls.',
+				mission: 'Mission: Practice sorting, viewing, filtering, searching, and labels.',
 				selector: '.bar-right-buttons .button-sort',
 				position: 'bottom',
 				icon: 'sort',
+				requireAction: true,
+				actionHint: 'Click the highlighted Sort button.',
+				advanceOn: { type: 'click', useTarget: true },
 			},
 			{
-				title: 'View Mode',
-				text: 'Toggle between Grid view and List view. In Grid mode you can also adjust the thumbnail size using the slider in this menu.',
+				chapter: 'Library Power Tools',
+				title: 'Sort Options',
+				text: 'Choose name, number, or hybrid name-number sorting. You can also invert order and prioritize folders/compressed files.',
+				selector: '#index-sort .sort-name-numeric',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'sort_by_alpha',
+				onShow: function() {
+					tutorial._openMenu('#index-sort', '.bar-right-buttons .button-sort');
+				},
+			},
+			{
+				chapter: 'Library Power Tools',
+				title: 'Open View Menu',
+				text: 'Click View to switch between module and list layouts.',
 				selector: '.bar-right-buttons .button-view',
 				position: 'bottom',
 				icon: 'view_module',
+				requireAction: true,
+				actionHint: 'Click the highlighted View button.',
+				advanceOn: { type: 'click', useTarget: true },
 			},
 			{
-				title: 'Reload',
-				text: 'Refresh the current folder view. Useful if you\'ve added or removed files outside of OpenComic.',
-				selector: '.bar-right-buttons [hover-text] .material-icon:not(.button-sort):not(.button-view)',
-				selectorFallback: '.bar-right-buttons div div[onclick*="dom.reload"]',
+				chapter: 'Library Power Tools',
+				title: 'View Details',
+				text: 'Inside View, switch module/list and adjust thumbnail card size. You can also toggle progress overlays and completion fade.',
+				selector: '#index-view .view-module-size',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'tune',
+				onShow: function() {
+					tutorial._openMenu('#index-view', '.bar-right-buttons .button-view');
+				},
+			},
+			{
+				chapter: 'Library Power Tools',
+				title: 'Reload Current Folder',
+				text: 'Use Reload when files changed on disk and you want an immediate refresh.',
+				selector: '.bar-right-buttons [onclick*="dom.reload"]',
+				selectorFallback: '.bar-right-buttons div[onclick*="dom.reload"]',
 				position: 'bottom',
 				icon: 'refresh',
 			},
 			{
-				title: 'Genre Filter',
-				text: 'Filter comics on the current page by genre. This uses metadata from tracking sites like AniList to let you browse by action, romance, comedy, etc.',
+				chapter: 'Library Power Tools',
+				title: 'Open Genre Filter',
+				text: 'Click Genre Filter to focus the current page by metadata genres.',
 				selector: '.bar-right-buttons .button-genre-filter',
 				position: 'bottom',
 				icon: 'filter_list',
+				requireAction: true,
+				actionHint: 'Click Genre Filter once to continue.',
+				advanceOn: { type: 'click', useTarget: true },
 			},
 			{
-				title: 'Search',
-				text: 'Search through your library by title. The search bar supports deep search across all your master folders and subfolders.',
+				chapter: 'Library Power Tools',
+				title: 'Open Search',
+				text: 'Click Search to use quick lookup and advanced saved search workflows.',
 				selector: '.bar-right-buttons .button-search',
 				position: 'bottom',
 				icon: 'search',
+				requireAction: true,
+				actionHint: 'Click the Search button to continue.',
+				advanceOn: { type: 'click', useTarget: true },
 			},
 			{
-				title: 'Pick at Random',
-				text: 'Can\'t decide what to read? This button picks a random comic or manga from the current folder for you!',
+				chapter: 'Library Power Tools',
+				title: 'Open Labels',
+				text: 'Click Labels to organize titles into custom groups such as To Read, Completed, or any workflow labels you prefer.',
+				selector: '.bar-right-buttons .button-labels',
+				position: 'bottom',
+				icon: 'label',
+				requireAction: true,
+				actionHint: 'Click Labels once.',
+				advanceOn: { type: 'click', useTarget: true },
+			},
+			{
+				chapter: 'Library Power Tools',
+				title: 'Pick At Random',
+				text: 'Random instantly opens an unpredictable title from the current scope when you want discovery mode.',
 				selector: '.bar-right-buttons .button-random',
 				position: 'bottom',
 				icon: 'shuffle',
 			},
 			{
-				title: 'Labels',
-				text: 'Create custom labels (like "To Read", "Completed", "Favorite Shonen") and assign them to any comic. Filter your library by label to stay organized.',
-				selector: '.bar-right-buttons .button-labels',
-				position: 'bottom',
-				icon: 'label',
-			},
-
-			// === FLOATING ACTION BUTTONS ===
-			{
-				title: 'Add Comics',
-				text: 'Use the + button to add individual comic files (CBZ, CBR, PDF, EPUB, ZIP, 7Z, etc.) or entire folders to your library.',
+				chapter: 'Library Power Tools',
+				title: 'Add Files And Folders',
+				text: 'Use the floating + button to import comics, manga archives, PDFs, EPUBs, and folders.',
 				selector: '.floating-action-button-add',
 				position: 'top',
 				icon: 'add',
 			},
+			{
+				chapter: 'Library Power Tools',
+				title: 'Right-Click Context Menu',
+				text: 'Right-click any title card for actions like mark read/unread, favorite, labels, poster tools, open location, cache cleanup, file info, and remove/delete options.',
+				selector: null,
+				position: 'center',
+				icon: 'ads_click',
+			},
+		];
+	},
 
-			// === OPEN SAMPLE COMIC ===
+	_settingsMissionSteps: function() {
+		return [
+			{
+				chapter: 'Global Settings',
+				title: 'Open Settings',
+				text: 'Click Settings in the sidebar. We will walk both General and Shortcuts sections.',
+				mission: 'Mission: Cover global app behavior, file/navigation options, and control customization.',
+				selector: '.content-left .menu-item-settings',
+				position: 'right',
+				icon: 'settings',
+				requireAction: true,
+				actionHint: 'Click Settings to continue.',
+				advanceOn: { type: 'click', useTarget: true },
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'General Tab',
+				text: 'The General tab groups tutorial reset, master folders, servers, reading defaults, navigation policies, startup behavior, and cache controls.',
+				selector: '.settings-body .tabs [data-name="general"]',
+				position: 'bottom',
+				icon: 'tune',
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Tutorial Restart Card',
+				text: 'You can restart this full walkthrough any time from here.',
+				selector: '.settings-body .tabs-general .menu-simple-text .simple-button[onclick*="tutorial.restart"]',
+				position: 'left',
+				icon: 'school',
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Master Folders',
+				text: 'Add top-level library roots from this button. OpenComic scans and organizes content from these roots.',
+				selector: '.settings-body .settings-master-folders .simple-button[onclick*="settings.addMasterFolder"]',
+				position: 'left',
+				icon: 'folder_special',
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Remote Servers',
+				text: 'Add SMB, FTP, SFTP, SSH, S3, and WebDAV server connections here.',
+				selector: '.settings-body .settings-servers .simple-button[onclick*="settings.addServer"]',
+				position: 'left',
+				icon: 'dns',
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Image Interpolation',
+				text: 'Choose different interpolation methods for downscaling and upscaling quality.',
+				selector: '.settings-body .settings-image-interpolation-method-downscaling',
+				position: 'left',
+				icon: 'image',
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Color Profile',
+				text: 'Force a display color profile if your workflow needs consistent rendering.',
+				selector: '.settings-body .settings-color-profile',
+				position: 'left',
+				icon: 'palette',
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Folder Opening Behavior',
+				text: 'Control how folder clicks behave and whether first images are used as posters.',
+				selector: '.settings-body .settings-opening-behavior-folder',
+				position: 'left',
+				icon: 'folder_open',
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'File Opening Behavior',
+				text: 'Choose what happens when opening files, including tab/window behavior and app startup continuation options.',
+				selector: '.settings-body .settings-opening-behavior-file',
+				position: 'left',
+				icon: 'description',
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Open Shortcuts Tab',
+				text: 'Click Shortcuts. This area configures keyboard/gamepad mappings and tap zones.',
+				selector: '.settings-body .tabs [data-name="shortcuts"]',
+				position: 'bottom',
+				icon: 'keyboard',
+				requireAction: true,
+				actionHint: 'Click the Shortcuts tab.',
+				advanceOn: { type: 'click', useTarget: true },
+				onShow: function() {
+					tutorial._openSettingsTab('general');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Keyboard And Gamepad Map',
+				text: 'Edit per-action keyboard/gamepad bindings directly in this table.',
+				selector: '.settings-body .settings-shortcuts-table',
+				position: 'top',
+				icon: 'sports_esports',
+				onShow: function() {
+					tutorial._openSettingsTab('shortcuts');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Tap Zones',
+				text: 'Tap zones let touch readers map screen regions to actions (next/prev/menu/etc.).',
+				selector: '.settings-body .settings-tap-zones-table',
+				position: 'top',
+				icon: 'touch_app',
+				onShow: function() {
+					tutorial._openSettingsTab('shortcuts');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Restore Defaults',
+				text: 'Restore defaults quickly for shortcuts or tap zones if you want to reset your controls.',
+				selector: '.settings-body .settings-shortcuts-table .simple-button[onclick*="settings.restoreShortcuts"]',
+				position: 'left',
+				icon: 'undo',
+				onShow: function() {
+					tutorial._openSettingsTab('shortcuts');
+				},
+			},
+			{
+				chapter: 'Global Settings',
+				title: 'Return To Library',
+				text: 'Click Library in the sidebar so we can open Pepper & Carrot for the reading lab.',
+				selector: '.content-left .menu-item-library',
+				position: 'right',
+				icon: 'book',
+				requireAction: true,
+				actionHint: 'Click Library to continue.',
+				advanceOn: { type: 'click', useTarget: true },
+			},
+		];
+	},
+
+	_sampleEntrySteps: function() {
+		return [
 			{
 				id: 'open-sample',
-				title: 'Open the Sample Comic',
-				text: 'Click "Pepper & Carrot" to open the included sample. We will use it to learn the reading controls.',
-				getTarget: function() { return tutorial._findLibraryItemByName('Pepper & Carrot', true, 'Pepper & Carrot'); },
+				chapter: 'Open Pepper & Carrot',
+				title: 'Open The Sample Collection',
+				text: 'Click Pepper & Carrot to enter the sample library.',
+				mission: 'Mission: Use this sample to practice all reading features in a safe sandbox.',
+				getTarget: function() {
+					return tutorial._findLibraryItemByName('Pepper & Carrot', true, 'Pepper & Carrot');
+				},
 				position: 'right',
 				icon: 'menu_book',
 				requireAction: true,
+				actionHint: 'Click Pepper & Carrot.',
 				advanceOn: { type: 'click', useTarget: true },
 			},
 			{
 				id: 'open-episode-1',
+				chapter: 'Open Pepper & Carrot',
 				title: 'Open Episode 1',
-				text: 'Now click "Episode 1, Potion of Flight" to start reading.',
-				getTarget: function() { return tutorial._findLibraryItemByName('Episode 1, Potion of Flight', true, 'Episode 1, Potion of Flight'); },
+				text: 'Click Episode 1, Potion of Flight to start reading.',
+				getTarget: function() {
+					return tutorial._findLibraryItemByName('Episode 1, Potion of Flight', true, 'Episode 1, Potion of Flight');
+				},
 				position: 'right',
 				icon: 'auto_stories',
 				requireAction: true,
+				actionHint: 'Open Episode 1 to begin the reading walkthrough.',
 				advanceOn: { type: 'click', useTarget: true },
 			},
+			{
+				id: 'reading-lab-start',
+				chapter: 'Open Pepper & Carrot',
+				title: 'Reading Lab Starting',
+				text: 'From here on, we will cover navigation, layouts, filters, AI, zoom tools, tracking, bookmarks, and advanced reading options.',
+				selector: null,
+				position: 'center',
+				icon: 'play_circle',
+				requiresSampleReading: true,
+			},
+			{
+				id: 'reveal-top-bar',
+				chapter: 'Open Pepper & Carrot',
+				title: 'Reveal The Top Bar',
+				text: 'When the chapter opens, the top bar may be hidden. Click the highlighted center square once to reveal it.\n\nIf the top bar is already visible, click Next.',
+				selector: '.reading-header-toggle-zone',
+				position: 'top',
+				icon: 'touch_app',
+				requireAction: false,
+				actionHint: 'Click the highlighted center square to show the top bar.',
+				advanceOn: { type: 'click', useTarget: true },
+				requiresSampleReading: true,
+			},
+		];
+	},
 
-			// === GENERAL FEATURES (no specific element) ===
-			{
-				title: 'Supported Formats',
-				text: 'OpenComic reads images (JPG, PNG, WEBP, AVIF, GIF, SVG, and more), compressed archives (CBZ, CBR, ZIP, RAR, 7Z, TAR), PDFs, and EPUBs.',
-				selector: null,
-				position: 'center',
-				icon: 'description',
-			},
-			{
-				title: 'Master Folders',
-				text: 'In Settings, add Master Folders — top-level directories where your comics live. OpenComic will automatically detect and display everything inside them in the sidebar.',
-				selector: null,
-				position: 'center',
-				icon: 'folder_special',
-			},
-			{
-				title: 'Server Connections',
-				text: 'Connect to remote servers using SMB, FTP, SFTP, SSH, S3, or WebDAV. Browse and read comics stored on network drives or cloud services.',
-				selector: null,
-				position: 'center',
-				icon: 'cloud',
-			},
-			// === READING CONTROLS (interactive) ===
+	_readingNavigationSteps: function() {
+		return [
 			{
 				id: 'reading-next',
+				chapter: 'Reading Navigation',
 				title: 'Next Page',
-				text: 'Click Next to move forward in the story.',
+				text: 'Click Next to move forward in the chapter.',
+				mission: 'Mission: Learn all reading header controls before deep layout customization.',
 				selector: '.reading-header .button-next',
 				position: 'bottom',
 				icon: 'navigate_next',
 				requireAction: true,
+				actionHint: 'Click Next.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
+				chapter: 'Reading Navigation',
 				title: 'Previous Page',
 				text: 'Click Previous to go back one page.',
 				selector: '.reading-header .button-prev',
 				position: 'bottom',
 				icon: 'navigate_before',
 				requireAction: true,
+				actionHint: 'Click Previous.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Jump to Last Page',
-				text: 'Click Last Page to jump to the end.',
+				chapter: 'Reading Navigation',
+				title: 'Jump To Last Page',
+				text: 'Use Last Page for instant jumps to chapter end.',
 				selector: '.reading-header .button-last-page',
 				position: 'bottom',
 				icon: 'last_page',
 				requireAction: true,
+				actionHint: 'Click Last Page once.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Back to First Page',
-				text: 'Click First Page to return to the start.',
+				chapter: 'Reading Navigation',
+				title: 'Jump To First Page',
+				text: 'Use First Page to quickly reset to chapter start.',
 				selector: '.reading-header .button-first-page',
 				position: 'bottom',
 				icon: 'first_page',
 				requireAction: true,
+				actionHint: 'Click First Page once.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Page Layout',
-				text: 'Open Page Layout to switch between single, double-page, and other layout options.',
+				chapter: 'Reading Navigation',
+				title: 'Sidebar Toggle',
+				text: 'Toggle the left panel visibility while reading.',
+				selector: '.reading-header .button-sidebar-toggle',
+				position: 'bottom',
+				icon: 'menu',
+				requireAction: true,
+				actionHint: 'Click Sidebar Toggle.',
+				advanceOn: { type: 'click', useTarget: true },
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Navigation',
+				title: 'Open Reading Sort',
+				text: 'Open the reading sort menu for in-chapter item ordering controls.',
+				selector: '.reading-header .button-sort',
+				position: 'bottom',
+				icon: 'sort',
+				requireAction: true,
+				actionHint: 'Click Reading Sort.',
+				advanceOn: { type: 'click', useTarget: true },
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Navigation',
+				title: 'Reading Sort Options',
+				text: 'Switch sort mode or invert order for chapter entries from this menu.',
+				selector: '#reading-sort .sort-name',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'swap_vert',
+				onShow: function() {
+					tutorial._openMenu('#reading-sort', '.reading-header .button-sort');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Navigation',
+				title: 'Open Page Layout',
+				text: 'Click Page Layout. Next chapter covers every reading layout control in detail.',
 				selector: '.reading-header .button-page-layout',
 				position: 'bottom',
 				dialogCorner: 'bottom-right',
 				icon: 'auto_stories',
 				requireAction: true,
+				actionHint: 'Click Page Layout.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Reading Mode',
-				text: 'Choose Slide or Scroll to change how pages move.',
+				chapter: 'Reading Navigation',
+				title: 'Night Mode Toggle',
+				text: 'Switch between light/dark app themes without leaving the reader.',
+				selector: '.reading-header .button-night-mode',
+				position: 'bottom',
+				icon: 'dark_mode',
+				requireAction: true,
+				actionHint: 'Click Night Mode once.',
+				advanceOn: { type: 'click', useTarget: true },
+				requiresSampleReading: true,
+			},
+		];
+	},
+
+	_readingLayoutSteps: function() {
+		return [
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Open Page Layout Tab',
+				text: 'Click the Page Layout tab to configure page flow and display mechanics.',
+				mission: 'Mission: Cover slide/scroll modes, double-page variants, webtoon behavior, margins, rotation, and ebook formatting.',
+				selector: '#reading-pages .tabs [data-name="page-layout"]',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'tab',
+				requireAction: true,
+				actionHint: 'Click the Page Layout tab.',
+				advanceOn: { type: 'click', useTarget: true },
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Scroll Mode',
+				text: 'Switch to Scroll mode for continuous vertical reading.',
+				selector: '#reading-pages .tabs-page-layout .reading-view-scroll',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'unfold_more',
+				requireAction: true,
+				actionHint: 'Click Scroll mode.',
+				advanceOn: { type: 'click', useTarget: true },
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Slide Mode',
+				text: 'Switch back to Slide mode for classic page-by-page transitions.',
 				selector: '#reading-pages .tabs-page-layout .reading-view-slide',
 				position: 'left',
 				dialogCorner: 'bottom-right',
 				icon: 'transition_slide',
 				requireAction: true,
+				actionHint: 'Click Slide mode.',
 				advanceOn: { type: 'click', useTarget: true },
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
 				requiresSampleReading: true,
 			},
 			{
+				chapter: 'Reading Layout Lab',
 				title: 'Double Page',
-				text: 'Toggle Double Page to view two pages side-by-side.',
+				text: 'Enable side-by-side double-page rendering for spreads.',
 				selector: '#reading-pages .tabs-page-layout .reading-double-page',
 				position: 'left',
 				dialogCorner: 'bottom-right',
 				icon: 'auto_stories',
 				requireAction: true,
+				actionHint: 'Toggle Double Page.',
 				advanceOn: { type: 'click', useTarget: true },
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
 				requiresSampleReading: true,
 			},
 			{
-				title: 'AI Tools',
-				text: 'Open AI Tools for upscaling, descreening, and artifact removal.',
-				selector: '.reading-header .button-ai',
-				position: 'bottom',
+				chapter: 'Reading Layout Lab',
+				title: 'Double Page Shadow',
+				text: 'Configure page-separation shadow and visual depth for two-page spreads.',
+				selector: '#reading-pages .tabs-page-layout .reading-double-page-shadow',
+				position: 'left',
 				dialogCorner: 'bottom-right',
-				icon: 'auto_awesome',
-				requireAction: true,
-				advanceOn: { type: 'click', useTarget: true },
+				icon: 'filter_none',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Test Features',
-				text: 'Open More Options to access experimental and extra controls.',
-				selector: '.reading-header .button-more-options',
-				position: 'bottom',
+				chapter: 'Reading Layout Lab',
+				title: 'Horizontal Exceptions',
+				text: 'Use horizontal-page exceptions and alignment options to handle panorama pages correctly.',
+				selector: '#reading-pages .tabs-page-layout .reading-do-not-apply-to-horizontals',
+				position: 'left',
 				dialogCorner: 'bottom-right',
-				icon: 'science',
-				requireAction: true,
-				advanceOn: { type: 'click', useTarget: true },
+				icon: 'panorama_wide_angle',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Color Filters',
-				text: 'Open Color Filters to adjust brightness, contrast, and more.',
+				chapter: 'Reading Layout Lab',
+				title: 'Align Next Horizontal',
+				text: 'Fine-tune alignment when a horizontal page needs pairing logic.',
+				selector: '#reading-pages .tabs-page-layout .reading-align-with-next-horizontal',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'align_horizontal_left',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Blank Page Insertion',
+				text: 'Insert blank pages to preserve intended left/right spread pacing.',
+				selector: '#reading-pages .tabs-page-layout .reading-blank-page',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'crop_portrait',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Manga Direction And Webtoon Mode',
+				text: 'Reading direction and webtoon mode are separate toggles so you can adapt to manga and long-scroll comics.',
+				selector: '#reading-pages .tabs-page-layout .reading-reading-manga',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'menu_book',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Webtoon Toggle',
+				text: 'Webtoon mode enables long vertical behavior and disables incompatible spread controls.',
+				selector: '#reading-pages .tabs-page-layout .reading-reading-webtoon',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'vertical_split',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Fit Controls',
+				text: 'Adjust-to-width, force-single-page, and not-enlarge-more-than-original-size help keep image readability predictable.',
+				selector: '#reading-pages .tabs-page-layout .reading-ajust-to-width',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'fit_screen',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Rotation',
+				text: 'Rotate standard pages or horizontals separately for scans that need correction.',
+				selector: '#reading-pages .tabs-page-layout .reading-rotate .reading-rotate-right',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'screen_rotation',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Margins, Clips, Delays, And Speed',
+				text: 'The page-layout panel also contains margin sliders, clipping controls, page-skip delay, and transition speed tuning.',
+				selector: '#reading-pages .tabs-page-layout',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'speed',
+				onShow: function() {
+					tutorial._openReadingPagesTab('page-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Open Ebook Layout Tab',
+				text: 'Click Ebook Layout tab. These controls apply when reading EPUB or text-heavy content.',
+				selector: '#reading-pages .tabs [data-name="ebook-layout"]',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'format_size',
+				requireAction: true,
+				actionHint: 'Click Ebook Layout tab.',
+				advanceOn: { type: 'click', useTarget: true },
+				onShow: function() {
+					tutorial._openReadingPagesTab('ebook-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Ebook Theme And Font Family',
+				text: 'Select ebook themes and font families for readability and style preferences.',
+				selector: '#reading-pages .tabs-ebook-layout .reading-ebook-theme',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'font_download',
+				onShow: function() {
+					tutorial._openReadingPagesTab('ebook-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Ebook Typography',
+				text: 'Text alignment, bold/italic toggles, and font sizing controls are all available in this tab.',
+				selector: '#reading-pages .tabs-ebook-layout .reading-text-align',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'format_align_left',
+				onShow: function() {
+					tutorial._openReadingPagesTab('ebook-layout');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Reading Layout Lab',
+				title: 'Ebook Spacing And Width',
+				text: 'Advanced sliders tune line-height, paragraph spacing, margins, and max text width for long-form reading comfort.',
+				selector: '#reading-pages .tabs-ebook-layout .simple-slider',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'space_bar',
+				onShow: function() {
+					tutorial._openReadingPagesTab('ebook-layout');
+				},
+				requiresSampleReading: true,
+			},
+		];
+	},
+
+	_readingEnhancementSteps: function() {
+		return [
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Open Color Filters',
+				text: 'Click Filters to access image color and tone correction tools.',
+				mission: 'Mission: Cover brightness/contrast filters, AI enhancement, magnifier controls, and zoom helpers.',
 				selector: '.reading-header .button-filters',
 				position: 'bottom',
 				dialogCorner: 'bottom-right',
 				icon: 'invert_colors',
 				requireAction: true,
+				actionHint: 'Click Filters.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Magnifying Glass',
-				text: 'Open the Magnifying Glass menu to zoom into small details.',
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Filters Tab',
+				text: 'Click the Filters tab to tune brightness, saturation, contrast, sepia, hue, invert, and negative.',
+				selector: '#reading-pages .tabs [data-name="filters"]',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'tune',
+				requireAction: true,
+				actionHint: 'Click Filters tab in the reading menu.',
+				advanceOn: { type: 'click', useTarget: true },
+				onShow: function() {
+					tutorial._openReadingPagesTab('filters');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Tone Sliders',
+				text: 'Use these sliders to correct washed-out scans or dark pages instantly.',
+				selector: '#reading-pages .tabs-filters .simple-slider',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'contrast',
+				onShow: function() {
+					tutorial._openReadingPagesTab('filters');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Invert And Negative',
+				text: 'Invert and Negative give instant dark-paper/light-ink alternatives for comfort reading.',
+				selector: '#reading-pages .tabs-filters .reading-invert',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'invert_colors_off',
+				onShow: function() {
+					tutorial._openReadingPagesTab('filters');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Colorize Pipeline',
+				text: 'Colorize can remap tones using custom color stacks, presets, and add/from-image/save preset workflows.',
+				selector: '#reading-pages .tabs-filters .reading-colorize',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'colorize',
+				onShow: function() {
+					tutorial._openReadingPagesTab('filters');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Open AI Tools',
+				text: 'Click AI to access artifact removal, descreen, and upscale pipelines.',
+				selector: '.reading-header .button-ai',
+				position: 'bottom',
+				dialogCorner: 'bottom-right',
+				icon: 'auto_awesome',
+				requireAction: true,
+				actionHint: 'Click AI tools.',
+				advanceOn: { type: 'click', useTarget: true },
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'AI Tab',
+				text: 'Click AI tab to configure each AI enhancement module.',
+				selector: '#reading-pages .tabs [data-name="ai"]',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'psychology',
+				requireAction: true,
+				actionHint: 'Click AI tab.',
+				advanceOn: { type: 'click', useTarget: true },
+				onShow: function() {
+					tutorial._openReadingPagesTab('ai');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Artifact Removal',
+				text: 'Artifact removal cleans compression artifacts before display.',
+				selector: '#reading-pages .tabs-ai .reading-ai-artifact-removal-active',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'cleaning_services',
+				onShow: function() {
+					tutorial._openReadingPagesTab('ai');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Descreen',
+				text: 'Descreen reduces moire patterns from scanned print sources.',
+				selector: '#reading-pages .tabs-ai .reading-ai-descreen-active',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'texture',
+				onShow: function() {
+					tutorial._openReadingPagesTab('ai');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Upscale',
+				text: 'Upscale improves resolution and lets you tune megapixels, autoscale, manual scale, and noise reduction.',
+				selector: '#reading-pages .tabs-ai .reading-ai-upscale-active',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'high_quality',
+				onShow: function() {
+					tutorial._openReadingPagesTab('ai');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Open Magnifying Glass',
+				text: 'Click Magnifying Glass for localized zoom and lens tuning.',
 				selector: '.reading-header .button-magnifying-glass',
 				position: 'bottom',
 				dialogCorner: 'bottom-right',
 				icon: 'search',
 				requireAction: true,
+				actionHint: 'Click Magnifying Glass.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Add a Bookmark',
-				text: 'Click the Bookmark button to save your place.',
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Magnifier Activation',
+				text: 'Enable/disable magnifier quickly from this switch.',
+				selector: '#reading-magnifying-glass .menu-simple-text .switch',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'visibility',
+				onShow: function() {
+					tutorial._openMenu('#reading-magnifying-glass', '.reading-header .button-magnifying-glass');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Lens Controls',
+				text: 'Tune lens zoom, size, ratio, and radius for detailed panel inspection.',
+				selector: '#reading-magnifying-glass .simple-slider',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'zoom_in',
+				onShow: function() {
+					tutorial._openMenu('#reading-magnifying-glass', '.reading-header .button-magnifying-glass');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Filters, AI, And Zoom',
+				title: 'Header Zoom Buttons',
+				text: 'Use zoom in/out and reset zoom from the header for immediate scaling control.',
+				selector: '.reading-header .button-reset-zoom',
+				position: 'bottom',
+				icon: 'aspect_ratio',
+				requiresSampleReading: true,
+			},
+		];
+	},
+
+	_readingWrapUpSteps: function() {
+		return [
+			{
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Bookmark Current Page',
+				text: 'Click Bookmark to save your current reading position as a named marker.',
+				mission: 'Mission: Finish utility workflows and return to library with complete feature coverage.',
 				selector: '.reading-header .button-bookmark',
 				position: 'bottom',
 				icon: 'bookmark_border',
 				requireAction: true,
+				actionHint: 'Click Bookmark.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				title: 'View Bookmarks',
-				text: 'Open Bookmarks to see and jump to saved pages.',
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Open Bookmark Collection',
+				text: 'Click Bookmark Collection to browse and jump to saved marks.',
 				selector: '.reading-header .button-collections-bookmark',
 				position: 'bottom',
 				dialogCorner: 'bottom-right',
 				icon: 'collections_bookmark',
 				requireAction: true,
+				actionHint: 'Click Bookmark Collection.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				title: 'Tracking',
-				text: 'Open Tracking to sync your progress with AniList or MyAnimeList.',
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Bookmark Menu Features',
+				text: 'Bookmark menus support navigation across saved points and batch bookmark image operations.',
+				selector: '#collections-bookmark .menu-simple',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'bookmark',
+				onShow: function() {
+					tutorial._openMenu('#collections-bookmark', '.reading-header .button-collections-bookmark');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Open Tracking',
+				text: 'Click Tracking to connect or update progress with tracking services such as AniList/MyAnimeList integrations.',
 				selector: '.reading-header .button-tracking-sites',
 				position: 'bottom',
 				dialogCorner: 'bottom-right',
 				icon: 'sync',
 				requireAction: true,
+				actionHint: 'Click Tracking.',
 				advanceOn: { type: 'click', useTarget: true },
 				requiresSampleReading: true,
 			},
 			{
-				id: 'back-to-library',
-				title: 'Back to Library',
-				text: 'Click Library in the header path to return to your Library.',
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Tracking Menu',
+				text: 'Tracking menu content adapts to your connected services and lets you sync reading progress.',
+				selector: '#tracking-sites .menu-simple',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'link',
+				onShow: function() {
+					tutorial._openMenu('#tracking-sites', '.reading-header .button-tracking-sites');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Open More Options',
+				text: 'Click More Options for UI visibility toggles, page number visibility, fullscreen toggle, and quick app close action.',
+				selector: '.reading-header .button-more-options',
+				position: 'bottom',
+				dialogCorner: 'bottom-right',
+				icon: 'more_vert',
+				requireAction: true,
+				actionHint: 'Click More Options.',
+				advanceOn: { type: 'click', useTarget: true },
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'More Options Toggles',
+				text: 'Hide header/sidebar, show page numbers, and toggle fullscreen from this panel.',
+				selector: '#reading-more-options .menu-simple-text .switch',
+				position: 'left',
+				dialogCorner: 'bottom-right',
+				icon: 'tune',
+				onShow: function() {
+					tutorial._openMenu('#reading-more-options', '.reading-header .button-more-options');
+				},
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Reading Music (If Available)',
+				text: 'If music packs are available, this button opens soundtrack controls for reading sessions.',
+				getTarget: function() {
+					return document.querySelector('.reading-header .button-reading-music') || null;
+				},
+				position: 'bottom',
+				icon: 'queue_music',
+				requiresSampleReading: true,
+			},
+			{
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Reading Context Menu',
+				text: 'Right-click while reading for context actions: set poster, save/copy image, export bookmark images, open file location, and file info.',
 				selector: null,
+				position: 'center',
+				icon: 'mouse',
+				requiresSampleReading: true,
+			},
+			{
+				id: 'back-to-library',
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'Back To Library',
+				text: 'Click Library in the breadcrumb (or back arrow) to return to your library home.',
 				getTarget: function() {
 					return tutorial._findHeaderBreadcrumb('Library')
 						|| document.querySelector('.reading-header .bar-title .bar-title-a')
 						|| document.querySelector('.reading-header .bar-back');
 				},
 				position: 'right',
-				icon: 'book',
+				icon: 'arrow_back',
 				requireAction: true,
+				actionHint: 'Click Library breadcrumb or back arrow.',
 				advanceOn: { type: 'click', useTarget: true, selector: '.reading-header .bar-title .bar-title-a, .reading-header .bar-back' },
 				requiresSampleReading: true,
 			},
-
-			// === FINISH ===
 			{
-				title: 'You\'re all set!',
-				text: 'You\'ve opened the sample and practiced the core reading tools. Add your own library folders anytime, and restart this tutorial from Settings if you want a refresher.',
+				chapter: 'Bookmarks, Tracking, And Finish',
+				title: 'You Finished The Full Interactive Tour',
+				text: 'You just walked through every major OpenComic feature surface: library tools, settings, shortcuts/tap zones, and complete reading workflows (layout, filters, AI, magnifier, bookmarks, tracking, and utility menus).\n\nYou can restart this tour anytime from Settings.',
 				selector: null,
 				position: 'center',
 				icon: 'celebration',
@@ -360,38 +1132,116 @@ var tutorial = {
 		];
 	},
 
+	_tryClick: function(selector) {
+		var el = document.querySelector(selector);
+		if (!el || typeof el.click !== 'function') return false;
+		el.click();
+		return true;
+	},
+
+	_openMenu: function(menuSelector, buttonSelector) {
+		var menuSimple = document.querySelector(menuSelector + ' .menu-simple');
+		var isOpen = !!(menuSimple && menuSimple.classList.contains('a'));
+		if (!isOpen && buttonSelector) tutorial._tryClick(buttonSelector);
+	},
+
+	_openSettingsTab: function(tabName) {
+		if (!document.querySelector('.settings-body')) {
+			tutorial._tryClick('.content-left .menu-item-settings');
+		}
+
+		var tab = document.querySelector('.settings-body .tabs [data-name="' + tabName + '"]');
+		if (tab && !tab.classList.contains('active')) {
+			tab.click();
+		}
+	},
+
+	_openReadingPagesTab: function(tabName) {
+		var buttonMap = {
+			'page-layout': '.reading-header .button-page-layout',
+			'ebook-layout': '.reading-header .button-ebook-layout',
+			'filters': '.reading-header .button-filters',
+			'ai': '.reading-header .button-ai',
+		};
+
+		tutorial._openMenu('#reading-pages', buttonMap[tabName] || '.reading-header .button-page-layout');
+
+		var tab = document.querySelector('#reading-pages .tabs [data-name="' + tabName + '"]');
+		if (tab && !tab.classList.contains('active')) {
+			tab.click();
+		}
+	},
+
+	_getChapterMeta: function(stepIndex) {
+		var chapters = [];
+		var chapterIndex = {};
+
+		for (var i = 0; i < tutorial._steps.length; i++) {
+			var chapter = tutorial._steps[i].chapter;
+			if (!chapter || chapterIndex[chapter]) continue;
+			chapterIndex[chapter] = chapters.length + 1;
+			chapters.push(chapter);
+		}
+
+		var currentStep = tutorial._steps[stepIndex] || {};
+		var currentChapter = currentStep.chapter || '';
+
+		return {
+			title: currentChapter,
+			number: chapterIndex[currentChapter] || 1,
+			total: chapters.length || 1,
+		};
+	},
+
 	hasSample: function() {
 		try {
 			if (typeof fs === 'undefined' || typeof p === 'undefined')
 				return false;
 
-			if (typeof document !== 'undefined') {
-				const cards = Array.from(document.querySelectorAll('.content-view-module .v-text'));
-				const inLibrary = cards.some(el => (el.textContent || '').trim() === 'Pepper & Carrot');
-				if (!inLibrary)
-					return false;
-			}
+			let sampleExists = false;
+			let sampleDeleted = false;
 
 			if (typeof storage !== 'undefined' && typeof storage.get === 'function') {
+				const config = storage.get('config') || {};
+				sampleDeleted = config.pepperCarrotDeleted === true;
+
 				const comics = storage.get('comics') || [];
+
 				for (let i = 0, len = comics.length; i < len; i++) {
 					const comic = comics[i];
-					if (!comic || comic.name !== 'Pepper & Carrot')
+					if (!comic)
+						continue;
+
+					const isSample = (typeof storage.isPepperCarrotPath === 'function' && storage.isPepperCarrotPath(comic.path)) || comic.name === 'Pepper & Carrot';
+					if (!isSample)
 						continue;
 
 					let samplePath = comic.path || '';
 					if (typeof relative !== 'undefined' && typeof relative.resolve === 'function')
 						samplePath = relative.resolve(samplePath);
 
-					if (samplePath && fs.existsSync(samplePath))
-						return true;
+					if (samplePath && fs.existsSync(samplePath)) {
+						sampleExists = true;
+						break;
+					}
 				}
 			}
 
-			if (typeof appDir !== 'undefined')
-				return fs.existsSync(p.join(appDir, 'Pepper & Carrot'));
+			if (sampleDeleted && !sampleExists)
+				return false;
 
-			return false;
+			if (!sampleExists && typeof appDir !== 'undefined') {
+				let fallbackPath = p.join(appDir, 'Pepper & Carrot');
+				if (typeof asarToAsarUnpacked === 'function')
+					fallbackPath = asarToAsarUnpacked(fallbackPath);
+
+				sampleExists = fs.existsSync(fallbackPath);
+			}
+
+			if (sampleExists && typeof storage !== 'undefined' && typeof storage.ensurePepperCarrotInComics === 'function')
+				storage.ensurePepperCarrotInComics(false, true);
+
+			return sampleExists;
 		}
 		catch (error) {
 			return false;
@@ -443,7 +1293,7 @@ var tutorial = {
 		overlay.className = 'tutorial-overlay';
 		overlay.addEventListener('click', function(e) {
 			if (e.target === overlay) {
-				// Click on backdrop does nothing — must use buttons
+				// Click on backdrop does nothing - must use buttons
 			}
 		});
 
@@ -487,9 +1337,15 @@ var tutorial = {
 			return;
 		}
 
+		try {
+
 		if (step.id === 'open-sample') {
 			if (tutorial._isReadingSample()) {
-				var readingIndex = tutorial._findStepIndexById('reading-next');
+				var readingIndex = tutorial._findStepIndexById('reading-lab-start');
+				if (readingIndex === -1)
+					readingIndex = tutorial._findStepIndexById('reveal-top-bar');
+				if (readingIndex === -1)
+					readingIndex = tutorial._findStepIndexById('reading-next');
 				if (readingIndex !== -1) {
 					tutorial._stepIndex = readingIndex;
 					return tutorial._showStep();
@@ -504,7 +1360,11 @@ var tutorial = {
 		}
 
 		if (step.id === 'open-episode-1' && tutorial._isReadingSample()) {
-			var nextIndex = tutorial._findStepIndexById('reading-next');
+			var nextIndex = tutorial._findStepIndexById('reading-lab-start');
+			if (nextIndex === -1)
+				nextIndex = tutorial._findStepIndexById('reveal-top-bar');
+			if (nextIndex === -1)
+				nextIndex = tutorial._findStepIndexById('reading-next');
 			if (nextIndex !== -1) {
 				tutorial._stepIndex = nextIndex;
 				return tutorial._showStep();
@@ -519,17 +1379,33 @@ var tutorial = {
 			}
 		}
 
+		if (typeof step.onShow === 'function') {
+			try {
+				step.onShow();
+			}
+			catch (error) {
+				// Ignore non-critical tutorial prep errors
+			}
+		}
+
 		var targetEl = tutorial._resolveTarget(step);
 
 		// Build dialog content
 		var totalSteps = tutorial._steps.length;
 		var currentStep = tutorial._stepIndex + 1;
+		var chapterMeta = tutorial._getChapterMeta(tutorial._stepIndex);
 
 		var html = '';
+		if (step.chapter) {
+			html += '<div class="tutorial-dialog-kicker label-small">Chapter ' + chapterMeta.number + ' of ' + chapterMeta.total + ' - ' + tutorial._escapeHtml(step.chapter) + '</div>';
+		}
 		html += '<div class="tutorial-dialog-header">';
 		html += '<i class="material-icon tutorial-dialog-icon">' + (step.icon || 'info') + '</i>';
 		html += '<span class="tutorial-dialog-title title-medium">' + tutorial._escapeHtml(step.title) + '</span>';
 		html += '</div>';
+		if (step.mission) {
+			html += '<div class="tutorial-dialog-mission body-small">' + tutorial._formatText(step.mission) + '</div>';
+		}
 		html += '<div class="tutorial-dialog-body body-medium">' + tutorial._formatText(step.text) + '</div>';
 		html += '<div class="tutorial-dialog-footer">';
 		html += '<span class="tutorial-dialog-progress body-small">' + currentStep + ' / ' + totalSteps + '</span>';
@@ -552,7 +1428,8 @@ var tutorial = {
 		}
 		html += '</div>';
 		if (step.requireAction === true) {
-			html += '<div class="tutorial-dialog-hint body-small"></div>';
+			var hint = step.actionHint || 'Complete the highlighted action to continue automatically.';
+			html += '<div class="tutorial-dialog-hint body-small">' + tutorial._escapeHtml(hint) + '</div>';
 		}
 		html += '</div>';
 
@@ -569,7 +1446,43 @@ var tutorial = {
 			tutorial._positionDialogCorner(step.dialogCorner);
 		}
 
+		if (!targetEl && (step.selector || step.getTarget) && !step.requireAction && !step.advanceOn) {
+			var retries = 0;
+			tutorial._actionPoll = setInterval(function() {
+				retries++;
+				var lateTarget = tutorial._resolveTarget(step);
+				if (lateTarget) {
+					tutorial._positionOnElement(lateTarget, step.position);
+					if (step.dialogCorner) tutorial._positionDialogCorner(step.dialogCorner);
+					clearInterval(tutorial._actionPoll);
+					tutorial._actionPoll = null;
+					return;
+				}
+
+				if (retries > 40) {
+					clearInterval(tutorial._actionPoll);
+					tutorial._actionPoll = null;
+				}
+			}, 250);
+		}
+
 		tutorial._bindStepAction(step, targetEl);
+		}
+		catch (error) {
+			if (typeof console !== 'undefined' && typeof console.error === 'function')
+				console.error('Tutorial step render failed', step && step.id ? step.id : 'unknown-step', error);
+
+			tutorial._cleanup();
+
+			if (typeof events !== 'undefined' && typeof events.snackbar === 'function') {
+				events.snackbar({
+					key: 'tutorialRenderError',
+					text: 'Tutorial had a display issue and was closed. Start it again from Settings.',
+					duration: 8,
+					update: true,
+				});
+			}
+		}
 	},
 
 	_findLibraryItemByName: function(name, ensureLibraryView, pathToken) {
@@ -611,16 +1524,71 @@ var tutorial = {
 	},
 
 	_isReadingSample: function() {
-		if (typeof onReading === 'undefined' || !onReading) return false;
-		if (typeof reading === 'undefined' || typeof reading.readingCurrentPath !== 'function') return false;
-		var current = reading.readingCurrentPath();
-		if (!current || typeof current !== 'string') return false;
-		return /Pepper\s*&\s*Carrot/i.test(current);
+		var isReading = false;
+
+		if (typeof reading !== 'undefined' && reading && typeof reading.onReading === 'function')
+			isReading = !!reading.onReading();
+		else if (typeof onReading !== 'undefined')
+			isReading = !!onReading;
+
+		if (!isReading && !document.querySelector('.reading-body, .reading-header, .reading-lens'))
+			return false;
+
+		var candidates = [];
+
+		if (typeof reading !== 'undefined' && reading) {
+			if (typeof reading.readingCurrentPath === 'function') {
+				var currentPath = reading.readingCurrentPath();
+				if (currentPath && typeof currentPath === 'string')
+					candidates.push(currentPath);
+			}
+
+			if (typeof reading.readingFile === 'function') {
+				var currentFile = reading.readingFile();
+				if (currentFile && typeof currentFile === 'string')
+					candidates.push(currentFile);
+			}
+		}
+
+		if (typeof dom !== 'undefined' && dom.history && typeof dom.history.path === 'string')
+			candidates.push(dom.history.path);
+
+		var crumbs = document.querySelectorAll('.reading-header .bar-title .bar-title-a');
+		for (var i = 0; i < crumbs.length; i++) {
+			var crumbText = (crumbs[i].textContent || '').trim();
+			if (crumbText)
+				candidates.push(crumbText);
+		}
+
+		if (!candidates.length)
+			return isReading;
+
+		var samplePattern = /pepper\s*&\s*carrot|episode\s*1,\s*potion\s*of\s*flight/i;
+
+		for (var j = 0; j < candidates.length; j++) {
+			if (samplePattern.test(String(candidates[j] || '')))
+				return true;
+		}
+
+		return false;
 	},
 
 	_isInSampleLibrary: function() {
 		if (typeof dom === 'undefined' || !dom.history || !dom.history.path) return false;
 		return /Pepper\s*&\s*Carrot/i.test(dom.history.path);
+	},
+
+	_isReadingHeaderVisible: function() {
+		var nextButton = document.querySelector('.reading-header .button-next');
+		if (!nextButton)
+			return false;
+
+		var rect = nextButton.getBoundingClientRect();
+		if (rect.width < 2 || rect.height < 2)
+			return false;
+
+		var style = window.getComputedStyle(nextButton);
+		return !!style && style.display !== 'none' && style.visibility !== 'hidden';
 	},
 
 	_resolveTarget: function(step) {
@@ -639,16 +1607,13 @@ var tutorial = {
 				|| document.querySelector('.reading-header .bar-back')
 				|| document.querySelector('.reading-header .bar-title');
 		}
+		if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+			targetEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'auto' });
+		}
 		if (targetEl) {
 			var rect = targetEl.getBoundingClientRect();
-			if (rect.width < 2 || rect.height < 2) {
-				var fallback = document.querySelector('.reading-header .bar-title .bar-title-a')
-					|| document.querySelector('.reading-header .bar-title');
-				if (fallback) targetEl = fallback;
-			}
-		}
-		if (targetEl && typeof targetEl.scrollIntoView === 'function') {
-			targetEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+			if (rect.width < 2 || rect.height < 2)
+				targetEl = null;
 		}
 		return targetEl;
 	},
@@ -724,6 +1689,16 @@ var tutorial = {
 		}
 
 		tutorial._actionPoll = setInterval(function() {
+			if (step.id === 'open-sample' && tutorial._isInSampleLibrary()) {
+				tutorial.next();
+				return;
+			}
+
+			if (step.id === 'open-episode-1' && tutorial._isReadingSample()) {
+				tutorial.next();
+				return;
+			}
+
 			var el = tutorial._resolveTarget(step);
 			if (!el) return;
 			tutorial._positionOnElement(el, step.position);
@@ -811,23 +1786,26 @@ var tutorial = {
 		// Calculate position
 		var winW = window.innerWidth;
 		var winH = window.innerHeight;
+		var dialogHeight = tutorial._dialog.getBoundingClientRect().height || 280;
+		dialogHeight = Math.min(dialogHeight, Math.max(200, winH - dialogMargin * 2));
+		var maxTop = Math.max(dialogMargin, winH - dialogHeight - dialogMargin);
 
 		switch (position) {
 			case 'right':
 				tutorial._dialog.style.left = Math.min(rect.right + dialogMargin, winW - dialogWidth - dialogMargin) + 'px';
-				tutorial._dialog.style.top = Math.max(dialogMargin, Math.min(rect.top - 20, winH - 300)) + 'px';
+				tutorial._dialog.style.top = Math.max(dialogMargin, Math.min(rect.top - 20, maxTop)) + 'px';
 				return true;
 			case 'left':
 				tutorial._dialog.style.left = Math.max(dialogMargin, rect.left - dialogWidth - dialogMargin) + 'px';
-				tutorial._dialog.style.top = Math.max(dialogMargin, Math.min(rect.top - 20, winH - 300)) + 'px';
+				tutorial._dialog.style.top = Math.max(dialogMargin, Math.min(rect.top - 20, maxTop)) + 'px';
 				return true;
 			case 'bottom':
 				tutorial._dialog.style.left = Math.max(dialogMargin, Math.min(rect.left, winW - dialogWidth - dialogMargin)) + 'px';
-				tutorial._dialog.style.top = Math.min(rect.bottom + dialogMargin, winH - 250) + 'px';
+				tutorial._dialog.style.top = Math.max(dialogMargin, Math.min(rect.bottom + dialogMargin, maxTop)) + 'px';
 				return true;
 			case 'top':
 				tutorial._dialog.style.left = Math.max(dialogMargin, Math.min(rect.left, winW - dialogWidth - dialogMargin)) + 'px';
-				tutorial._dialog.style.bottom = (winH - rect.top + dialogMargin) + 'px';
+				tutorial._dialog.style.top = Math.max(dialogMargin, Math.min(rect.top - dialogHeight - dialogMargin, maxTop)) + 'px';
 				return true;
 			default:
 				return false;

@@ -1696,10 +1696,8 @@ function pickAtRandom() {
 	const random = Math.floor(Math.random() * comics.length);
 	const item = comics[random];
 
-	const onclick = item.getAttribute('onclick');
-
-	if (onclick)
-		eval(onclick);
+	if (item && typeof item.click === 'function')
+		item.click();
 }
 
 async function _getFolderThumbnails(file, images, _images, path, folderSha, isAsync = false, forceSize = false) {
@@ -2670,11 +2668,9 @@ async function comicContextMenu(path, mainPath, fromIndex = true, fromIndexNotMa
 
 	let isServer = fileManager.isServer(path);
 	if (fileManager.isOpds(path)) {
-		const onclick = this.getAttribute('onclick');
-
-		if (onclick) {
+		if (this && typeof this.click === 'function') {
 			opds.fromContextMenu = true;
-			eval(onclick);
+			this.click();
 		}
 
 		return;
@@ -3694,6 +3690,11 @@ function renamePath(path, name = '') {
 // Remove the comic from OpenComic
 function removeComic(path, confirm = false, reload = true) {
 	path = relative.path(path);
+
+	if (typeof storage.isPepperCarrotPath === 'function' && storage.isPepperCarrotPath(path)) {
+		storage.updateVar('config', 'pepperCarrotDeleted', true);
+	}
+
 	var _comics = [], comics = storage.get('comics');
 
 	for (let i in comics) {

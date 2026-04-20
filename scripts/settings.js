@@ -191,6 +191,8 @@ function removeTemporaryFiles(onClose = false) {
 		storage.set('recommendationFeedback', {});
 		storage.set('recentlyOpened', {});
 		storage.set('comics', []);
+		if (typeof storage.ensurePepperCarrotInComics === 'function')
+			storage.ensurePepperCarrotInComics([], true);
 		storage.set('readingProgress', {});
 		storage.set('readingPages', {});
 		if (typeof dom !== 'undefined' && dom.boxes && dom.boxes.reset) {
@@ -813,6 +815,10 @@ function setTurnPagesWithMouseWheelShortcut(active, generate = true) {
 }
 
 function generateShortcutsTable(highlightItem = false) {
+	const contentRight = template._contentRight();
+	if (!contentRight)
+		return false;
+
 	let list = shortcuts.shortcuts();
 
 	// Keyboard
@@ -903,13 +909,18 @@ function generateShortcutsTable(highlightItem = false) {
 
 	handlebarsContext.shortcuts = actions;
 
-	let table = template._contentRight().querySelector('.settings-shortcuts-table');
+	let table = contentRight.querySelector('.settings-shortcuts-table');
+	if (!table)
+		return false;
+
 	table.innerHTML = template.load('settings.content.right.shortcuts.html');
 
 	gamepad.updateBrowsableItems('settings', false, !(highlightItem !== false));
 	if (highlightItem !== false) gamepad.highlightItem(highlightItem);
 
 	generateTapZonesTable(list);
+
+	return true;
 }
 
 var recording = false;
@@ -1003,6 +1014,10 @@ function restoreShortcuts() {
 }
 
 function generateTapZonesTable(list) {
+	const contentRight = template._contentRight();
+	if (!contentRight)
+		return false;
+
 	const tapZones = app.copy(list.reading.tapZones);
 
 	for (let vertical in tapZones) {
@@ -1016,8 +1031,13 @@ function generateTapZonesTable(list) {
 
 	handlebarsContext.tapZones = tapZones;
 
-	let table = template._contentRight().querySelector('.settings-tap-zones-table');
+	let table = contentRight.querySelector('.settings-tap-zones-table');
+	if (!table)
+		return false;
+
 	table.innerHTML = template.load('settings.content.right.tap.zones.html');
+
+	return true;
 }
 
 var currentTapZone = {};

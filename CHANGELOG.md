@@ -34,6 +34,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix hidden top-bar center toggle not triggering in webtoon/scroll reading so the same center tap/click zone works across all reading modes.
 - Fix webtoon center-zone cursor feedback/hit-area mismatch by aligning pointer-hover geometry with the same effective area used in other reading modes.
 - Fix duplicated/unclean search history entries by normalizing and de-duplicating saved recent-search terms.
+- Fix Settings > Shortcuts occasionally appearing empty by hardening tab content regeneration and container checks during tab activation.
+- Fix tutorial step progression race conditions when opening Pepper & Carrot and Episode 1 by improving async state detection and step auto-routing.
+- Fix tutorial overlay/dialog disappearing or appearing off-screen when step targets are temporarily hidden during tab/view transitions.
+- Fix tutorial getting stuck around the hidden top-bar onboarding by adding an explicit center-zone guidance card and non-blocking progression behavior.
+- Fix Pepper & Carrot bundled sample memory across startup and temporary-file cleanup, while preserving explicit user deletion intent unless manually re-added.
+- Fix scroll reading line-preservation state typo (`heigth` -> `height`) that could cause unstable position restoration.
+- Fix chapter-skip/touch-hover timer callbacks using string-based timeouts, preventing brittle runtime behavior with escaped path/code strings.
+- Fix eval-based click execution in random pick, OPDS context, and gamepad back navigation paths by dispatching native click handlers directly.
 
 ##### Optimizations & Stability
 
@@ -45,6 +53,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Improve image resize resilience for corrupted JPEG streams by using safer Sharp retry options (`sequentialRead`, tolerant retries with `failOn: none`).
 - Improve reading smoothness on large chapters/PDFs with stronger source priming and queue stability changes that reduce visible loading gaps without increasing startup overhead.
 - Improve end-of-chapter handoff smoothness by preloading first pages of the next inferred chapter after a short idle delay, with cancellation guards and bounded preload tracking.
+- Improve tutorial resilience with fail-safe cleanup/snackbar behavior when a step render throws, preventing stuck dark-overlay states.
+- Improve runtime safety by replacing active string-evaluated timeout callbacks with direct function callbacks in reading/events flows.
 
 ## v1.7.6 (05-03-2026)
 

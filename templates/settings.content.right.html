@@ -7,7 +7,7 @@
 				<span class="material-icon">tune</span>{{language.settings.general}}
 			</div>
 
-			<div class="title-medium gamepad-item{{#compare settingsTab '==' 'shortcuts'}} active{{/compare}}" data-name="shortcuts" data-on-end-animation="gamepad.updateBrowsableItems(gamepad.currentKey())">
+			<div class="title-medium gamepad-item{{#compare settingsTab '==' 'shortcuts'}} active{{/compare}}" data-name="shortcuts" data-on-end-animation="settings.generateShortcutsTable(); gamepad.updateBrowsableItems(gamepad.currentKey())">
 				<span class="material-icon">keyboard</span>{{language.settings.shortcuts.main}}
 			</div>
 		</div>

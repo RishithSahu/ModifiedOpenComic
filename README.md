@@ -26,15 +26,16 @@ More [Screenshots 📸](/SCREENSHOTS.MD)
 
 - 🌄 Support these image formats: `JPG`, `JP2`, `JXR`, `JXL`, `PNG`, `APNG`, `AVIF`, `HEIC`, `WEBP`, `GIF`, `SVG`, `BMP`, `ICO`
 - 📦 Support these compressed formats: `RAR`, `ZIP`, `7Z`, `TAR`, `LZH`, `ACE`, `CBR`, `CBZ`, `CBA`, `CB7`, `CBT`
-- 📄 Support these document/ebook formats: `PDF`, `EPUB` (Alpha)
+- 📄 Support these document/ebook formats: `PDF`, `EPUB`
 - 🎵 Support background music from folder: `MP3`, `M4A`, `MP4`, `WEBM`, `WEBA`, `OGG`, `OPUS`, `WAV`, `FLAC`
 - ☁️ Server connection support: `smb://`, `ftp://`, `ftps://`, `scp://`, `sftp://`, `ssh://`, `s3://`, `webdav://`, `webdavs://`
 - 📁 Master folders support
 - 📚 OPDS support
-<!-- - 🗂️ Tab support -->
-<!-- - 🪟 Multi-window support -->
+- 🗂️ Tab support
+- 🪟 Multi-window support
 - ❤️ Favorite labels
 - 🏷️ Custom labels
+- 🎓 Interactive in-app tutorial walkthrough
 - 🇯🇵 Manga read mode
 - 🇰🇷 Webtoon read mode
 - 📖 Double page view
@@ -43,16 +44,18 @@ More [Screenshots 📸](/SCREENSHOTS.MD)
 - 🖱️ Reading in scroll or slide
 - ⚪ Adjust the brightness, saturation, contrast, sepia, negative and invert colors
 - 🎨 Colorize black and white images
+- ✨ AI tools: Artifact Removal, Descreen, and Upscale
 - 🔄 Tracking with sites (AniList and MyAnimeList)
 - 🎮 Gamepad navigation
 - ⌨️ Custom shortcuts and tap zones
+- 🔎 Advanced library search with saved searches
 - 🔢 Multiple interpolation methods: `lanczos3`, `lanczos2`, `mitchell`, `cubic`, `linear`, `nearest` and others
 
 You can see the changes between versions in the [Changelog 📝](/CHANGELOG.md)
 
 <a id="download"></a>
 
-## Download [`v1.6.5`](https://github.com/ollm/OpenComic/releases)
+## Download [`v1.7.7`](https://github.com/ollm/OpenComic/releases/tag/v1.7.7)
 
 ###### Stores
 <a href="https://apps.microsoft.com/detail/9PDCMVNFZ2KK"><img height="50" alt="Get it from Microsoft" title="Get it from Microsoft" src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/store/microsoft-store.svg" /></a>
@@ -61,43 +64,43 @@ You can see the changes between versions in the [Changelog 📝](/CHANGELOG.md)
 &nbsp;&nbsp;&nbsp;<a href="https://flathub.org/apps/app.opencomic.OpenComic"><img height="50" alt="Get it on Flathub" title="Get it on Flathub" src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/store/flathub-store.svg" /></a>
 
 ###### Windows
-- [.exe](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic.Setup.1.6.5.exe)
-- [portable.exe](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic.Portable.1.6.5.exe)
-- [folder.portable.exe](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic.Folder.Portable.1.6.5.exe)
-- [folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-Folder-Portable-1.6.5.7z)
+- [.exe](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic.Setup.1.7.7.exe)
+- [portable.exe](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic.Portable.1.7.7.exe)
+- [folder.portable.exe](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic.Folder.Portable.1.7.7.exe)
+- [folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-Folder-Portable-1.7.7.7z)
 
 ###### Windows Arm64
-- [arm64.exe](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic.Setup.1.6.5.arm64.exe)
+- [arm64.exe](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic.Setup.1.7.7.arm64.exe)
 
 ###### macOS
-- [.dmg](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5.dmg)
-- [.pkg](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5.pkg)
-- [.7z](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5-mac.7z)
+- [.dmg](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7.dmg)
+- [.pkg](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7.pkg)
+- [.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-mac.7z)
 
 ###### macOS Arm64
-- [arm64.dmg](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5-arm64.dmg)
-- [arm64.pkg](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5-arm64.pkg)
-- [arm64.7z](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5-arm64-mac.7z)
+- [arm64.dmg](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-arm64.dmg)
+- [arm64.pkg](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-arm64.pkg)
+- [arm64.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-arm64-mac.7z)
 
 ###### Linux
-- [.deb](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic_1.6.5_amd64.deb)
-- [.rpm](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic-1.6.5.x86_64.rpm)
-- [.7z](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic-1.6.5.7z)
-- [.tar.gz](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic-1.6.5.tar.gz)
-- [.snap](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic_1.6.5_amd64.snap)
-- [.flatpak](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5-x86_64.flatpak)
-- [.AppImage](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5.AppImage)
+- [.deb](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic_1.7.7_amd64.deb)
+- [.rpm](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7.x86_64.rpm)
+- [.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7.7z)
+- [.tar.gz](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7.tar.gz)
+- [.snap](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic_1.7.7_amd64.snap)
+- [.flatpak](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-x86_64.flatpak)
+- [.AppImage](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7.AppImage)
 - [AUR](https://aur.archlinux.org/packages/opencomic-bin/) by [@z00rat](https://github.com/z00rat)
-- [folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic-folder-portable-linux-1.6.5.7z)
+- [folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-folder-portable-linux-1.7.7.7z)
 
 ###### Linux Arm64
-- [arm64.deb](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic_1.6.5_arm64.deb)
-- [arm64.rpm](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic-1.6.5.aarch64.rpm)
-- [arm64.7z](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic-1.6.5-arm64.7z)
-- [arm64.tar.gz](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic-1.6.5-arm64.tar.gz)
-- [arm64.flatpak](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5-aarch64.flatpak)
-- [arm64.AppImage](https://github.com/ollm/OpenComic/releases/download/v1.6.5/OpenComic-1.6.5-arm64.AppImage)
-- [arm64.folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.6.5/opencomic-folder-portable-linux-1.6.5-arm64.7z)
+- [arm64.deb](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic_1.7.7_arm64.deb)
+- [arm64.rpm](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7.aarch64.rpm)
+- [arm64.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7-arm64.7z)
+- [arm64.tar.gz](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7-arm64.tar.gz)
+- [arm64.flatpak](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-aarch64.flatpak)
+- [arm64.AppImage](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-arm64.AppImage)
+- [arm64.folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-folder-portable-linux-1.7.7-arm64.7z)
 
 ## Website
 
@@ -108,8 +111,8 @@ You can see the changes between versions in the [Changelog 📝](/CHANGELOG.md)
 __Requirements__: Git, Node and NPM
 
 ```shell
-git clone https://github.com/ollm/OpenComic.git
-cd OpenComic
+git clone https://github.com/RishithSahu/ModifiedOpenComic.git
+cd ModifiedOpenComic
 npm install
 npm start
 ```
@@ -117,12 +120,12 @@ npm start
 ## Build from source
 
 ```shell
-npm pull origin master
+git pull origin main
 npm install
 npm run build-<buildType>
 ```
 
-Available builds types:
+Available build types:
 
 - Windows: `nsis` , `portable`
 - macOS: `mac-dmg`, `mac-pkg` (Both include `arm`)

@@ -589,6 +589,154 @@ const storageDefault = {
 	},
 };
 
+function pepperCarrotPath()
+{
+	let path = p.join(appDir, 'Pepper & Carrot');
+
+	if(typeof asarToAsarUnpacked === 'function')
+		path = asarToAsarUnpacked(path);
+
+	return relative.path(path);
+}
+
+function normalizeComparePath(path)
+{
+	if(!path || typeof path !== 'string')
+		return '';
+
+	let normalized = '';
+
+	try
+	{
+		normalized = relative.resolve(path) || path;
+	}
+	catch
+	{
+		normalized = path;
+	}
+
+	normalized = p.normalize(normalized).replace(/[\\/]+$/u, '').toLowerCase();
+
+	return normalized;
+}
+
+function isPepperCarrotPath(path)
+{
+	const normalizedPath = normalizeComparePath(path);
+
+	if(!normalizedPath)
+		return false;
+
+	const samplePath = normalizeComparePath(pepperCarrotPath());
+
+	if(samplePath && normalizedPath === samplePath)
+		return true;
+
+	return /pepper\s*&\s*carrot/iu.test(p.basename(normalizedPath));
+}
+
+function pepperCarrotEntry()
+{
+	return {
+		name: 'Pepper & Carrot',
+		path: pepperCarrotPath(),
+		added: 0,
+		compressed: false,
+		bookmark: false,
+		folder: true,
+		readingProgress: {
+			index: 0,
+			path: '',
+			lastReading: 0,
+			progress: 0,
+		},
+	};
+}
+
+function ensurePepperCarrotInComics(comics = false, persist = true)
+{
+	let list = Array.isArray(comics) ? comics.slice(0) : (Array.isArray(storageJson.comics) ? storageJson.comics.slice(0) : []);
+	const configData = storageJson.config || {};
+	const samplePath = relative.resolve(pepperCarrotPath());
+
+	if(configData.pepperCarrotDeleted === true)
+	{
+		const stillPresent = list.some(function(comic) {
+			return comic && isPepperCarrotPath(comic.path);
+		});
+
+		if(stillPresent)
+		{
+			storageJson.config.pepperCarrotDeleted = false;
+
+			if(persist)
+			{
+				setData('config', storageJson.config);
+				setLastUpdate('config');
+			}
+		}
+
+		return list;
+	}
+
+	if(!samplePath || !fs.existsSync(samplePath))
+		return list;
+
+	let foundIndex = -1;
+
+	for(let i = 0, len = list.length; i < len; i++)
+	{
+		const comic = list[i];
+
+		if(comic && isPepperCarrotPath(comic.path))
+		{
+			foundIndex = i;
+			break;
+		}
+	}
+
+	let changed = false;
+	const canonicalPath = pepperCarrotPath();
+
+	if(foundIndex === -1)
+	{
+		list.push(pepperCarrotEntry());
+		changed = true;
+	}
+	else
+	{
+		const comic = list[foundIndex] || {};
+		const merged = {
+			...comic,
+			name: 'Pepper & Carrot',
+			path: canonicalPath,
+			compressed: false,
+			folder: true,
+			readingProgress: comic.readingProgress || {
+				index: 0,
+				path: '',
+				lastReading: 0,
+				progress: 0,
+			},
+		};
+
+		if(merged.name !== comic.name || merged.path !== comic.path || merged.compressed !== comic.compressed || merged.folder !== comic.folder || merged.readingProgress !== comic.readingProgress)
+		{
+			list[foundIndex] = merged;
+			changed = true;
+		}
+	}
+
+	if(persist && changed)
+	{
+		storageJson.comics = list;
+		setData('comics', list);
+		setLastUpdate('comics');
+	}
+
+	return list;
+}
+
 const syncIgnoreKeys = ['cache', 'tmpUsage'];
 const storageJson = {};
 
@@ -1001,6 +1149,8 @@ async function start(callback)
 		}
 	}
 
+	ensurePepperCarrotInComics(false, true);
+
 	callback();
 }
 
@@ -1162,4 +1312,7 @@ module.exports = {
 	safe,
 	syncInstances,
 	onChangeFromOtherInstance,
+	pepperCarrotPath,
+	isPepperCarrotPath,
+	ensurePepperCarrotInComics,
 };
