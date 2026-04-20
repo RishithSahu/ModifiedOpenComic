@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Improve Continue Reading presentation with updated card/list styling and better metadata prominence.
 - Add AniList-format-aware reading defaults per tracked series folder: manga now defaults to manga reading + double page, while manhwa/manhua now default to webtoon reading.
 - Add per-series folder reading-mode memory so each series keeps its own last-used reading options instead of sharing one global state across different titles.
+- Add power-user library search syntax with field filters (`author:`, `genre:`, `status:`, `tag:`, `label:`, `source:`, `type:`), numeric comparisons (`rating`, `year`, `confidence`, `progress`, `reading time`), keyword tokens (`unread`, `reading`, `read`, `favorite`, `tracked`) and negation.
+- Add saved searches in the search overlay with one-click save/remove actions and quick recall from the suggestion list.
 
 ##### Bug Fixes
 
@@ -31,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix AniList tracked-series reading defaults being skipped when a folder had saved reading config with only unrelated overrides; defaults now still apply unless reading mode was explicitly customized.
 - Fix hidden top-bar center toggle not triggering in webtoon/scroll reading so the same center tap/click zone works across all reading modes.
 - Fix webtoon center-zone cursor feedback/hit-area mismatch by aligning pointer-hover geometry with the same effective area used in other reading modes.
+- Fix duplicated/unclean search history entries by normalizing and de-duplicating saved recent-search terms.
 
 ##### Optimizations & Stability
 
@@ -41,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Improve module-view virtualization accuracy after resize/style drift by calculating visible ranges from live DOM geometry instead of only fixed size presets.
 - Improve image resize resilience for corrupted JPEG streams by using safer Sharp retry options (`sequentialRead`, tolerant retries with `failOn: none`).
 - Improve reading smoothness on large chapters/PDFs with stronger source priming and queue stability changes that reduce visible loading gaps without increasing startup overhead.
+- Improve end-of-chapter handoff smoothness by preloading first pages of the next inferred chapter after a short idle delay, with cancellation guards and bounded preload tracking.
 
 ## v1.7.6 (05-03-2026)
 

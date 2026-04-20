@@ -3749,8 +3749,144 @@ async function deletePermanently(path, fromIndexNotMasterFolders = false, confir
 
 
 var readingActive = false, skipNextComic = false, skipPreviousComic = false;
+const NEXT_CHAPTER_PRELOAD_DELAY = 1200;
+const NEXT_CHAPTER_PRELOAD_CACHE_LIMIT = 64;
+var nextChapterPreloadToken = 0, nextChapterPreloadST = false;
+var preloadedNextChapterPaths = new Map();
+
+function clearNextChapterPreload(invalidateToken = true) {
+	if (nextChapterPreloadST) {
+		clearTimeout(nextChapterPreloadST);
+		nextChapterPreloadST = false;
+	}
+
+	if (invalidateToken)
+		nextChapterPreloadToken++;
+}
+
+function normalizeChapterPath(path = '') {
+	return (typeof path === 'string' && path) ? p.normalize(path) : '';
+}
+
+function hasPreloadedNextChapter(path = '') {
+	const normalizedPath = normalizeChapterPath(path);
+
+	if (!normalizedPath)
+		return false;
+
+	return preloadedNextChapterPaths.has(normalizedPath);
+}
+
+function rememberPreloadedNextChapter(path = '') {
+	const normalizedPath = normalizeChapterPath(path);
+
+	if (!normalizedPath)
+		return;
+
+	preloadedNextChapterPaths.set(normalizedPath, Date.now());
+
+	while (preloadedNextChapterPaths.size > NEXT_CHAPTER_PRELOAD_CACHE_LIMIT) {
+		const oldestPath = preloadedNextChapterPaths.keys().next().value;
+
+		if (!oldestPath)
+			break;
+
+		preloadedNextChapterPaths.delete(oldestPath);
+	}
+}
+
+function getNextChapterPreloadCount() {
+	if (reading && typeof reading.readingViewIs === 'function' && reading.readingViewIs('scroll'))
+		return 1;
+
+	return 2;
+}
+
+async function preloadNextChapterFirstPages(nextChapterPath = '', token = 0) {
+	const normalizedPath = normalizeChapterPath(nextChapterPath);
+
+	if (!normalizedPath || token !== nextChapterPreloadToken || hasPreloadedNextChapter(normalizedPath))
+		return false;
+
+	const preloadFile = fileManager.file(normalizedPath, {
+		cacheServer: true,
+		subtask: true,
+		fromThumbnailsGeneration: true,
+		log: false,
+		sort: { extraKey: 'Reading' },
+	});
+
+	try {
+		const preloadCount = getNextChapterPreloadCount();
+		let preloadTargets = await preloadFile.images(preloadCount);
+
+		if (token !== nextChapterPreloadToken)
+			return false;
+
+		if (!preloadTargets)
+			return false;
+
+		if (!Array.isArray(preloadTargets))
+			preloadTargets = [preloadTargets];
+
+		if (!preloadTargets.length)
+			return false;
+
+		await preloadFile.makeAvailable(preloadTargets, false, false, true);
+
+		if (token !== nextChapterPreloadToken)
+			return false;
+
+		rememberPreloadedNextChapter(normalizedPath);
+
+		return true;
+	}
+	catch (error) {
+		return false;
+	}
+	finally {
+		preloadFile.destroy();
+	}
+}
+
+function scheduleNextChapterPreload(currentPath = '', currentMainPath = '', nextChapterPath = '', isCanvas = false, isEbook = false) {
+	clearNextChapterPreload(false);
+
+	const normalizedCurrentPath = normalizeChapterPath(currentPath);
+	const normalizedMainPath = normalizeChapterPath(currentMainPath);
+	const normalizedNextPath = normalizeChapterPath(nextChapterPath);
+
+	if (!normalizedCurrentPath || !normalizedMainPath || !normalizedNextPath || isCanvas || isEbook)
+		return;
+
+	if (fileManager.isServer(normalizedNextPath) || hasPreloadedNextChapter(normalizedNextPath))
+		return;
+
+	const token = ++nextChapterPreloadToken;
+
+	nextChapterPreloadST = setTimeout(async function () {
+
+		nextChapterPreloadST = false;
+
+		if (token !== nextChapterPreloadToken || !onReading || !readingActive)
+			return;
+
+		if (normalizeChapterPath(history.path) !== normalizedCurrentPath || normalizeChapterPath(history.mainPath) !== normalizedMainPath)
+			return;
+
+		const currentHandoffTarget = normalizeChapterPath((reading && typeof reading.manga === 'function' && reading.manga()) ? skipPreviousComic : skipNextComic);
+
+		if (currentHandoffTarget !== normalizedNextPath)
+			return;
+
+		await preloadNextChapterFirstPages(normalizedNextPath, token);
+
+	}, NEXT_CHAPTER_PRELOAD_DELAY);
+}
 
 async function openComic(animation = true, path = true, mainPath = true, end = false, fromGoBack = false, fromNextAndPrev = false) {
+	clearNextChapterPreload();
+
 	settings.purgeTemporaryFilesEveryTimes(10);
 	fileManager.revokeAllObjectURL();
 	reading.render.revokeAllObjectURL();
@@ -3961,6 +4097,9 @@ async function openComic(animation = true, path = true, mainPath = true, end = f
 
 		cache.resumeQueue();
 		reading.discord.update();
+
+		const handoffTarget = (reading && typeof reading.manga === 'function' && reading.manga()) ? skipPreviousComic : skipNextComic;
+		scheduleNextChapterPreload(path, mainPath, handoffTarget, isCanvas, isEbook);
 
 	});
 
