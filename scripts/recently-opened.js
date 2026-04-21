@@ -159,14 +159,14 @@ function set(mainPath)
 	if(recentlyOpenedA.length > config.recentlyOpenedItems)
 	{
 		recentlyOpenedA.sort(function(a, b) {
-		
+
 			if(a.lastOpened == b.lastOpened)
 				return 0;
 
 			return a.lastOpened < b.lastOpened ? 1 : -1;
-			
+
 		});
-	
+
 		for(let i = config.recentlyOpenedItems, len = recentlyOpenedA.length; i < len; i++)
 		{
 			delete recentlyOpened[recentlyOpenedA[i].path];

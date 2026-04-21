@@ -485,7 +485,7 @@ var ebook = function(book, config = {}) {
 				if(node.hasAttribute('id'))
 				{
 					let id = node.getAttribute('id');
-					
+
 					if(!this.chapterIds[id])
 					{
 						this.chapterIds[id] = true;
@@ -889,7 +889,7 @@ var ebook = function(book, config = {}) {
 				}
 			}
 		}*/
-	
+
 		console.timeEnd('separateWords');
 
 		return html;
@@ -931,7 +931,7 @@ var ebook = function(book, config = {}) {
 			let item = href[i];
 			item.setAttribute('href', this.resolvePath(item.getAttribute('href'), basePath));
 		}
-	
+
 		let src = html.querySelectorAll('[src]');
 
 		for(let i = 0, len = src.length; i < len; i++)
@@ -1339,7 +1339,7 @@ async function restartRender(index)
 
 	});
 
-} 
+}
 
 async function jobEndedRenderedEbook(event, index, pages)
 {
@@ -1384,7 +1384,7 @@ async function createRenders(maxThreads = false, callback = false)
 	{
 		if(callback)
 			callback();
-		
+
 		return;
 	}
 
@@ -1448,7 +1448,7 @@ async function createRender(callback)
 	}));
 
 	win.webContents.on('console-message', function(event, level, message, line, sourceId) {
-		
+
 		if(!/Electron Security Warning/iu.test(message))
 			console.error(`Error in render: ${message} ${sourceId}:${line}`);
 

@@ -1160,7 +1160,7 @@ function snackbar(config)
 
 		}, duration * 1000);
 	}
-	else	
+	else
 	{
 		let isset = false;
 
@@ -1311,7 +1311,7 @@ function eventInput()
 			inputs[i].dataset.first = 1;
 		}
 	}
-	
+
 }
 
 function focus(query, end = true)
@@ -1395,7 +1395,7 @@ function loadingProgress(loading, progress = 0)
 		circle.style.transition = 'stroke-dasharray '+speed+'ms linear';
 		circle.style.strokeDashoffset = 300;
 		circle.style.strokeDasharray = 301 + ((dashArray) * progress);
-	
+
 		const circle2 = loading.querySelector('.loading circle:nth-child(2)');
 
 		if(circle2)

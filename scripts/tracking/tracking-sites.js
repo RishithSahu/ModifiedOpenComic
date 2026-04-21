@@ -3,7 +3,7 @@ const sites = [
 		key: 'anilist',
 		name: 'AniList',
 		description: 'Track, Discover, Share Anime & Manga',
-		trackingChapter: true, // Supports chapter tracking 
+		trackingChapter: true, // Supports chapter tracking
 		trackingVolume: true,  // Supports volume tracking
 		url: 'https://anilist.co/',
 		pageUrl: 'https://anilist.co/manga/{{siteId}}',
@@ -12,7 +12,7 @@ const sites = [
 		key: 'myanimelist',
 		name: 'MyAnimeList',
 		description: 'Anime and manga Database and Community',
-		trackingChapter: true, // Supports chapter tracking 
+		trackingChapter: true, // Supports chapter tracking
 		trackingVolume: true,  // Supports volume tracking
 		url: 'https://myanimelist.net/',
 		pageUrl: 'https://myanimelist.net/manga/{{siteId}}',

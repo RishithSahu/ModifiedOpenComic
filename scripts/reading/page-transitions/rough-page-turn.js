@@ -173,7 +173,7 @@ function _pageTurnPercent(percent, readingDirection, leftPrev, rightPrev, leftCu
 	generateShadow(rightCurrent, percentBezier);
 	generateShadow(rightPrev, percentBezier);
 	generateShadow(leftCurrent, percentBezier);
-	generateShadow(leftPrev, percentBezier);	
+	generateShadow(leftPrev, percentBezier);
 }
 
 function pageTurnAnimation(animationDuration, startNow, startPercent, readingDirection, leftPrev, rightPrev, leftCurrent, rightCurrent, reverse = false)

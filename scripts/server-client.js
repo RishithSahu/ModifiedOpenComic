@@ -1674,7 +1674,7 @@ var client = function(path) {
 				opdsAuth.auth.auth = auth;
 
 			}
-		
+
 			this.opds = opdsAuth;
 		}
 		else

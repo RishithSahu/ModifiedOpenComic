@@ -1,4 +1,4 @@
-var _dom = function(_this, string = false, querySelectorAll = false) { 
+var _dom = function(_this, string = false, querySelectorAll = false) {
 
 	this._this = _this;
 
@@ -111,7 +111,7 @@ var _dom = function(_this, string = false, querySelectorAll = false) {
 				if(query === false || parents[i2].matches(query))
 				{
 					newThis.push(parents[i2]);
-				
+
 					if(!all)
 						break;
 				}

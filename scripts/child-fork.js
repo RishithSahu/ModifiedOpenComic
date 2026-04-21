@@ -86,7 +86,7 @@ class ChildFork
 	}
 
 	closeOnFinish() {
-		
+
 		if(!this.promisses.length)
 			this.close();
 		else

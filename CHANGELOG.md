@@ -52,6 +52,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Improve module-view virtualization accuracy after resize/style drift by calculating visible ranges from live DOM geometry instead of only fixed size presets.
 - Improve image resize resilience for corrupted JPEG streams by using safer Sharp retry options (`sequentialRead`, tolerant retries with `failOn: none`).
 - Improve reading smoothness on large chapters/PDFs with stronger source priming and queue stability changes that reduce visible loading gaps without increasing startup overhead.
+- Improve page-turn responsiveness in non-scroll reading modes by prioritizing an immediate near-page render window and deferring wider prefetch so stale jobs no longer block the next page.
+- Improve high-speed page navigation smoothness with frame-based coalesced scroll animation and transition-queue coalescing, reducing stop/start jitter during rapid next/previous actions.
+- Fix unhandled `EncodingError: The source image cannot be decoded` promise rejections from lazy image decode observers, preventing repeated decode fault spam from degrading page-turn smoothness on problematic files.
+- Improve non-scroll reading smoothness under rapid next/previous input by throttling heavy side-effects (sidebar thumbnail refresh, tracking updates, optional filter/music focus work) so transitions stay responsive during burst navigation.
+- Reduce runtime console overhead during reading by keeping verbose navigation/transition/metadata debug logging disabled by default, while preserving internal debug hooks for targeted profiling when needed.
 - Improve end-of-chapter handoff smoothness by preloading first pages of the next inferred chapter after a short idle delay, with cancellation guards and bounded preload tracking.
 - Improve tutorial resilience with fail-safe cleanup/snackbar behavior when a step render throws, preventing stuck dark-overlay states.
 - Improve runtime safety by replacing active string-evaluated timeout callbacks with direct function callbacks in reading/events flows.

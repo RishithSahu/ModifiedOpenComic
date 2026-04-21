@@ -4,9 +4,9 @@ var file = false,
 	ebook = false,
 	ebookConfigChanged = false,
 	renderType = 'canvas',
-	renderImages = false,	
+	renderImages = false,
 	renderCanvas = false,
-	renderEbook = false,	
+	renderEbook = false,
 	imagesData = {},
 	rendering = {},
 	rendered = {},
@@ -328,7 +328,7 @@ function getVisbleImages(doublePage = false)
 	if(next == 0)
 		next = 1;
 
-	return {prev: prev, next: next}; 
+	return {prev: prev, next: next};
 }
 
 function renderingKey(index, magnifyingGlass = false)
@@ -470,18 +470,36 @@ async function focusIndex(index, _doublePage = false)
 
 	currentIndex = index;
 	doublePage = !!_doublePage;
-	primeImmediateSourceWindow(10, 10);
+	const isScrollView = reading.readingViewIs('scroll');
+
+	if(!isScrollView)
+	{
+		// Drop stale queued renders from previous turns so the current page does not wait behind old work.
+		queue.clean('readingRender');
+		ai.clean();
+		rendering = {};
+	}
+
+	const immediateSourceWindow = isScrollView ? 10 : (_doublePage ? 6 : 5);
+	primeImmediateSourceWindow(immediateSourceWindow, immediateSourceWindow);
 	pruneRenderedObjectURL();
+
+	const immediateQueue = isScrollView ? getVisbleImages(_doublePage) : {
+		prev: _doublePage ? 2 : 1,
+		next: _doublePage ? 3 : 2,
+	};
 	const limits = getQueueLimits();
 	const prioritizeNext = getPrioritizeNextWindow(_doublePage);
 
-	setRenderQueue(limits.prev, limits.next, false, false, prioritizeNext);
+	setRenderQueue(immediateQueue.prev, immediateQueue.next, false, false, prioritizeNext);
 
 	sendToQueueST = setTimeout(function(){
 
+		setRenderQueue(limits.prev, limits.next, false, false, prioritizeNext);
+
 		if(scaleMagnifyingGlass) setRenderQueue(doublePage ? 3 : 2, doublePage ? 4 : 2, false, true);
 
-	}, 100);
+	}, 180);
 }
 
 function revokeAllObjectURL()
@@ -1085,7 +1103,7 @@ async function decodeImage(img, sync = false)
 		{
 			await img.decode();
 		}
-		catch(e){}	
+		catch(e){}
 	}
 
 	observer.observe(img);
@@ -1105,12 +1123,17 @@ function createObserver()
 			const entry = entries[i];
 
 			if(entry.isIntersecting || entry.intersectionRatio > 0)
-			{				
+			{
+				observer.unobserve(entry.target);
+
 				try
 				{
-					entry.target.decode();
+					const decodePromise = entry.target.decode();
+
+					if(decodePromise && decodePromise.catch)
+						decodePromise.catch(function(){});
 				}
-				catch(e){}	
+				catch(e){}
 			}
 		}
 

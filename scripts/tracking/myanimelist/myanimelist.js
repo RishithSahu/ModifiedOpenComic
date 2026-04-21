@@ -88,7 +88,7 @@ async function getComicData(siteId)
 		else if(response.status == 200)
 		{
 			const json = await response.json();
-		
+
 			if(json.id)
 			{
 				return {
@@ -124,7 +124,7 @@ async function login()
 	const variables = new URLSearchParams({
 		grant_type: 'authorization_code',
 		client_id: site.auth.clientId,
-		redirect_uri: 'opencomic://tracking/myanimelist', 
+		redirect_uri: 'opencomic://tracking/myanimelist',
 		code: code,
 		code_verifier: challenge,
 	});

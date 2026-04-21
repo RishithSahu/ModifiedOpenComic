@@ -146,7 +146,7 @@ const compatibleMime = {
 		jp2: {
 			'image/jp2': 'jp2',
 			'image/jpx': 'jpf',
-			'image/jpm': 'jpm', 
+			'image/jpm': 'jpm',
 		},
 		jxr: {
 			'image/jxr': 'jxr',
@@ -322,7 +322,7 @@ compatible.image.convert = [ // This image formats requires conversion to PNG to
 	...compatible.image.jxr,
 	...compatible.image.jp2,
 	...compatible.image.jxl,
-	...compatible.image.heic,	
+	...compatible.image.heic,
 ];
 
 // Join compressed

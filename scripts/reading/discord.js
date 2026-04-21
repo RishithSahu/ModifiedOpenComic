@@ -13,7 +13,7 @@ function reset()
 		logged: false,
 		client: false,
 		promise: false,
-	};	
+	};
 }
 
 async function login()
@@ -154,7 +154,7 @@ function events()
 	});
 
 	currentWindow.on('blur', function() {
-		
+
 		focused = false;
 		update(false);
 

@@ -7,6 +7,7 @@ const METADATA_SCRAPE_RETRY_COOLDOWN = 1000 * 60 * 60 * 6; // 6 hours
 const METADATA_SCRAPE_QUEUE_DELAY = 2200;
 const METADATA_SCRAPE_QUEUE_BATCH_SIZE = 24;
 const METADATA_UI_REFRESH_THROTTLE = 1600;
+const TRACKING_METADATA_DEBUG = false;
 
 var sitesScripts = {};
 
@@ -263,6 +264,9 @@ const metadataScrapeStats = {
 
 function logMetadataScrape(event = '', payload = {})
 {
+	if(!TRACKING_METADATA_DEBUG)
+		return;
+
 	try
 	{
 		console.log('[tracking:metadata]', event, payload || {});
@@ -710,7 +714,7 @@ async function login(site, fromConfig = false)
 	if(session.valid)
 	{
 		setSessionToken(site, session);
-		
+
 		if(fromConfig)
 			configTracking(site, true);
 		else
@@ -746,7 +750,7 @@ async function refreshTokens(force = false)
 				else
 					invalidateSession(site, true);
 
-			});	
+			});
 		}
 	}
 }
@@ -1120,7 +1124,7 @@ function addChapterNumberDialog(done = false, onlySite = false)
 
 		if(volume < 1)
 			volume = false;
-	
+
 		if(chapter !== false || volume !== false)
 		{
 			tracking.track(chapter, volume, onlySite, false, false, force);
@@ -1692,7 +1696,7 @@ function getImagesChapter()
 	for(let i = 0, len = handlebarsContext.comics?.length; i < len; i++)
 	{
 		const comic = handlebarsContext.comics[i];
-		
+
 		if(comic.name)
 		{
 			images.push({

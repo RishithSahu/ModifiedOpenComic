@@ -39,7 +39,7 @@ for(let key in folders)
 
 		tokens += '}';
 
-		fs.writeFileSync(p.join(path, 'tokens.missing.css'), tokens); 
+		fs.writeFileSync(p.join(path, 'tokens.missing.css'), tokens);
 
 		fs.copyFileSync(p.join(basepath, 'theme.css'), p.join(path, 'theme.css'));
 

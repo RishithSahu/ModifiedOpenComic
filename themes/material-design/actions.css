@@ -1254,7 +1254,7 @@
 
 .dialog-buttons .simple-button
 {
-	margin-left: 8px; 
+	margin-left: 8px;
 }
 
 .dialog-scroll-header
@@ -1514,7 +1514,7 @@
 	background-color: transparent;
 	color: var(--md-sys-color-primary);
 	padding: 0px 12px;
-} 
+}
 
 .simple-button.outlined > div
 {
@@ -1896,7 +1896,7 @@
 .simple-slider .range
 {
 	display: block;
-	
+
 }
 
 .simple-slider:after
@@ -2107,7 +2107,7 @@
 	border: 2px solid #fff;
 	background: #b0b0b0;
 }
-	
+
 
 /*
 .range input::-webkit-slider-thumb:active

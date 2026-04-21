@@ -258,12 +258,12 @@ function returnThumbnailsImages(images, callback, file = false)
 
 async function writeFile(name, content)
 {
-	fs.writeFile(p.join(cacheFolder, name), content, function(){}); 
+	fs.writeFile(p.join(cacheFolder, name), content, function(){});
 }
 
 function writeFileSync(name, content)
 {
-	fs.writeFileSync(p.join(cacheFolder, name), content, function(){}); 
+	fs.writeFileSync(p.join(cacheFolder, name), content, function(){});
 }
 
 var jsonMemory = {};
@@ -589,7 +589,7 @@ async function _deleteInCache(sha)
 
 		cacheImagesDeleted[sha] = cacheImagesDeleted[sha] ? cacheImagesDeleted[sha] + 1 : 1;
 	}
-		
+
 	return;
 }
 
