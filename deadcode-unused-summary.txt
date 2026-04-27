@@ -1,0 +1,34 @@
+.\scripts\app.js -> L42:i, L42:len, L100:number, L230:error
+.\scripts\cache.js -> L46:reject, L70:copyError, L767:type, L774:size
+.\scripts\dom.js -> L297:force, L729:key, L1098:error, L1106:error, L1656:path, L1656:mainPath, L1664:path, L1664:mainPath, L2599:changed, L3691:confirm, L3710:confirm, L3845:error, L3916:startImage, L4119:button
+.\scripts\dom\boxes.js -> L467:error, L476:error
+.\scripts\dom\poster.js -> L20:currentPoster, L66:reload, L75:image
+.\scripts\ebook.js -> L147:_this, L240:reject, L250:error, L254:event, L268:error2, L276:error, L377:e, L992:e, L1252:error, L1295:error, L1313:error, L1355:pages, L1532:config
+.\scripts\ebook\epub.js -> L31:error, L192:error, L274:error, L509:e, L761:error, L774:error, L783:error
+.\scripts\ebook\render.js -> L4:app, L54:error2, L87:event
+.\scripts\events.js -> L3:activeTab, L37:event, L169:event, L463:event, L468:event, L557:event, L594:moveToTop, L1017:event
+.\scripts\file-manager.js -> L322:_realPath, L350:_realPath, L418:file, L462:file, L832:file, L1028:message, L1035:message, L1443:error, L1495:error, L1602:error, L1692:firstFile, L1963:callback, L1994:data, L2245:error, L2300:_this, L2480:item, L2657:pages, L2774:_this, L2856:virtualPath, L2880:path, L2897:file, L2897:canvas, L2913:error, L3480:lastCompressed, L3584:server
+.\scripts\gamepad.js -> L886:axes, L892:key, L944:gamepadResizeST
+.\scripts\image.js -> L227:info, L429:error, L454:error
+.\scripts\opds.js -> L167:opdsCatalogsLoaded, L319:feed, L662:confirm, L827:facets
+.\scripts\opencomic.js -> L12:isFullScreen, L82:fsp, L83:fse, L85:os, L86:ejs, L89:isEqual, L90:shortWindowsPath, L204:_config, L205:_onReading, L206:readingTouchEvent, L207:inChildFork, L232:storagePath, L241:image, L243:cache, L244:queue, L245:templates, L252:ebook, L253:workers, L254:childFork, L255:threads, L256:mutex, L258:serverClient, L259:opds, L265:shortcuts, L267:trackingSites, L270:tempFolder, L277:fromGamepad, L280:appBaseLoaded, L524:openNewInstance, L566:currentContextMenuInput, L585:loadShoSho, L605:loadPdfjs, L626:loadPdfjsDecoders, L652:loadJxlImage, L675:loadFoliateJs, L692:loadWebdav, L703:inArray, L707:removeElements, L712:fastJoin, L716:pregQuote, L720:mousePosition, L748:readFile, L756:existsFile, L783:sha1, L1072:showBlobInternals, L1083:printMemoryUsage, L1131:joinRegexs, L1141:extract, L1170:matchArray, L1180:callbackString, L1386:fromLibrary, L1537:callCallbacks, L1546:checkError, L1559:NOT_POSSIBLE_WITHOUT_DECOMPRESSING, L1560:ERROR_UNZIPPING_THE_FILE, L1561:ERROR_READING_THE_FILE, L1562:ERROR_RENDERING_THE_FILE
+.\scripts\reading.js -> L258:margin, L327:imageHeight, L744:resize, L887:currentPage, L1129:error, L1890:event, L1954:e, L2172:originalRectReadingBody2, L2172:prevAnime, L2232:scaleOffset, L2538:index, L2539:animationDurationS, L3056:hideContentRunningST, L3756:key, L3756:value, L4870:error, L5793:event, L5974:e, L6248:value
+.\scripts\reading\ai.js -> L55:model, L75:model
+.\scripts\reading\discord.js -> L2:clientId, L26:reject, L164:interval
+.\scripts\reading\filters.js -> L521:rgbToHue, L638:_s, L822:end, L969:toCheck
+.\scripts\reading\page-transitions.js -> L32:error, L138:event, L138:touchevents, L143:event, L143:touchevents, L149:readingView, L221:changedDirection, L223:reverse, L249:reject, L265:reverse, L565:reject
+.\scripts\reading\page-transitions\smooth-page-turn.js -> L49:generateBoxShadow, L57:generateShadow, L133:percentFirst, L134:percentLast, L137:percentBezier, L331:drawPoints, L384:rightSize, L543:rightSize, L547:scaleM, L762:path, L932:lastNegative, L1014:_i
+.\scripts\reading\progress.js -> L106:cache, L106:cacheOnly, L115:cache, L237:first, L379:error
+.\scripts\reading\render.js -> L85:error, L97:error, L188:error, L281:error, L565:e, L586:error, L862:progress, L875:aiPath, L1106:e, L1136:e
+.\scripts\reading\sidebar.js -> L1:active, L44:index, L56:thumbnail, L147:event
+.\scripts\server-client.js -> L143:_realPath, L453:error, L550:reject, L618:reject, L752:files, L772:reject, L911:files, L1048:files, L1066:reject, L1200:files, L1220:reject, L1416:files, L1436:reject, L1570:files, L1590:reject, L1753:files, L1772:reject
+.\scripts\settings.js -> L124:e, L228:e, L630:error, L965:shortcut, L988:button
+.\scripts\shortcuts.js -> L392:event, L897:event, L904:event, L911:event, L918:event, L925:event
+.\scripts\storage.js -> L1029:throttles, L1030:debounces, L1047:error, L1124:error, L1142:error
+.\scripts\storage\sync-instances.js -> L94:err, L103:error
+.\scripts\tracking.js -> L653:force, L688:e, L1460:force, L1623:e
+.\scripts\tracking\anilist\anilist.js -> L184:e, L227:e, L231:error, L237:e, L385:error, L455:error, L494:error, L526:error
+.\scripts\tracking\example\example.js -> L1:site, L1:controller, L25:title, L48:callback, L101:toTrack
+.\scripts\tracking\myanimelist\myanimelist.js -> L63:error, L109:error, L151:error, L184:error, L214:userStatus
+.\scripts\tutorial.js -> L1246:error, L1386:error
+.\scripts\worker.js -> L25:loadPdfjsDecoders, L42:loadJxlImage
