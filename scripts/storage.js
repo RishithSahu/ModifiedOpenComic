@@ -175,7 +175,7 @@ const storageDefault = {
 				continueReading: true,
 				recentlyAdded: true,
 				rankingSidebar: true,
-				viewModuleSize: 150,	
+				viewModuleSize: 150,
 				fadeCompleted: true,
 				progressBar: true,
 				progressPages: true,

@@ -68,7 +68,7 @@ async function getComicData(siteId, callback = false)
 // Loging to site
 async function login()
 {
-	// Open link to browser and return the redirect url/uri 
+	// Open link to browser and return the redirect url/uri
 	// const url = await tracking.getRedirectResult(site.key, 'https://example.com/api/oauth/authorize?client_id='+site.auth.clientId+'&redirect_uri=opencomic://tracking/example&response_type=code');
 	// const token = url.searchParams.get('token');
 
@@ -121,7 +121,7 @@ async function track(toTrack)
 
 
 	/*
-	Update OpenComic tracking info	
+	Update OpenComic tracking info
 	tracking.setTrackingChapters(site.key, {chapters, volumes, progress: {chapters, volumes}}, toTrack.mainPath);
 
 	Send tracking data to the site

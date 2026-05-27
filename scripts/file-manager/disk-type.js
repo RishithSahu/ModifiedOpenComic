@@ -114,7 +114,7 @@ async function findDisks(force = false)
 	}
 
 	disks.sort(function(a, b) {
-		
+
 		if(a.mount.length === b.mount.length)
 			return 0;
 

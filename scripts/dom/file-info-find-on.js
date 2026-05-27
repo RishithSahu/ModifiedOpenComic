@@ -298,7 +298,7 @@ function get(name)
 			for(let i in list[type][section])
 			{
 				let site = list[type][section][i];
-				
+
 				site.url = site.url.replace(/\{\{domainCountry\}\}/g, site.domainCountry ? (site.domainCountry[domainCountry] || site.domainCountry.default || 'com') : 'com');
 				site.url = site.url.replace(/\{\{query\}\}/g, encodeURI(name));
 

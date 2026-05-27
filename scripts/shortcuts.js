@@ -90,7 +90,7 @@ function clickTapZone(event, button)
 function shortcutSnackbar(string, status = null)
 {
 	events.closeSnackbar();
-	
+
 	string = string+(status !== null ? ': '+(status ? language.buttons.on : language.buttons.off) : '');
 
 	events.snackbar({
@@ -1427,7 +1427,7 @@ function play()
 		register(_currentlyRegistered);
 		currentlyRegistered = _currentlyRegistered;
 	}
-	
+
 	_currentlyRegistered = false;
 }
 

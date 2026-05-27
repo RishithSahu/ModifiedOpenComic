@@ -90,7 +90,7 @@ function clickMenu(index)
 			_menu.classList.add('active');
 			_menus.style.display = 'block';
 			_menus.style.left = (_menu.getBoundingClientRect().left)+'px';
-		
+
 			dom.query('.bar-header').css({
 				webkitAppRegion: 'no-drag',
 			});

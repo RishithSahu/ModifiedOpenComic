@@ -4,9 +4,9 @@ var file = false,
 	ebook = false,
 	ebookConfigChanged = false,
 	renderType = 'canvas',
-	renderImages = false,	
+	renderImages = false,
 	renderCanvas = false,
-	renderEbook = false,	
+	renderEbook = false,
 	imagesData = {},
 	rendering = {},
 	rendered = {},
@@ -329,7 +329,7 @@ function getVisbleImages(doublePage = false)
 	if(next == 0)
 		next = 1;
 
-	return {prev: prev, next: next}; 
+	return {prev: prev, next: next};
 }
 
 function renderingKey(index, magnifyingGlass = false)
@@ -1211,7 +1211,7 @@ async function decodeImage(img, sync = false)
 		{
 			await img.decode();
 		}
-		catch(e){}	
+		catch(e){}
 	}
 
 	observer.observe(img);
@@ -1231,12 +1231,17 @@ function createObserver()
 			const entry = entries[i];
 
 			if(entry.isIntersecting || entry.intersectionRatio > 0)
-			{				
+			{
+				observer.unobserve(entry.target);
+
 				try
 				{
-					entry.target.decode();
+					const decodePromise = entry.target.decode();
+
+					if(decodePromise && decodePromise.catch)
+						decodePromise.catch(function(){});
 				}
-				catch(e){}	
+				catch(e){}
 			}
 		}
 

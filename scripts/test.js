@@ -50,7 +50,7 @@ if(process.platform == 'darwin')
 
 }
 else if(process.platform == 'linux')
-{	
+{
 	// Node ZSTD All
 	exists('./node_modules/@toondepauw/node-zstd-linux-x64-gnu/node-zstd.linux-x64-gnu.node', fs.constants.R_OK);
 	exists('./node_modules/@toondepauw/node-zstd-linux-arm64-gnu/node-zstd.linux-arm64-gnu.node', fs.constants.R_OK);

@@ -412,7 +412,7 @@ async function publication(path = false)
 	if(!fromContextMenu && hasDownloadable(publication.acquisitionLinks) && currentCatalog.downloadAuto)
 	{
 		openBestAcquisitionLink(publication.acquisitionLinks, currentCatalog.downloadFiles);
-		
+
 		return;
 	}
 
@@ -425,7 +425,7 @@ async function publication(path = false)
 
 	handlebarsContext.opdsDownloadFile = downloadFile;
 	handlebarsContext.opdsAcquisitionLinks = publication.acquisitionLinks;
-	
+
 	// Get image in cache
 	const image = getPosterPath(metadata.poster);
 
@@ -894,7 +894,7 @@ function add(save = false)
 		const opdsCatalogs = storage.get('opdsCatalogs');
 
 		const values = getInputValues();
-		
+
 		opdsCatalogs.push({
 			title: values.title,
 			subtitle: '',

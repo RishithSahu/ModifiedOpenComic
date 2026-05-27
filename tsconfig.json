@@ -11,7 +11,7 @@
 		"skipLibCheck": true,
 		"allowSyntheticDefaultImports": true,
 		"moduleResolution": "node",
-		"noImplicitAny": false, 
+		"noImplicitAny": false,
 		"resolveJsonModule": true,
 		"baseUrl": "./scripts",
 		"paths": {

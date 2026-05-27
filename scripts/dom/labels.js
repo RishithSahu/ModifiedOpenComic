@@ -20,7 +20,7 @@ function middleClick(event, key, data)
 	switch(key)
 	{
 		case 'page':
-			
+
 			tabData = {
 				...tabData,
 				...pageData(data),
@@ -66,7 +66,7 @@ function middleClick(event, key, data)
 			break;
 
 		case 'master-folder':
-			
+
 			tabData = {
 				...tabData,
 				indexLabel: masterFolderData(data),
@@ -597,7 +597,7 @@ function filterList(comics, filter = {favorites: false, labels: false, withoutLa
 					if(!some) return false;
 				}
 			}
-		
+
 			if(filter.withoutLabels && labels)
 			{
 				const some = labels.some(value => filter.withoutLabels.includes(value));

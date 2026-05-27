@@ -4,7 +4,7 @@ var _isEncryptionAvailable = null;
 function isEncryptionAvailable()
 {
 	if(_isEncryptionAvailable !== null) return _isEncryptionAvailable;
-	
+
 	_isEncryptionAvailable = electronRemote.safeStorage.isEncryptionAvailable();
 	return _isEncryptionAvailable;
 }

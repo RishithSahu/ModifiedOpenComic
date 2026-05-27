@@ -11,13 +11,49 @@ const roughPageTurn = require(p.join(appDir, '.dist/reading/page-transitions/rou
 	smoothPageTurn = require(p.join(appDir, '.dist/reading/page-transitions/smooth-page-turn.js'));
 
 var prevDirection = null, prevIndex = -1, waitTransition = false, waitTransitionResolver = false, lastTransitionRequestAt = 0;
+var pageTransitionsDebug = false;
+
+function transitionDebug(event, data = false)
+{
+	if(!pageTransitionsDebug)
+		return;
+
+	try
+	{
+		const payload = Object.assign({}, data || {});
+		const transitionQueue = queue.get('pageTransitions');
+
+		payload.ts = Date.now();
+		payload.waitTransition = !!waitTransition;
+		payload.queueSize = transitionQueue ? transitionQueue.length : 0;
+
+		console.log('[PAGE_TRANSITION_DEBUG]', event, payload);
+	}
+	catch(error) {}
+}
 
 async function goToIndex(index, animation)
 {
+	transitionDebug('go-to-index-request', {
+		index: index,
+		animation: animation,
+		prevIndex: prevIndex,
+		prevDirection: prevDirection,
+		readingDirection: reading.realReadingDirection(),
+	});
+
 	if(!animation)
 	{
 		prevDirection = null;
 		prevIndex = -1;
+	}
+	else
+	{
+		transitionDebug('queue-clear-before-enqueue', {
+			index: index,
+		});
+
+		queue.set('pageTransitions', []);
 	}
 
 	const now = Date.now();
@@ -38,8 +74,22 @@ async function goToIndex(index, animation)
 
 	queue.add('pageTransitions', async function(index, animation, readingDirection, rapidRequest) {
 
+		transitionDebug('queue-callback-start', {
+			index: index,
+			animation: animation,
+			readingDirection: readingDirection,
+			prevDirection: prevDirection,
+			prevIndex: prevIndex,
+		});
+
 		if(prevDirection !== null && prevDirection != readingDirection && waitTransition)
 		{
+			transitionDebug('direction-change-wait', {
+				index: index,
+				readingDirection: readingDirection,
+				prevDirection: prevDirection,
+			});
+
 			purgeQueue(readingDirection);
 			await waitTransition;
 		}
@@ -49,6 +99,11 @@ async function goToIndex(index, animation)
 		if(waitTransition)
 			await waitTransition;
 
+		transitionDebug('queue-callback-end', {
+			index: index,
+			animation: animation,
+		});
+
 		return;
 
 	}, index, animation, readingDirection, rapidRequest);
@@ -57,6 +112,7 @@ async function goToIndex(index, animation)
 async function _goToIndex(index, animation, rapidRequest = false)
 {
 	const readingView = reading.readingView();
+	const originalIndex = index;
 
 	if(!animation) prevDirection = null;
 	const readingDirection = reading.realReadingDirection();
@@ -67,6 +123,14 @@ async function _goToIndex(index, animation, rapidRequest = false)
 	if(animation && rapidRequest && animationDuration > 0)
 		animationDuration = Math.max(120, animationDuration * 0.65);
 
+	transitionDebug('transition-run-start', {
+		index: originalIndex,
+		targetIndex: index,
+		animation: animation,
+		readingView: readingView,
+		animationDuration: animationDuration,
+	});
+
 	if(readingView == 'fade')
 		fadeGoTo(index, animationDuration);
 	else if(readingView == 'rough-page-turn')
@@ -76,6 +140,13 @@ async function _goToIndex(index, animation, rapidRequest = false)
 
 	prevDirection = readingDirection;
 	prevIndex = index;
+
+	transitionDebug('transition-run-end', {
+		index: originalIndex,
+		targetIndex: index,
+		prevIndex: prevIndex,
+		prevDirection: prevDirection,
+	});
 }
 
 // Touchmove transition
@@ -171,7 +242,7 @@ function setVisibility(index, prev, current, animationDuration, reverse = false)
 	clearTimeout(zIndexST);
 
 	const contentRight = template._contentRight();
-	
+
 	current.addClass('active').css({
 		zIndex: zIndex + 1,
 	});
@@ -187,6 +258,11 @@ function setVisibility(index, prev, current, animationDuration, reverse = false)
 
 		if(!waitTransition)
 		{
+			transitionDebug('wait-transition-create', {
+				index: index,
+				animationDuration: animationDuration,
+			});
+
 			waitTransition = new Promise(function(resolve, reject) {
 
 				waitTransitionResolver = resolve;
@@ -218,6 +294,11 @@ function setVisibility(index, prev, current, animationDuration, reverse = false)
 			zIndex = 1;
 
 			requestAnimationFrame(function(){
+
+				transitionDebug('wait-transition-resolve', {
+					index: index,
+					duration: duration,
+				});
 
 				waitTransitionResolver();
 				waitTransition = false;

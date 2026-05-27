@@ -3941,7 +3941,7 @@ function macosStopAccessingSecurityScopedResource() {
 	}
 }
 
-// Code from https://github.com/sindresorhus/read-chunk 
+// Code from https://github.com/sindresorhus/read-chunk
 async function readChunk(filePath, { length, startPosition }) {
 	const fileDescriptor = await fsp.open(filePath, 'r');
 

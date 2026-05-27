@@ -28,7 +28,7 @@ async function findSearch(search)
 
 	if(/\{[^{}]*(?:query|searchTerms)[^{}]*\}/.test(search.href))
 		return searchCache[search.href] = foliateJs.opds.getSearch(search);
-	
+
 	const _search = await opds.opds.read(search.href, '', '', true);
 	return searchCache[search.href] = _search;
 }

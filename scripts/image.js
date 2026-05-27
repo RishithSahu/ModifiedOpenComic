@@ -205,7 +205,7 @@ async function rawToPng(fromBuffer, toImage, raw = {}, config = {})
 			_sharp.removeAlpha();
 
 		_sharp.keepIccProfile().pipelineColourspace(raw.rgb16 ? 'rgb16' : 'srgb').toColourspace(raw.rgb16 ? 'rgb16' : 'srgb').png({force: true, compressionLevel: config.compressionLevel}).toFile(toImage, function(error) {
-		
+
 			if(error)
 				reject();
 			else
@@ -234,7 +234,7 @@ async function rawToBuffer(fromBuffer, raw = {}, config = {})
 			_sharp.removeAlpha();
 
 		_sharp.keepIccProfile().pipelineColourspace(raw.rgb16 ? 'rgb16' : 'srgb').toColourspace(raw.rgb16 ? 'rgb16' : 'srgb').png({force: true, compressionLevel: config.compressionLevel}).toBuffer(function(error, buffer, info) {
-		
+
 			if(error || !buffer)
 				reject(error);
 			else
@@ -412,7 +412,7 @@ async function getSizes(images)
 
 					const jxlImage = new JxlImage();
 					jxlImage.feedBytes(buffer);
-			
+
 					if(!jxlImage.tryInit())
 						throw new Error('Partial image, no frame data');
 

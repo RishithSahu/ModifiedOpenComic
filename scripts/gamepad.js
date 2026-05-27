@@ -635,7 +635,7 @@ function highlightClosestItem(key)
 						y = bestDistance(current.top, current.bottom, item.top, item.bottom);
 
 					let d = Math.sqrt(x ** 2 + y ** 2); // Distance
-					
+
 					item.d = d;
 					item.i = i;
 
@@ -937,7 +937,7 @@ window.addEventListener('keydown', function(event) {
 			}
 		}
 	}
-	
+
 });
 
 // Update Browsable Items position if window size its changed
