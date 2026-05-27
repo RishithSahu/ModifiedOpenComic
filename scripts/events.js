@@ -202,7 +202,7 @@ function windowMove1()
 
 	if(eventHoverTimeoutActive)
 		eventHoverTimeout = setTimeout(function () {
-			events.showHoverText();
+			showHoverText();
 		}, eventHoverTimeoutActive);
 	else
 		hideHoverText();

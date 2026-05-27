@@ -60,7 +60,7 @@ function save(path = false, mainPath = false) {
 
 	const percent = (totalPages === 1) ? 0 : (((currentPage - 1) / (totalPages - 1)) * 100);
 
-	storage.updateVar('readingProgress', relative.path(mainPath), {
+	const _progressData = {
 		index: currentPage,
 		path: relative.path(path.replace(/\?page=[0-9]+$/, '')),
 		lastReading: Date.now(),
@@ -73,7 +73,15 @@ function save(path = false, mainPath = false) {
 		pages: !isParent ? totalPages : 0, // Calculate from childrens if is parent
 		percent: !isParent ? percent : 0, // Calculate from childrens if is parent
 		completed: !isParent ? (currentPage >= totalPages) : false, // Calculate from childrens if is parent
-	});
+	};
+
+	storage.updateVar('readingProgress', relative.path(mainPath), _progressData);
+
+	// Debug: log what we just saved so it's easy to inspect in DevTools
+	try {
+		console.debug('[reading.progress.save] saved', { key: relative.path(mainPath), data: _progressData });
+	}
+	catch (e) { /* ignore logging errors */ }
 
 	dom.history.updateLastComic(path);
 

@@ -35,6 +35,9 @@ function startSecond() {
 }
 
 async function getStorageSize() {
+	// Ensure tempFolder is always current before calculating sizes
+	tempFolder = getTmpFolder();
+
 	// Cache size
 	let cacheSize = await fileManager.dirSize(cache.folder);
 
@@ -179,56 +182,158 @@ function logAllStylesheets() {
     console.log('All <style> elements:', styles.length);
 }
 
+function clearTemporaryFolderContents(folder) {
+	const failed = [];
+
+	if (!fs.existsSync(folder)) {
+		fs.mkdirSync(folder, { recursive: true });
+		return failed;
+	}
+
+	let entries = [];
+
+	try {
+		entries = fs.readdirSync(folder, { withFileTypes: true });
+	}
+	catch (error) {
+		failed.push({ path: folder, error: error });
+		return failed;
+	}
+
+	for (let i = 0, len = entries.length; i < len; i++) {
+		const entry = entries[i];
+		const entryPath = p.join(folder, entry.name);
+
+		try {
+			fs.rmSync(entryPath, {
+				recursive: true,
+				force: true,
+				maxRetries: 12,
+				retryDelay: 100,
+			});
+		}
+		catch (error) {
+			failed.push({ path: entryPath, error: error });
+		}
+	}
+
+	return failed;
+}
+
+function resetUserAddedData() {
+	storage.set('tracking', {});
+	storage.set('trackingFolderMetadata', {});
+	storage.set('recommendationFeedback', {});
+	storage.set('recentlyOpened', {});
+	storage.set('readingProgress', {});
+	storage.set('readingPages', {});
+	storage.set('bookmarks', {});
+	storage.set('favorites', {});
+	storage.set('labels', []);
+	storage.set('comicLabels', {});
+	storage.set('masterFolders', []);
+	storage.set('servers', []);
+	storage.set('recentlySearched', []);
+	storage.set('savedSearches', []);
+	storage.set('comics', []);
+
+	if (typeof storage.ensurePepperCarrotInComics === 'function')
+		storage.ensurePepperCarrotInComics([], true);
+
+	if (typeof dom !== 'undefined' && dom.boxes && typeof dom.boxes.reset === 'function')
+		dom.boxes.reset();
+
+	if (typeof template !== 'undefined' && typeof template.flushTemplateCache === 'function')
+		template.flushTemplateCache();
+}
+
 function removeTemporaryFiles(onClose = false) {
 	setTimeout(ensureThemeCSS, 100);
-	try {
-		storage.set('tmpUsage', {});
-		fse.emptyDirSync(tempFolder);
+	tempFolder = getTmpFolder();
+	let cleared = false;
+	let failedEntries = [];
 
-		// Clear all progress, recommendations, and metadata
-		storage.set('tracking', {});
-		storage.set('trackingFolderMetadata', {});
-		storage.set('recommendationFeedback', {});
-		storage.set('recentlyOpened', {});
-		storage.set('comics', []);
-		if (typeof storage.ensurePepperCarrotInComics === 'function')
-			storage.ensurePepperCarrotInComics([], true);
-		storage.set('readingProgress', {});
-		storage.set('readingPages', {});
-		if (typeof dom !== 'undefined' && dom.boxes && dom.boxes.reset) {
-			dom.boxes.reset();
-		}
-		if (typeof template !== 'undefined' && template.flushTemplateCache) {
-			template.flushTemplateCache();
-		}
-		if (typeof template !== 'undefined' && template.flushTemplateCache) {
-			template.flushTemplateCache();
-		}
-	} catch (error) {
-		console.error(error);
+	try {
+		// Optional modules are not always initialized in every view.
+		if (typeof reading !== 'undefined' && reading && typeof reading.disposeImages === 'function')
+			reading.disposeImages();
+		if (typeof reading !== 'undefined' && reading && reading.render && typeof reading.render.revokeAllObjectURL === 'function')
+			reading.render.revokeAllObjectURL();
+		if (typeof fileManager !== 'undefined' && fileManager && typeof fileManager.revokeAllObjectURL === 'function')
+			fileManager.revokeAllObjectURL();
+		if (typeof fileManager !== 'undefined' && fileManager && typeof fileManager.closeAllCompressed === 'function')
+			fileManager.closeAllCompressed();
+		if (typeof ebook !== 'undefined' && ebook && typeof ebook.closeAllRenders === 'function')
+			ebook.closeAllRenders();
+		if (typeof workers !== 'undefined' && workers && typeof workers.closeAllWorkers === 'function')
+			workers.closeAllWorkers();
 	}
+	catch (error) {
+		console.error('Failed to close temporary resources before cleanup:', error);
+	}
+
+	try {
+		if (!onClose)
+			resetUserAddedData();
+
+		storage.set('tmpUsage', {});
+		failedEntries = clearTemporaryFolderContents(tempFolder);
+
+		// Retry one more time; some handles are released shortly after resource cleanup.
+		if (failedEntries.length)
+			failedEntries = clearTemporaryFolderContents(tempFolder);
+
+		cleared = (failedEntries.length === 0);
+
+		if (cleared) {
+			console.log('Temporary files folder cleared:', tempFolder);
+		}
+		else {
+			console.error('Temporary files cleanup left locked entries:', failedEntries.map(function (entry) {
+				return entry.path;
+			}));
+		}
+	}
+	catch (error) {
+		console.error('Failed to clear temporary files folder:', tempFolder, error);
+	}
+
 	if (!onClose) {
+		// User requested this action to behave as a practical app reset.
+		try {
+			storage.set('cache', {});
+			storage.set('cacheFolderThumbnails', {});
+			fse.emptyDirSync(cache.folder);
+		}
+		catch (error) {
+			console.error('Failed to clear cache folder during reset:', error);
+		}
+
 		getStorageSize();
-		if (typeof dom !== 'undefined' && dom.showNotification) {
+		if (typeof fileManager !== 'undefined' && fileManager && typeof fileManager.dirSize === 'function') {
+			fileManager.dirSize(tempFolder).then(function (size) {
+				console.log('Temporary files folder after cleanup:', tempFolder, 'size(bytes)=', size);
+			});
+		}
+
+		if (cleared && typeof dom !== 'undefined' && dom.showNotification) {
 			dom.showNotification(language.settings.storage.clearFileCacheSuccessfully || 'Temporary files cleared successfully.');
-		} else {
+		}
+		else if (cleared) {
 			alert('Temporary files cleared successfully.');
 		}
-		if (typeof location !== 'undefined' && location.reload) {
-			setTimeout(() => {
-				ensureThemeCSS();
-				try {
-					if (typeof require !== 'undefined') {
-						const { remote } = require('electron');
-						if (remote && remote.getCurrentWindow && remote.getCurrentWindow().webContents) {
-							remote.getCurrentWindow().webContents.reloadIgnoringCache();
-							return;
-						}
-					}
-				} catch (e) { /* fallback to normal reload */ }
-				location.reload();
-			}, 100);
+		else if (typeof dom !== 'undefined' && dom.showNotification) {
+			dom.showNotification('Temporary files partially cleared. Some files are in use; close readers and try again.');
 		}
+		else {
+			alert('Temporary files partially cleared. Some files are in use; close readers and try again.');
+		}
+
+		// Full reload avoids transient "undefined" UI state after a data reset.
+		setTimeout(function () {
+			if (typeof location !== 'undefined' && typeof location.reload === 'function')
+				location.reload();
+		}, 120);
 	}
 }
 

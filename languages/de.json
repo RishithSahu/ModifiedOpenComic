@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "Dateien werden aus dem Cache entfernt, wenn sie länger als diese Zeit nicht verwendet wurden.",
 			"clearCache": "Cache leeren",
 			"temporaryFiles": "Temporäre Dateien",
-			"temporaryFilesDescription": "Hier werden die komprimierten Dateien bei Bedarf dekomprimiert. Dies wird beim Schließen von OpenComic teilweise entfernt.",
+			"temporaryFilesDescription": "Hier werden die komprimierten Dateien bei Bedarf dekomprimiert. Dies wird beim SchlieBen von OpenComic teilweise entfernt. Klicke NUR, wenn du ALLE Daten loschen mochtest.",
 			"removeTemporaryFiles": "Temporäre Dateien entfernen",
 			"temporaryFilesMaxSize": "Maximum an temporären Dateien",
 			"temporaryFilesMaxSizeDescription": "Temporäre Dateien werden entfernt, wenn sie diese Größe überschreiten, wobei ältere, ungenutzte Dateien priorisiert werden.",

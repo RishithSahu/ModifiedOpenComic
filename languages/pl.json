@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "Pliki będą usuwane z pamięci podręcznej, gdy nie będą używane przez dłuższy czas.",
 			"clearCache": "Wyczyść pamięć podręczną",
 			"temporaryFiles": "Pliki tymczasowe",
-			"temporaryFilesDescription": "Tutaj dekompresowane są pliki w miarę potrzeb. Są one częściowo usuwane przy zamykaniu OpenComic.",
+			"temporaryFilesDescription": "Tutaj pliki sa dekompresowane w miare potrzeb. Ich czesc jest usuwana przy zamykaniu OpenComic. Kliknij TYLKO, jesli chcesz usunac WSZYSTKIE dane.",
 			"removeTemporaryFiles": "Usuń pliki tymczasowe",
 			"temporaryFilesMaxSize": "Maksymalny rozmiar plików tymczasowych",
 			"temporaryFilesMaxSizeDescription": "Pliki tymczasowe będą usuwane, gdy przekroczą ten rozmiar, priorytetowo traktując starsze, nieużywane pliki.",

@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "設定快取中保留的最大舊檔案數量",
 			"clearCache": "清除快取",
 			"temporaryFiles": "暫存檔案",
-			"temporaryFilesDescription": "在這裡，壓縮檔案會根據需要進行解壓縮，這些檔案會在關閉 OpenComic 時自動刪除",
+			"temporaryFilesDescription": "這裡會依需求解壓縮檔案，關閉 OpenComic 時會部分清理。只有在你想清除所有資料時才點擊。",
 			"removeTemporaryFiles": "刪除暫存檔案",
 			"temporaryFilesMaxSize": "最大暫存檔案大小",
 			"temporaryFilesMaxSizeDescription": "當暫存檔案超過此大小時將被刪除，優先刪除較舊且未使用的檔案",

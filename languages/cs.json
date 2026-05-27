@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "",
 			"clearCache": "",
 			"temporaryFiles": "",
-			"temporaryFilesDescription": "",
+			"temporaryFilesDescription": "Zde se komprimovane soubory dekomprimuji podle potreby a pri zavreni OpenComic se cast z nich odstrani. Kliknete POUZE pokud chcete smazat VSECHNA data.",
 			"removeTemporaryFiles": "",
 			"temporaryFilesMaxSize": "",
 			"temporaryFilesMaxSizeDescription": "",

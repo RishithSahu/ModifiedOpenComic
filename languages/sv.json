@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "Filer kommer att tas bort från cacheminnet när de inte har använts under mer än den specificerad tiden",
 			"clearCache": "Töm cache",
 			"temporaryFiles": "Temporära filer",
-			"temporaryFilesDescription": "Här packas de komprimerade filerna upp när de behövs. De raderas delvis när du stänger OpenComic",
+			"temporaryFilesDescription": "Har packas komprimerade filer upp nar de behovs. De tas delvis bort nar OpenComic stangs. Klicka ENDAST om du vill rensa ALL data.",
 			"removeTemporaryFiles": "Ta bort temporära filer",
 			"temporaryFilesMaxSize": "Högsta antal temporära filer",
 			"temporaryFilesMaxSizeDescription": "Temporära filer tas bort när de överskrider den specificerade storleken och äldre oanvända filer prioriteras",

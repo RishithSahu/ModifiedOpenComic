@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.8.0 (20-05-2026)
+
+##### Bug Fixes
+
+- Fix AI-processed images not displaying in reader by implementing proper cache bypass logic: when AI output is available, skip cached PDF blob URLs that would overwrite the AI-processed result.
+- Fix AI image quality regression where AI-processed pages displayed blurry by applying CSS-based `imageRendering` scaling kernels to AI images immediately upon loading, ensuring proper interpolation (upscaling/downscaling) is applied consistent with normal rendering.
+- Fix page rendering control flow issue where AI images routed through `srcToImage()` would skip downstream CSS scaling code blocks, preventing interpolation kernels from being applied.
+- Fix Continue Reading bookmark entries limiting navigation to a single chapter by ensuring `mainPath` is correctly passed from the reading session, allowing next/prev chapter navigation to work properly when opened from bookmarks.
+- Fix series type detection in AniList-backed reading defaults by using AniList series type instead of confidence scores.
+- Fix looping during continuous scrolling by preventing the scroll reader from re-entering the same navigation state.
+- Fix temporary-file cleanup by reloading the app after clearing temp files so all transient files are removed.
+
+##### Optimizations & Stability
+
+- Improve AI rendering pipeline robustness by consolidating AI image handling to ensure CSS-based scaling is applied uniformly across all imageRendering modes.
+
 ## v1.7.7 (25-03-2026)
 
 ##### New Features
@@ -52,6 +68,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Improve module-view virtualization accuracy after resize/style drift by calculating visible ranges from live DOM geometry instead of only fixed size presets.
 - Improve image resize resilience for corrupted JPEG streams by using safer Sharp retry options (`sequentialRead`, tolerant retries with `failOn: none`).
 - Improve reading smoothness on large chapters/PDFs with stronger source priming and queue stability changes that reduce visible loading gaps without increasing startup overhead.
+- Improve page-turn responsiveness in non-scroll reading modes by prioritizing an immediate near-page render window and deferring wider prefetch so stale jobs no longer block the next page.
+- Improve rapid page-turn smoothness by coalescing queued transition requests and applying adaptive shorter transition durations during high-speed navigation input.
 - Improve end-of-chapter handoff smoothness by preloading first pages of the next inferred chapter after a short idle delay, with cancellation guards and bounded preload tracking.
 - Improve tutorial resilience with fail-safe cleanup/snackbar behavior when a step render throws, preventing stuck dark-overlay states.
 - Improve runtime safety by replacing active string-evaluated timeout callbacks with direct function callbacks in reading/events flows.

@@ -367,7 +367,15 @@ function continueReading(comics, single = false)
 	if(!readingCandidates.length)
 		readingCandidates = candidates;
 
-	return box(readingCandidates, single, language.comics.continueReading, 'real-numeric', 'readingProgress', 'lastReading', 'continue');
+	// Debug: report how many candidates have reading progress
+	try {
+		console.debug('[dom.boxes.continueReading] readingCandidates.length =', readingCandidates.length, 'sample=', readingCandidates.slice(0,3));
+	}
+	catch (e) { }
+
+	// Show continue-reading even when there is only one candidate so the
+	// user sees the "Continue reading" card immediately after starting.
+	return box(readingCandidates, true, language.comics.continueReading, 'real-numeric', 'readingProgress', 'lastReading', 'continue');
 }
 
 function recentlyAdded(comics, single = false)

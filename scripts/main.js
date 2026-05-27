@@ -29,6 +29,19 @@ function writeStartupLog(message = '')
 writeStartupLog('Process start. argv='+JSON.stringify(process.argv));
 writeStartupLog('Versions='+JSON.stringify(process.versions));
 
+try
+{
+	const sessionDataPath = path.join(app.getPath('userData'), 'session-data');
+	if (!fs.existsSync(sessionDataPath))
+		fs.mkdirSync(sessionDataPath, { recursive: true });
+	app.setPath('sessionData', sessionDataPath);
+	app.commandLine.appendSwitch('disk-cache-dir', path.join(sessionDataPath, 'Cache'));
+}
+catch(error)
+{
+	console.error('Failed to set session cache path:', error);
+}
+
 require('@electron/remote/main').initialize();
 //remoteMain.enable(window.webContents);
 
@@ -68,6 +81,7 @@ function createWindow(options = {}) {
 	let win = null;
 	let appClosing = false;
 	let windowShowed = false;
+	let showWindowTimeout = false;
 
 	let gotSingleInstanceLock = app.requestSingleInstanceLock();
 	if (!gotSingleInstanceLock) {
@@ -157,6 +171,9 @@ function createWindow(options = {}) {
 
 	const showWindow = function (message = '') {
 
+		if (windowShowed || !win || win.isDestroyed() || !win.webContents || win.webContents.isDestroyed())
+			return;
+
 		if (!windowShowed) {
 			win.show();
 			windowShowed = true;
@@ -170,7 +187,7 @@ function createWindow(options = {}) {
 
 	// https://github.com/electron/electron/issues/42409
 	win.webContents.once('did-finish-load', () => showWindow('Warning: win.show() from did-finish-load and not from ready-to-show'));
-	setTimeout(() => showWindow('Warning: win.show() from setTimeout and not from ready-to-show'), 5000);
+	showWindowTimeout = setTimeout(() => showWindow('Warning: win.show() from setTimeout and not from ready-to-show'), 5000);
 
 	// and load the index.html of the app.
 	win.loadURL(url.format({
@@ -178,12 +195,27 @@ function createWindow(options = {}) {
 		protocol: 'file:',
 		slashes: true
 	}));
+	win.webContents.on('did-fail-load', function (event, errorCode, errorDescription, validatedURL) {
+		console.error('did-fail-load:', errorCode, errorDescription, validatedURL);
+	});
+	win.webContents.on('render-process-gone', function (event, details) {
+		console.error('render-process-gone:', details);
+	});
+	win.webContents.on('unresponsive', function () {
+		console.error('webContents unresponsive');
+	});
+	win.webContents.on('did-start-loading', function () {
+		console.log('webContents did-start-loading');
+	});
+	win.webContents.on('dom-ready', function () {
+		console.log('webContents dom-ready');
+	});
 
 	// Open the DevTools.
 	if (configInit.openDevTools)
 		win.webContents.openDevTools()
 
-	if (toOpenFile && !newWindow)
+	if (toOpenFile && !newWindow && win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed())
 		win.webContents.executeJavaScript('toOpenFile = "' + toOpenFile + '";', false);
 
 	const initData = {};
@@ -191,12 +223,17 @@ function createWindow(options = {}) {
 	if (options.initHistory)
 		initData.history = options.initHistory;
 
-	win.webContents.send('init-data', initData);
+	if (win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed())
+		win.webContents.send('init-data', initData);
 
 	win.on('close', function (event) {
 
 		if (!appClosing) {
 			appClosing = true;
+			if (showWindowTimeout) {
+				clearTimeout(showWindowTimeout);
+				showWindowTimeout = false;
+			}
 
 			win.webContents.executeJavaScript('const saved = reading.progress.save(); tabs.restore.save(false, true); settings.purgeTemporaryFiles(); cache.purge(); ebook.closeAllRenders(); workers.closeAllWorkers(); storage.purgeOldAtomic(); saved;', false).then(function (value) {
 

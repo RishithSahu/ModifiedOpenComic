@@ -21,7 +21,8 @@ var file = false,
 	scale = 1,
 	scaleMagnifyingGlass = false,
 	globalZoom = false,
-	doublePage = false;
+	doublePage = false,
+	onRender = false;
 
 let syncRenderedPdfDimensionsST = false;
 
@@ -470,18 +471,36 @@ async function focusIndex(index, _doublePage = false)
 
 	currentIndex = index;
 	doublePage = !!_doublePage;
-	primeImmediateSourceWindow(10, 10);
+	const isScrollView = reading.readingViewIs('scroll');
+
+	if(!isScrollView)
+	{
+		// Drop stale queued renders from previous turns so the current page does not wait behind old work.
+		queue.clean('readingRender');
+		ai.clean();
+		rendering = {};
+	}
+
+	const immediateSourceWindow = isScrollView ? 10 : (_doublePage ? 6 : 5);
+	primeImmediateSourceWindow(immediateSourceWindow, immediateSourceWindow);
 	pruneRenderedObjectURL();
+
+	const immediateQueue = isScrollView ? getVisbleImages(_doublePage) : {
+		prev: _doublePage ? 2 : 1,
+		next: _doublePage ? 3 : 2,
+	};
 	const limits = getQueueLimits();
 	const prioritizeNext = getPrioritizeNextWindow(_doublePage);
 
-	setRenderQueue(limits.prev, limits.next, false, false, prioritizeNext);
+	setRenderQueue(immediateQueue.prev, immediateQueue.next, false, false, prioritizeNext);
 
 	sendToQueueST = setTimeout(function(){
 
+		setRenderQueue(limits.prev, limits.next, false, false, prioritizeNext);
+
 		if(scaleMagnifyingGlass) setRenderQueue(doublePage ? 3 : 2, doublePage ? 4 : 2, false, true);
 
-	}, 100);
+	}, 180);
 }
 
 function revokeAllObjectURL()
@@ -700,8 +719,6 @@ async function setRenderQueue(prev = 1, next = 1, scale = false, magnifyingGlass
 	});
 }
 
-var onRender = false;
-
 async function setOnRender(num = 1, callback = false)
 {
 	queue.clean('readingRender');
@@ -808,6 +825,8 @@ async function render(index, _scale = false, magnifyingGlass = false, queueIndex
 				const pdfDevicePixelRatioCap = file?.pdfFastRead ? 1 : 1.25;
 				renderDevicePixelRatio = Math.min(renderDevicePixelRatio, pdfDevicePixelRatioCap);
 			}
+			if(runAi)
+				console.log('[ai.trace] render:scale', {index, windowDevicePixelRatio: window.devicePixelRatio, renderDevicePixelRatio, originalWidth, originalHeight});
 
 			_scale = _scale * renderDevicePixelRatio;
 
@@ -821,11 +840,15 @@ async function render(index, _scale = false, magnifyingGlass = false, queueIndex
 			let src = img.dataset.src;
 			const path = img.dataset.path;
 			const key = isPdfCanvasMode() ? src+'|pdf|'+_config.width : src+'|'+_config.width+'x'+_config.height;
+			if(runAi)
+				console.log('[ai.trace] render:start', {index, src, path, renderCanvas, magnifyingGlass, targetWidth: _config.width, targetHeight: _config.height, key});
 
 			fileManager.macosStartAccessingSecurityScopedResource(src);
 
 			if(compatible.image.convert(path)) // Convert unsupported images
 				src = await workers.convertImage(path, {priorize: true});
+
+			const aiInputSrc = src;
 
 			const aiPath = ai.image(src, imageData, {
 				run: runAi,
@@ -864,11 +887,46 @@ async function render(index, _scale = false, magnifyingGlass = false, queueIndex
 				}
 			});
 
+			if(runAi || aiPath)
+			{
+				try {
+					const meta = await image.metadata(aiInputSrc);
+					let sizeBytes = 0;
+					try {
+						if(typeof fs !== 'undefined' && fs && fs.statSync)
+							sizeBytes = fs.statSync(aiInputSrc).size;
+					} catch (e) {}
+					console.log('[ai.trace] render:src-meta', {index, src: aiInputSrc, width: meta.width, height: meta.height, format: meta.format, sizeBytes});
+				}
+				catch (e) {
+					console.log('[ai.trace] render:src-meta-error', {index, src: aiInputSrc, message: e?.message || String(e)});
+				}
+			}
+
 			if(aiPath)
 				src = aiPath;
+			if(runAi || aiPath)
+				console.log('[ai.trace] render:ai-result', {index, aiPath: !!aiPath, src});
+			if(aiPath)
+			{
+				try {
+					const meta = await image.metadata(aiPath);
+					let sizeBytes = 0;
+					try {
+						if(typeof fs !== 'undefined' && fs && fs.statSync)
+							sizeBytes = fs.statSync(aiPath).size;
+					} catch (e) {}
+					console.log('[ai.trace] render:ai-meta', {index, src: aiPath, width: meta.width, height: meta.height, format: meta.format, sizeBytes});
+				}
+				catch (e) {
+					console.log('[ai.trace] render:ai-meta-error', {index, src: aiPath, message: e?.message || String(e)});
+				}
+			}
 
 			const imageSize = aiPath ? reading.ai.size(imageData) : imageData;
 			_config.kernel = _config.width > imageSize.width ? config.readingImageInterpolationMethodUpscaling : config.readingImageInterpolationMethodDownscaling;
+			if(runAi || aiPath)
+				console.log('[ai.trace] render:image-size-kernel', {index, imageSizeWidth: imageSize.width, imageSizeHeight: imageSize.height, targetWidth: _config.width, targetHeight: _config.height, kernel: _config.kernel});
 
 			if(renderCanvas)
 			{
@@ -881,12 +939,17 @@ async function render(index, _scale = false, magnifyingGlass = false, queueIndex
 					const ratio = maxWidth / _config.width;
 					_config.width = maxWidth;
 					_config.height = Math.max(1, Math.round(_config.height * ratio));
+					if(runAi || aiPath)
+						console.log('[ai.trace] render:max-width-cap', {index, maxWidth, cappedWidth: _config.width, cappedHeight: _config.height, ratio});
 				}
 
-				if(renderedObjectsURLCache[key])
+				// Skip cache if AI path was applied; cache key is based on original src, not aiPath
+				if(!aiPath && renderedObjectsURLCache[key])
 				{
 					const data = renderedObjectsURLCache[key];
 					syncRenderedPdfDimensions(index, imageData, data);
+					if(runAi)
+						console.log('[ai.trace] render:cache-hit-non-ai', {index, key, blobWidth: data.width, blobHeight: data.height});
 
 					img.src = data.blob;
 					img.classList.add('blobRendered', 'blobRender', 'sizeFromImg');
@@ -896,51 +959,90 @@ async function render(index, _scale = false, magnifyingGlass = false, queueIndex
 					img.dataset.height = Math.round(data.height);
 					renderQuality = 'processed';
 				}
-				else
-				{
-					try
-					{
+				else {
+					try {
 						let name = imageData.name;
-						name = (name && !/\.jpg$/.test(name)) ? name+'.jpg' : name;
+						name = (name && !/\.jpg$/.test(name)) ? name + '.jpg' : name;
 
 						let data = false;
 
-						if(name)
-						{
-							data = await file.renderBlob(name, _config);
+						if (name) {
+							// If an AI-produced path is available, prefer loading it directly instead of
+							// rendering the original PDF page blob. This ensures AI output is shown.
+							if (aiPath) {
+								console.log('[ai.trace] render:ai-branch', {index, kernel: _config.kernel, targetWidth: _config.width, targetHeight: _config.height, aiSrc: src});
+									if (_config.kernel && cssMethods[_config.kernel]) {
+										// aiPath is already assigned to src above
+										await srcToImage(src, img);
+										img.style.imageRendering = cssMethods[_config.kernel];
+										console.log('[ai.trace] render:ai-css-kernel', {index, kernel: _config.kernel, cssMethod: cssMethods[_config.kernel]});
+									}
+									else {
+										await ensureDirectImageSource(src, img);
+										let aiResizeConfig = {..._config};
+										if(!aiResizeConfig.kernel || aiResizeConfig.kernel === 'chromium')
+											aiResizeConfig.kernel = 'lanczos3';
+										console.log('[ai.trace] render:ai-resize-pre', {index, kernel: aiResizeConfig.kernel, width: aiResizeConfig.width, height: aiResizeConfig.height});
 
-							if(!data || !data.blob)
-							{
-								await srcToImage(src, img);
-							}
-							else
-							{
-								renderedObjectsURL.push({data: data, img: img, key, src, index, createdAt: Date.now()});
-								renderedObjectsURLCache[key] = data;
-								pruneRenderedObjectURL();
-								syncRenderedPdfDimensions(index, imageData, data);
+										if(!(await image.isAnimated(src))) {
+											if(affineInterpolationMethods[aiResizeConfig.kernel]) {
+												aiResizeConfig.imageWidth = rotated90 ? imageSize.height : imageSize.width;
+												aiResizeConfig.imageHeight = rotated90 ? imageSize.width : imageSize.height;
+												aiResizeConfig.interpolator = affineInterpolationMethods[aiResizeConfig.kernel];
+												aiResizeConfig.kernel = false;
+											}
 
-								if(queueIndex !== queue.index('readingRender')) return; // Return if the queue is different
+											try {
+												let data = await image.resizeToBlob(src, aiResizeConfig);
+												console.log('[ai.trace] render:ai-resize-done', {index, outputSize: data.size, info: data.info || null});
 
-								img.src = data.blob;
+												img.src = data.blob;
+												img.classList.add('blobRendered', 'blobRender');
+												img.style.imageRendering = '';
+												renderQuality = 'processed';
+											}
+											catch(error) {
+												console.error(error);
+												console.log('[ai.trace] render:ai-resize-error', {index, message: error?.message || String(error)});
+
+												await srcToImage(src, img);
+												renderQuality = 'fast';
+											}
+										}
+										else {
+											renderQuality = 'processed';
+											console.log('[ai.trace] render:ai-animated-skip-resize', {index});
+										}
+									}
+									// leave data false so we don't cache a rendered blob
+							} else {
+								data = await file.renderBlob(name, _config);
+
+								if (!data || !data.blob) {
+									await srcToImage(src, img);
+								} else {
+									renderedObjectsURL.push({ data: data, img: img, key, src, index, createdAt: Date.now() });
+									renderedObjectsURLCache[key] = data;
+									pruneRenderedObjectURL();
+									syncRenderedPdfDimensions(index, imageData, data);
+
+									if (queueIndex !== queue.index('readingRender')) return; // Return if the queue is different
+
+img.src = data.blob;
 								img.classList.add('blobRendered', 'blobRender', 'sizeFromImg');
 								img.style.imageRendering = '';
 
-								img.dataset.width = Math.round(data.width);
-								img.dataset.height = Math.round(data.height);
-								renderQuality = 'processed';
+									img.dataset.width = Math.round(data.width);
+									img.dataset.height = Math.round(data.height);
+									renderQuality = 'processed';
+								}
 							}
-						}
-						else
-						{
+						} else {
 							await srcToImage(src, img);
 							renderQuality = 'processed';
 						}
-					}
-					catch(error)
-					{
+					} catch (error) {
 						console.error(error);
-
 						await srcToImage(src, img);
 						renderQuality = 'fast';
 					}
@@ -1032,6 +1134,30 @@ async function render(index, _scale = false, magnifyingGlass = false, queueIndex
 			{
 				rendered[index] = _scale;
 				renderedQuality[index] = renderQuality === 'pending' ? 'fast' : renderQuality;
+			}
+			if(runAi || aiPath)
+				console.log('[ai.trace] render:done', {index, renderQuality, finalSrc: img.src, className: img.className, imageRendering: img.style.imageRendering || ''});
+			if(runAi || aiPath)
+			{
+				const logDims = () => {
+					console.log('[ai.trace] render:img-dimensions', {
+						index,
+						naturalWidth: img.naturalWidth,
+						naturalHeight: img.naturalHeight,
+						clientWidth: img.clientWidth,
+						clientHeight: img.clientHeight,
+						containerWidth: ocImg.clientWidth,
+						containerHeight: ocImg.clientHeight,
+						datasetWidth: ocImg.dataset.width,
+						datasetHeight: ocImg.dataset.height,
+						scale: _scale,
+						renderDevicePixelRatio,
+					});
+				};
+				if(img.complete)
+					logDims();
+				else
+					img.addEventListener('load', logDims, {once: true});
 			}
 		}
 

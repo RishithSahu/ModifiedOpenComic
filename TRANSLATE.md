@@ -57,7 +57,7 @@ Translate by [Oleguer Llopart](https://github.com/ollm)
 
 Translate by [Matyáš Caras](https://github.com/hernikplays)
 
-`20.9% | Remain 438 | Translated 116`
+`21.1% | Remain 437 | Translated 117`
 
 <a href="https://github.com/ollm/OpenComic/blob/master/languages/cs.json"><img src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/translated/cs.svg" /></a>
 
@@ -129,7 +129,7 @@ Translate by [Nikwok](https://github.com/nikwok) and [Loocist23](https://github.
 
 Translate by [Tóth Róbert](https://github.com/Nekomajin42)
 
-`18.4% | Remain 452 | Translated 102`
+`18.6% | Remain 451 | Translated 103`
 
 <a href="https://github.com/ollm/OpenComic/blob/master/languages/hu.json"><img src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/translated/hu.svg" /></a>
 

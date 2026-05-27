@@ -363,6 +363,17 @@ async function getComicMetadata(siteId)
 
 		const staffEdges = media?.staff?.edges || [];
 
+		// Determine seriesType: prefer explicit AniList tags, fall back to country
+		let seriesType = normalizeSeriesType(media?.countryOfOrigin);
+		try {
+			const tagNames = (Array.isArray(media?.tags) ? media.tags.map(t => String(t?.name || '').toLowerCase()) : []);
+			if(!seriesType) {
+				if(tagNames.includes('manhwa')) seriesType = 'manhwa';
+				else if(tagNames.includes('manhua')) seriesType = 'manhua';
+				else if(tagNames.includes('manga')) seriesType = 'manga';
+			}
+		} catch(e) {}
+
 		return {
 			id: media.id,
 			title: media?.title?.userPreferred || media?.title?.romaji || media?.title?.english || media?.title?.native || '',
@@ -372,7 +383,7 @@ async function getComicMetadata(siteId)
 			titleUserPreferred: media?.title?.userPreferred || '',
 			synonyms: Array.isArray(media?.synonyms) ? media.synonyms : [],
 			author: extractPrimaryAuthor(staffEdges),
-			seriesType: normalizeSeriesType(media?.countryOfOrigin),
+			seriesType: seriesType,
 			demographic: normalizeDemographic(media?.tags || []),
 			genres: Array.isArray(media?.genres) ? media.genres : [],
 			description: String(media?.description || ''),
@@ -409,6 +420,7 @@ async function getComicData(siteId)
 				romaji
 			}
 		}
+	}
 	}
 	`;
 

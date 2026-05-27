@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "Các tệp sẽ được xóa khỏi bộ nhớ đệm khi không được sử dụng trong nhiều hơn khoảng thời gian này",
 			"clearCache": "Xóa bộ nhớ đệm",
 			"temporaryFiles": "Tệp tin tạm",
-			"temporaryFilesDescription": "Đây là những tệp tin được giải nén khi cần thiết, và sẽ được xóa một phần khi tắt OpenComic",
+			"temporaryFilesDescription": "Day la noi cac tep nen duoc giai nen khi can thiet, va mot phan se duoc xoa khi dong OpenComic. Chi bam khi ban muon xoa TOAN BO du lieu.",
 			"removeTemporaryFiles": "Xóa các tệp tin tạm",
 			"temporaryFilesMaxSize": "Kích thước tệp tin tạm tối đa",
 			"temporaryFilesMaxSizeDescription": "Các tệp tin tạm sẽ bị xóa khi vượt qua mức cài đặt này, ưu tiên các tệp tin cũ không được sử dụng",

@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "指定期間以上使用されていないファイルをキャッシュから削除します。",
 			"clearCache": "キャッシュをクリア",
 			"temporaryFiles": "一時ファイル",
-			"temporaryFilesDescription": "必要に応じて解凍されたファイルがここに保存されます。OpenComic 終了時に一部削除されます。",
+			"temporaryFilesDescription": "ここでは必要に応じて圧縮ファイルが展開され、OpenComic を閉じると一部が削除されます。すべてのデータを消去したい場合のみクリックしてください。",
 			"removeTemporaryFiles": "一時ファイルを削除",
 			"temporaryFilesMaxSize": "一時ファイルの最大サイズ",
 			"temporaryFilesMaxSizeDescription": "一時ファイルが指定サイズを超えたとき、古い未使用ファイルを優先的に削除します。",

@@ -33,8 +33,9 @@ function upscale(src, imageSize, options = {})
 
 		if(fs.existsSync(path))
 		{
-			fileManager.setTmpUsage(path);
-			return path;
+				console.log('[ai.image] cache hit for', path);
+				fileManager.setTmpUsage(path);
+				return path;
 		}
 
 		if(options.generate === false)
@@ -133,19 +134,58 @@ function image(src, imageSize, options = {})
 	const toUpscale = reading.ai.toUpscale(imageSize);
 	const _pipeline = [];
 
+	// Validate selected models belong to the correct model type list.
+	function modelIsValidFor(key, modelKey)
+	{
+		const queryKey = key === 'artifactRemoval' ? 'artifact-removal' : key;
+		const list = OpenComicAI.modelsTypeList[queryKey] || [];
+		return list.includes(modelKey);
+	}
+
 	if(_config.readingAi.artifactRemoval.active)
 	{
-		_pipeline.push({
-			model: _config.readingAi.artifactRemoval.model,
-		});
+		let modelKey = _config.readingAi.artifactRemoval.model;
+		if(!modelIsValidFor('artifactRemoval', modelKey))
+		{
+			console.warn('[ai.image] artifactRemoval model invalid for artifactRemoval:', modelKey);
+			const fallback = (OpenComicAI.modelsTypeList['artifact-removal'] || [])[0];
+			if(fallback)
+			{
+				console.warn('[ai.image] falling back to', fallback);
+				modelKey = fallback;
+			}
+		}
+
+		_pipeline.push({ model: modelKey });
 	}
 
 	if(_config.readingAi.descreen.active)
 	{
-		_pipeline.push({
-			model: _config.readingAi.descreen.model,
-		});
+		let modelKey = _config.readingAi.descreen.model;
+		if(modelKey === 'opencomic-ai-descreen-hard-compact')
+		{
+			console.warn('[ai.image] descreen compact model selected; switching to opencomic-ai-descreen-hard-lite for quality');
+			modelKey = 'opencomic-ai-descreen-hard-lite';
+		}
+		if(!modelIsValidFor('descreen', modelKey))
+		{
+			console.warn('[ai.image] descreen model invalid for descreen:', modelKey);
+			const fallback = (OpenComicAI.modelsTypeList['descreen'] || [])[0];
+			if(fallback)
+			{
+				console.warn('[ai.image] falling back to', fallback);
+				modelKey = fallback;
+			}
+		}
+
+		_pipeline.push({ model: modelKey });
 	}
+
+	// Debug: log pipeline and active flags to help diagnose missing AI steps
+	try {
+		console.log('[ai.image] pipeline built:', JSON.stringify(_pipeline));
+		console.log('[ai.image] config flags: artifactRemoval=', !!_config.readingAi.artifactRemoval.active, 'descreen=', !!_config.readingAi.descreen.active, 'upscale=', !!toUpscale);
+	} catch (e) {}
 
 	if(toUpscale)
 	{
@@ -167,21 +207,32 @@ function image(src, imageSize, options = {})
 
 	if(fs.existsSync(path))
 	{
+		let cacheSize = 0;
+		try { cacheSize = fs.statSync(path).size; } catch(e) {}
+		console.log('[ai.image] cache hit for', path);
+		console.log('[ai.trace] ai:cache-hit', {src, path, cacheSize, pipeline: _pipeline});
 		fileManager.setTmpUsage(path);
 		return path;
 	}
 
-	if(!options.run)
-		return;
+		if(!options.run)
+		{
+			console.log('[ai.image] options.run is false, not running pipeline for', path);
+			return;
+		}
 
 	if(options.start)
 		options.start(pipeline);
+	console.log('[ai.trace] ai:start-async', {src, outPath: path, run: !!options.run, pipeline: _pipeline});
 
 	(async function(){
 
 		for(const step of _pipeline)
 		{
 			const modelInfo = OpenComicAI.model(step.model);
+
+			// Debug: log model info
+			try { console.log('[ai.image] modelInfo for', step.model, modelInfo ? { path: modelInfo.path, files: modelInfo.files } : 'MISSING'); } catch (e) {}
 
 			for(const file of modelInfo.files)
 			{
@@ -190,11 +241,13 @@ function image(src, imageSize, options = {})
 		}
 
 		await threads.job('aiPipeline', {key: imageSha, useThreads: threads.SINGLE}, async function() {
+			console.log('[ai.trace] ai:job-begin', {src, outPath: path, key: imageSha});
 
 			if(fs.existsSync(path))
 			{
 				if(options.end)
 					options.end(path);
+				console.log('[ai.trace] ai:job-skip-existing', {outPath: path});
 
 				return;
 			}
@@ -211,15 +264,32 @@ function image(src, imageSize, options = {})
 			}
 
 			OpenComicAI.keepIccProfile(sharp, 'rgb16');
-			await OpenComicAI.pipeline(image, path, _pipeline, options.progress || false, downloading);
+			console.log('[ai.image] running pipeline for', path, 'pipeline=', JSON.stringify(_pipeline));
+			try {
+				await OpenComicAI.pipeline(image, path, _pipeline, options.progress || false, downloading);
 
-			fileManager.setTmpUsage(path);
+				if (fs.existsSync(path)) {
+					const st = fs.statSync(path);
+					console.log('[ai.image] pipeline output exists:', path, 'size=', st.size);
+					fileManager.setTmpUsage(path);
+				}
+				else {
+					console.error('[ai.image] pipeline completed but output missing for', path);
+				}
+			}
+			catch (err) {
+				console.error('[ai.image] pipeline error for', path, err && err.stack ? err.stack : err);
+			}
 
 			if(convertPath)
 				fs.rmSync(convertPath, {force: true});
 
-			return;
+			if(convertPath)
+				fs.rmSync(convertPath, {force: true});
 
+			console.log('[ai.trace] ai:job-end', {outPath: path, exists: fs.existsSync(path)});
+
+			return;
 		});
 
 		if(options.end)

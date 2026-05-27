@@ -425,7 +425,7 @@ function migrateDefaultModelsToOpenComicAiModels(data)
 			data.config.readingAi.artifactRemoval.model = 'opencomic-ai-artifact-removal-lite';
 
 		if(data.config.readingAi.descreen?.model)
-			data.config.readingAi.descreen.model = 'opencomic-ai-descreen-hard-lite';
+			data.config.readingAi.descreen.model = data.config.readingAi.descreen.model === 'opencomic-ai-descreen-hard-compact' ? 'opencomic-ai-descreen-hard-lite' : 'opencomic-ai-descreen-hard-lite';
 
 		// if(data.config.readingAi.upscale?.model)
 		//	data.config.readingAi.upscale.model = 'opencomic-ai-upscale-lite';
@@ -436,7 +436,7 @@ function migrateDefaultModelsToOpenComicAiModels(data)
 				data.readingShortcutPagesConfig[key].readingAi.artifactRemoval.model = 'opencomic-ai-artifact-removal-lite';
 
 			if(data.readingShortcutPagesConfig[key]?.readingAi?.descreen?.model)
-				data.readingShortcutPagesConfig[key].readingAi.descreen.model = 'opencomic-ai-descreen-hard-lite';
+				data.readingShortcutPagesConfig[key].readingAi.descreen.model = data.readingShortcutPagesConfig[key].readingAi.descreen.model === 'opencomic-ai-descreen-hard-compact' ? 'opencomic-ai-descreen-hard-lite' : 'opencomic-ai-descreen-hard-lite';
 
 			// if(data.readingShortcutPagesConfig[key]?.readingAi?.upscale?.model)
 			//	data.readingShortcutPagesConfig[key].readingAi.upscale.model = 'opencomic-ai-upscale-lite';
@@ -448,7 +448,7 @@ function migrateDefaultModelsToOpenComicAiModels(data)
 				data.readingPagesConfig[key].readingAi.artifactRemoval.model = 'opencomic-ai-artifact-removal-lite';
 
 			if(data.readingPagesConfig[key]?.readingAi?.descreen?.model)
-				data.readingPagesConfig[key].readingAi.descreen.model = 'opencomic-ai-descreen-hard-lite';
+				data.readingPagesConfig[key].readingAi.descreen.model = data.readingPagesConfig[key].readingAi.descreen.model === 'opencomic-ai-descreen-hard-compact' ? 'opencomic-ai-descreen-hard-lite' : 'opencomic-ai-descreen-hard-lite';
 
 			// if(data.readingPagesConfig[key]?.readingAi?.upscale?.model)
 			//	data.readingPagesConfig[key].readingAi.upscale.model = 'opencomic-ai-upscale-lite';

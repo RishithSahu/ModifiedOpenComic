@@ -3588,16 +3588,64 @@ function applyTrackedSeriesReadingDefaults(readingPagesConfigPath = '', storedRe
 		return false;
 
 	if (hasCustomTrackedSeriesMode(storedReadingPagesConfig))
+	{
+		try { console.log('[applyTrackedSeriesReadingDefaults] skipping - customTrackedSeriesMode', storedReadingPagesConfig, 'path=', readingPagesConfigPath); } catch (e) {}
 		return false;
+	}
 
 	if (typeof tracking === 'undefined' || !tracking || typeof tracking.getFolderMetadata !== 'function')
 		return false;
 
 	const metadata = tracking.getFolderMetadata(readingPagesConfigPath);
-	const seriesType = metadata?.seriesType || '';
+	let seriesType = metadata?.seriesType || '';
+
+	// If seriesType not present, attempt more robust inference from stored
+	// trackingFolderMetadata or metadata fields (demographic/genres/confidence).
+	if (!seriesType) {
+		try {
+			const folderMetaRaw = (relative.get('trackingFolderMetadata') || {})[readingPagesConfigPath] || false;
+
+			// Prefer sanitized metadata if available
+			if (folderMetaRaw) {
+				const folderMetadataSchema = require(p.join(appDir, '.dist/tracking/folder-metadata.js'));
+				const sanitized = folderMetadataSchema.sanitizeFolderMetadata(folderMetaRaw || {});
+
+				if (sanitized && sanitized.seriesType)
+					seriesType = sanitized.seriesType;
+
+				// If still missing, use demographic as a strong indicator of manga
+				if (!seriesType && sanitized && sanitized.demographic) {
+					seriesType = 'manga';
+				}
+
+				// If confidence is reasonable and genres/clusters mention manhwa/manhua, use them
+				if (!seriesType && sanitized && sanitized.confidence >= 30) {
+					const allText = ((sanitized.genres || []).join(' ') + ' ' + (sanitized.recommendation?.genreClusters || []).join(' ')).toLowerCase();
+					if (/manhwa/.test(allText)) seriesType = 'manhwa';
+					else if (/manhua/.test(allText)) seriesType = 'manhua';
+				}
+			}
+
+			// Final heuristic: look at original metadata object
+			if (!seriesType && metadata) {
+				if (metadata.demographic) seriesType = 'manga';
+				else if ((metadata.genres || []).some(g=>/manhwa/i.test(g))) seriesType = 'manhwa';
+				else if ((metadata.genres || []).some(g=>/manhua/i.test(g))) seriesType = 'manhua';
+			}
+		}
+		catch (e) {
+			// ignore and continue
+		}
+	}
 
 	if (!seriesType)
 		return false;
+
+	// Debug: log resolved metadata and inferred seriesType to help diagnose misses
+	try {
+		console.log('[applyTrackedSeriesReadingDefaults] metadata=', metadata, 'inferredSeriesType=', seriesType, 'path=', readingPagesConfigPath);
+	}
+	catch (e) {}
 
 	const readingPagesConfig = copy(_config);
 	delete readingPagesConfig.key;
@@ -3623,6 +3671,8 @@ function applyTrackedSeriesReadingDefaults(readingPagesConfigPath = '', storedRe
 	}
 
 	storage.updateVar('readingPagesConfig', readingPagesConfigPath, readingPagesConfig);
+
+	try { console.log('[applyTrackedSeriesReadingDefaults] applied defaults', readingPagesConfig, 'path=', readingPagesConfigPath); } catch(e) {}
 
 	currentReadingConfigKey = false;
 	_config = { ...readingPagesConfig, key: false };
@@ -3882,7 +3932,7 @@ function loadBookmarks(bookmarksChild = false) {
 				name: dom.translatePageName(decodeURI(p.basename(readingProgress.path).replace(/\.[^\.]*$/, ''))),
 				index: readingProgress.index,
 				sha: sha,
-				mainPath: readingProgress.mainPath,
+				mainPath: mainPath,
 				path: readingProgress.path,
 				ebook: readingProgress.ebook,
 				progress: readingProgress.progress,
@@ -5857,6 +5907,10 @@ async function read(path, index = 1, end = false, isCanvas = false, isEbook = fa
 
 		reading.isLoad();
 	}
+
+	// Make the current comic eligible for the home continue-reading card immediately.
+	progress.activeSave();
+	progress.save();
 
 	template.contentRight().children('div').css({ scrollbarGutter: readingViewIs('scroll') ? '' : 'initial' });
 

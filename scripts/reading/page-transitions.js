@@ -10,7 +10,7 @@ const bottomBezier = new Bezier(0,0, 500,200, 500,200, 1000,0),
 const roughPageTurn = require(p.join(appDir, '.dist/reading/page-transitions/rough-page-turn.js')),
 	smoothPageTurn = require(p.join(appDir, '.dist/reading/page-transitions/smooth-page-turn.js'));
 
-var prevDirection = null, prevIndex = -1, waitTransition = false, waitTransitionResolver = false;
+var prevDirection = null, prevIndex = -1, waitTransition = false, waitTransitionResolver = false, lastTransitionRequestAt = 0;
 
 async function goToIndex(index, animation)
 {
@@ -20,9 +20,23 @@ async function goToIndex(index, animation)
 		prevIndex = -1;
 	}
 
+	const now = Date.now();
+	const requestGap = now - lastTransitionRequestAt;
+	lastTransitionRequestAt = now;
+	const rapidRequest = animation && requestGap > 0 && requestGap < 220;
+
+	if(animation)
+	{
+		const pendingTransitions = queue.get('pageTransitions');
+
+		// Keep only the latest pending turn request while an animation is already running.
+		if(pendingTransitions && pendingTransitions.length > 0)
+			queue.set('pageTransitions', []);
+	}
+
 	const readingDirection = reading.realReadingDirection();
 
-	queue.add('pageTransitions', async function(index, animation, readingDirection) {
+	queue.add('pageTransitions', async function(index, animation, readingDirection, rapidRequest) {
 
 		if(prevDirection !== null && prevDirection != readingDirection && waitTransition)
 		{
@@ -30,14 +44,17 @@ async function goToIndex(index, animation)
 			await waitTransition;
 		}
 
-		_goToIndex(index, animation);
+		await _goToIndex(index, animation, rapidRequest);
+
+		if(waitTransition)
+			await waitTransition;
 
 		return;
 
-	}, index, animation, readingDirection);
+	}, index, animation, readingDirection, rapidRequest);
 }
 
-async function _goToIndex(index, animation)
+async function _goToIndex(index, animation, rapidRequest = false)
 {
 	const readingView = reading.readingView();
 
@@ -46,6 +63,9 @@ async function _goToIndex(index, animation)
 
 	index = index - 1;
 	let animationDuration = ((animation) ? _config.readingViewSpeed * 1000 : 0);
+
+	if(animation && rapidRequest && animationDuration > 0)
+		animationDuration = Math.max(120, animationDuration * 0.65);
 
 	if(readingView == 'fade')
 		fadeGoTo(index, animationDuration);

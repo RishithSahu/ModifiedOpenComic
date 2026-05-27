@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "当文件超过指定时间未使用时，将从缓存中删除",
 			"clearCache": "清除缓存",
 			"temporaryFiles": "临时文件",
-			"temporaryFilesDescription": "在这里，压缩文件根据需要进行解压缩，这在关闭 OpenComic 时会自动删除",
+			"temporaryFilesDescription": "这里会按需解压压缩文件，关闭 OpenComic 时会部分清理。仅当你想清除所有数据时才点击。",
 			"removeTemporaryFiles": "删除临时文件",
 			"temporaryFilesMaxSize": "最大临时文件数",
 			"temporaryFilesMaxSizeDescription": "当临时文件超过此大小时将被删除，优先考虑较旧的未使用文件",

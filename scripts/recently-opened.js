@@ -16,6 +16,7 @@ async function load(animation = true, content = false)
 	dom.fromLibrary(false);
 	dom.indexPathControl(false, false, false, false, true);
 	dom.setCurrentPageVars('recently-opened');
+	reading.hideContent();
 
 	template.loadContentRight('index.content.right.loading.html', animation);
 	template.loadHeader('recently.opened.header.html', animation);
@@ -99,11 +100,22 @@ async function load(animation = true, content = false)
 		{
 			let images = await dom.getFolderThumbnails(comics[key].path);
 
+			let openMainPath = comics[key].mainPath;
+			if(!fileManager.isServer(comics[key].path))
+			{
+				try
+				{
+					if(fs.existsSync(comics[key].path) && !fs.statSync(comics[key].path).isDirectory())
+						openMainPath = p.dirname(comics[key].path);
+				}
+				catch(error){}
+			}
+
 			comics[key].sha = sha1(comics[key].path);
 			comics[key].poster = images.poster;
-			comics[key].onclick = 'recentlyOpened.set(\''+escapeQuotes(escapeBackSlash(comics[key].mainPath), 'simples')+'\')';
+			comics[key].onclick = 'recentlyOpened.set(\''+escapeQuotes(escapeBackSlash(openMainPath), 'simples')+'\')';
 			comics[key].images = images.images;
-			comics[key].mainPath = config.showFullPathOpened ? p.parse(comics[key].path).root : comics[key].mainPath;
+			comics[key].mainPath = openMainPath;
 			comics[key].readingProgress = readingProgress[comics[key].path] || {lastReading: 0};
 			comics[key].progress = images.progress;
 		}

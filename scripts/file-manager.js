@@ -211,6 +211,7 @@ var file = function (path, _config = false) {
 			);
 
 			if (!this.config.fromThumbnailsGeneration && (compressedFile.config.fromThumbnailsGeneration || hasSyntheticSinglePage)) {
+				console.log('[openCompressed] clearing thumbnail/synthetic state', path, 'hasSyntheticSinglePage=', hasSyntheticSinglePage, 'compressedFile.fromThumbnailsGeneration=', !!compressedFile.config.fromThumbnailsGeneration);
 				compressedOpened[path].compressed.config.fromThumbnailsGeneration = false;
 				compressedOpened[path].compressed.config.width = compressedOpened[path].compressed._config.width;
 				compressedOpened[path].compressed.files = false;
@@ -256,13 +257,35 @@ var file = function (path, _config = false) {
 		let mtime = !_isServer ? fs.statSync(firstCompressedFile(path)).mtime.getTime() : 1;
 		let compressed = this.openCompressed(path, _realPath, mtime);
 
+		if (this.config.forceFullRead) {
+			try {
+				console.log('[readCompressed] forceFullRead - deleting cache', compressed.cacheFile, this.path);
+				cache.deleteJson(compressed.cacheFile);
+			}
+			catch (e) { }
+			// mark guard to avoid other parts writing cache for this compressed file while we do a full read
+			forceFullReadInProgress[compressed.cacheFile] = true;
+			this.config.fromThumbnailsGeneration = false;
+
+			// Also clear any in-memory single-page results and reset PDF object
+			try {
+				compressed.files = false;
+				if (compressed.pdf) {
+					compressed.pdf.destroy();
+					compressed.pdf = null;
+				}
+			}
+			catch (e) { }
+		}
+
 		let json = cache.readJson(compressed.cacheFile);
+		console.log('[readCompressed] cacheRead=', !!json, 'forceFullRead=', !!this.config.forceFullRead, 'fromThumbnailsGeneration=', !!this.config.fromThumbnailsGeneration, 'path=', this.path);
 		let isBadPdfCache = false;
 
-		if (this.config.cache) {
+		if (this.config.cache && !this.config.forceFullRead) {
 			if (json && json.files) {
 				if (json.mtime == mtime || _isServer) {
-					// Invalidate polluted 1-page caches for full PDF reads
+					// Invalidate polluted 1-page caches for full reads (thumbnails previously wrote a 1-page cache)
 					let isPdf = path.toLowerCase().endsWith('.pdf');
 					const jsonFirstFile = json.files[0] || {};
 					isBadPdfCache = isPdf && !this.config.fromThumbnailsGeneration && json.files.length === 1 && (
@@ -270,13 +293,23 @@ var file = function (path, _config = false) {
 						/^page-0*1\.(?:jpg|jpeg|png)$/i.test(jsonFirstFile.name || '')
 					);
 
-					if (!isBadPdfCache) {
-						if (json.error && !this.config.fromThumbnailsGeneration && !this.config.subtask)
-							dom.compressedError({ message: json.error }, false, sha1(this.path), this.path);
+					// Also treat any single-file cache as suspect when opening for full read
+					const isBadSinglePageCache = (!this.config.fromThumbnailsGeneration && json.files.length === 1);
 
-						setFileData(path, json.files);
+					if (!isBadPdfCache && !isBadSinglePageCache) {
+						// Extra sanity: avoid returning a single-file PDF cache that looks suspicious.
+						if (json.files.length === 1 && path.toLowerCase().endsWith('.pdf') && !this.config.fromThumbnailsGeneration) {
+							console.warn('[readCompressed] suspicious single-file PDF cache, forcing full read', compressed.cacheFile, path);
+							try { cache.deleteJson(compressed.cacheFile); } catch (e) {}
+						}
+						else {
+							if (json.error && !this.config.fromThumbnailsGeneration && !this.config.subtask)
+								dom.compressedError({ message: json.error }, false, sha1(this.path), this.path);
 
-						return json.files;
+							setFileData(path, json.files);
+
+							return json.files;
+						}
 					}
 				}
 
@@ -304,15 +337,28 @@ var file = function (path, _config = false) {
 			files = this.setPosterFromMetadata(files, metadata.poster);
 
 		if (!json || json.mtime != mtime || isBadPdfCache) {
-			let isSyntheticPdf = this.config.fromThumbnailsGeneration && path.toLowerCase().endsWith('.pdf');
-			if (!isSyntheticPdf) {
-				cache.writeJson(compressed.cacheFile, { mtime: mtime, files: files, metadata: metadata });
+			// Do not persist cache when this read was performed for thumbnails generation
+			if (!this.config.fromThumbnailsGeneration) {
+				try {
+					if (!forceFullReadInProgress[compressed.cacheFile]) {
+						cache.writeJson(compressed.cacheFile, { mtime: mtime, files: files, metadata: metadata });
+					}
+					else {
+						console.log('[readCompressed] skipping cache.writeJson due to forceFullReadInProgress', compressed.cacheFile, path);
+					}
+				}
+				catch (e) { }
 			}
 		}
 
-		setFileData(path, files);
-
-		return files;
+		try {
+			setFileData(path, files);
+			return files;
+		}
+		finally {
+			if (this.config.forceFullRead)
+				delete forceFullReadInProgress[compressed.cacheFile];
+		}
 
 	}
 
@@ -501,6 +547,8 @@ var file = function (path, _config = false) {
 
 		const images = [];
 		let imagesNum = 0;
+		const normalizedFrom = from ? p.normalize(from) : false;
+		const normalizedFromKey = (normalizedFrom && process.platform === 'win32') ? normalizedFrom.toLowerCase() : normalizedFrom;
 
 		const reverse = num < 0 ? true : false;
 		const len = fullFiltered.length;
@@ -512,9 +560,14 @@ var file = function (path, _config = false) {
 
 		for (let i = start; i !== end; i += step) {
 			let file = fullFiltered[i];
+			const filePath = file?.path || '';
+			const normalizedFilePath = filePath ? p.normalize(filePath) : '';
+			const normalizedFileKey = (normalizedFilePath && process.platform === 'win32') ? normalizedFilePath.toLowerCase() : normalizedFilePath;
+			const fromMatchesFile = !!normalizedFromKey && normalizedFileKey === normalizedFromKey;
+			const fromInFile = !!normalizedFromKey && !!normalizedFileKey && normalizedFromKey.startsWith(normalizedFileKey);
 			let image = false;
 
-			if (!from || fromReached || new RegExp('^\s*' + pregQuote(file.path)).test(from)) {
+			if (!normalizedFromKey || fromReached || fromInFile) {
 				if (file.folder || file.compressed) {
 					const _files = file.files || await this.read({ cacheServer: true, filtered: false }, file.path);
 					const _fullFiltered = fileManager.filtered(_files);
@@ -555,7 +608,7 @@ var file = function (path, _config = false) {
 				}
 			}
 
-			if (file.path === from)
+			if (fromMatchesFile)
 				fromReached = true;
 
 			if (this.config.cacheOnly && index > 16 && deep > 0)
@@ -1131,7 +1184,13 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 
 		if (json) {
 			json.error = (error.detail || error.message);
-			cache.writeJson(this.cacheFile, json);
+			try {
+				if (!forceFullReadInProgress[this.cacheFile])
+					cache.writeJson(this.cacheFile, json);
+				else
+					console.log('[saveErrorToCache] skipping write due to forceFullReadInProgress', this.cacheFile);
+			}
+			catch (e) {}
 		}
 
 	}
@@ -1141,7 +1200,11 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 		this.updateConfig(config);
 		this.getFeatures();
 
-		if (this.config.cache && this.files) {
+		if (this.config.forceFullRead) {
+			this.config.fromThumbnailsGeneration = false;
+			this.files = false;
+		}
+		else if (this.config.cache && this.files) {
 			let isPdf = this.features.pdf;
 			const memoryFirstFile = this.files?.[0] || {};
 			let isBadPdfMemoryCache = isPdf && !this.config.fromThumbnailsGeneration && this.files.length === 1 && (
@@ -2083,6 +2146,9 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 
 								await self.isFullyWrittenToDisk(path, realPath);
 
+								// Mark the extracted temp file as in-use so cleanup won't remove it
+								try { fileManager.setTmpUsage(realPath); } catch (e) { }
+
 								self.setFileStatus(name, { extracted: extract });
 								self.whenExtractFile(path);
 
@@ -2287,7 +2353,13 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 
 			if (entry) {
 				entry.size = nextSize;
-				cache.writeJson(this.cacheFile, json);
+				try {
+					if (!forceFullReadInProgress[this.cacheFile])
+						cache.writeJson(this.cacheFile, json);
+					else
+						console.log('[updatePdfPageSizeCache] skipping write due to forceFullReadInProgress', this.cacheFile, file);
+				}
+				catch (e) { }
 			}
 		}
 
@@ -2301,14 +2373,19 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 
 		let files = [];
 
+		if (this.config.forceFullRead)
+			this.config.fromThumbnailsGeneration = false;
+
 		// For thumbnail generation, skip loading the entire PDF just for metadata.
 		// Return a synthetic page-1 entry with dummy dimensions — the actual rendering
 		// happens in extractPdf which will open the PDF only briefly for page 1.
 		if (this.config.fromThumbnailsGeneration) {
+			console.log('[readPdf] returning synthetic single-page for thumbnails generation', this.path);
 			let file = 'page-0001.jpg';
 			let size = { width: 800, height: 1200 };
 			files.push({ name: file, path: p.join(this.path, file), folder: false, compressed: false, size: size, page: 1 });
 			this.setFileStatus(file, { page: 1, extracted: false, size: size });
+			console.log('[readPdf] synthetic files count=', files.length, this.path);
 			return this.files = files;
 		}
 
@@ -2389,6 +2466,7 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 			this.setFileStatus(file, { page: i, extracted: false, size: size });
 		}
 
+		console.log('[readPdf] full pdf files count=', files.length, this.path);
 		return this.files = files;
 
 	}
@@ -2623,6 +2701,11 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 					if (e.code !== 'ENOENT') console.error('Error writing PDF thumbnail:', e);
 				}
 
+				// Mark the extracted temp file as in-use so cleanup won't remove it
+				try {
+					fileManager.setTmpUsage(path);
+				} catch (e) { /* best-effort */ }
+
 				// Free canvas and image data immediately to prevent memory accumulation
 				canvas.width = 0;
 				canvas.height = 0;
@@ -2660,6 +2743,10 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 
 		if (status) {
 			this.log('renderBlobPdf');
+			try {
+				console.log('[renderBlobPdf] path=', this.path, 'file=', file, 'status=', status, 'fromThumbnailsGeneration=', !!this.config.fromThumbnailsGeneration);
+			}
+			catch (e) {}
 
 			let page;
 			let retries = 5;
@@ -2883,6 +2970,10 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 			_this.setFileStatus(file, { extracted: true, width: _this.config.width });
 
 			_this.setProgress(epub.extracted ? (0.5 + progressIndex++ / totalFiles / 2) : (progressIndex++ / totalFiles));
+
+			// Mark the extracted temp file as in-use so cleanup won't remove it
+			try { fileManager.setTmpUsage(path); } catch (e) { }
+
 			_this.whenExtractFile(virtualPath);
 
 		});
@@ -3215,6 +3306,8 @@ var downloadedCompressedFiles = {
 	list: [],
 	sizes: {},
 };
+// Guard map to prevent cache writes while a forceFullRead is in progress for a compressed cache file
+var forceFullReadInProgress = {};
 
 function downloadedCompressedFile(path) {
 	let realPath = fileManager.realPath(path, -1);

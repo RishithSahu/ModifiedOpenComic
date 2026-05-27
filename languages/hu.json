@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "",
 			"clearCache": "",
 			"temporaryFiles": "",
-			"temporaryFilesDescription": "",
+			"temporaryFilesDescription": "Itt a tomoritett fajlok szukseg szerint kicsomagolasra kerulnek, es az OpenComic bezarasakor ezek egy resze torlodik. CSAK akkor kattints, ha MINDEN adatot torolni szeretnel.",
 			"removeTemporaryFiles": "",
 			"temporaryFilesMaxSize": "",
 			"temporaryFilesMaxSizeDescription": "",

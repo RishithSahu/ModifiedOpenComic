@@ -1,0 +1,7 @@
+﻿Dead-code ESLint summary
+Generated: 2026-04-27T18:08:48.5501889+05:30
+
+no-unused-vars: 290
+no-unreachable: 0
+no-dupe-keys: 0
+no-constant-condition: 2

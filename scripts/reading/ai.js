@@ -53,6 +53,8 @@ function change(feaute, key, value, save = true) {
 				case 'model':
 
 					const model = OpenComicAI.model(value);
+					if (value === 'opencomic-ai-descreen-hard-compact')
+						value = 'opencomic-ai-descreen-hard-lite';
 					dom.queryAll('.reading-ai-descreen-models .text').html(getModelName(value));
 					events.eventRange();
 
@@ -287,6 +289,44 @@ function processContext() {
 	// Artifact Removal
 	handlebarsContext.readingArtifactRemovalModel = getModelName(_config.readingAi.artifactRemoval.model);
 }
+
+// Validate reading AI models are in the available model lists and auto-correct if needed.
+function validateReadingAiModels() {
+	try {
+		if(typeof _config === 'undefined' || !_config || !_config.readingAi) {
+			// Config not available yet (early load). Skip validation.
+			return;
+		}
+
+		const descreenList = OpenComicAI.modelsTypeList['descreen'] || [];
+		const artifactList = OpenComicAI.modelsTypeList['artifact-removal'] || [];
+
+		if(_config.readingAi.descreen && _config.readingAi.descreen.model && !descreenList.includes(_config.readingAi.descreen.model)) {
+			const fallback = descreenList[0];
+			if(fallback) {
+				console.warn('[reading.ai] descreen model invalid, switching to', fallback);
+				change('descreen', 'model', fallback, true);
+			}
+		}
+		else if(_config.readingAi.descreen && _config.readingAi.descreen.model === 'opencomic-ai-descreen-hard-compact') {
+			console.warn('[reading.ai] descreen model compact is lower quality, switching to opencomic-ai-descreen-hard-lite');
+			change('descreen', 'model', 'opencomic-ai-descreen-hard-lite', true);
+		}
+
+		if(_config.readingAi.artifactRemoval && _config.readingAi.artifactRemoval.model && !artifactList.includes(_config.readingAi.artifactRemoval.model)) {
+			const fallback = artifactList[0];
+			if(fallback) {
+				console.warn('[reading.ai] artifactRemoval model invalid, switching to', fallback);
+				change('artifactRemoval', 'model', fallback, true);
+			}
+		}
+	} catch (e) {
+		console.warn('[reading.ai] validateReadingAiModels failed', e);
+	}
+}
+
+// Run validation once when module is loaded
+validateReadingAiModels();
 
 
 module.exports = {

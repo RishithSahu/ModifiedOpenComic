@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "Arquivos que não forem usados excedendo esse tempo serão removidos do cache",
 			"clearCache": "Limpar cache",
 			"temporaryFiles": "Arquivos temporários",
-			"temporaryFilesDescription": "Aqui os arquivos comprimidos são decomprimidos a medida que eles são necessários, isso é particalmente removido quando OpenComic fecha",
+			"temporaryFilesDescription": "Aqui os arquivos comprimidos sao descomprimidos conforme necessario, e isso e parcialmente removido ao fechar o OpenComic. Clique SOMENTE se quiser apagar TODOS os dados.",
 			"removeTemporaryFiles": "Remover arquivos temporários",
 			"temporaryFilesMaxSize": "Máximo de arquivos temporários",
 			"temporaryFilesMaxSizeDescription": "Arquivos temporários que excederem esse tamanho serão removidos, priorizando arquivos não usados antigos",

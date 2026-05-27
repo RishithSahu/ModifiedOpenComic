@@ -453,7 +453,7 @@
 			"cacheMaxOldDescription": "Bu süre boyunca kullanılmayan dosyalar önbellekten kaldırılacaktır",
 			"clearCache": "Önbelleği temizle",
 			"temporaryFiles": "Geçici dosyalar",
-			"temporaryFilesDescription": "Burada bulunan sıkıştırılmış dosyalar ihtiyaç duyuldukça açılır, buradaki dosyalar OpenComic her kapatılırken kısmi olarak kaldırılır",
+			"temporaryFilesDescription": "Burada sikistirilmis dosyalar gerektikce acilir ve OpenComic kapatildiginda bir kismi kaldirilir. Tum verileri temizlemek istiyorsaniz YALNIZCA o zaman tiklayin.",
 			"removeTemporaryFiles": "Geçici dosyaları kaldır",
 			"temporaryFilesMaxSize": "Maksimum geçici dosya boyutu",
 			"temporaryFilesMaxSizeDescription": "Geçici dosyalar bu boyutu aştığında en eskilere öncelik verilerek kaldırılacaktır",

@@ -1,6 +1,7 @@
 const domPoster = require(p.join(appDir, '.dist/dom/poster.js')),
 	domManager = require(p.join(appDir, '.dist/dom/dom.js')),
 	labels = require(p.join(appDir, '.dist/dom/labels.js')),
+	cache = require(p.join(appDir, '.dist/cache.js')),
 	fileInfo = require(p.join(appDir, '.dist/dom/file-info.js')),
 	clearFileCache = require(p.join(appDir, '.dist/dom/clear-file-cache.js')),
 	search = require(p.join(appDir, '.dist/dom/search.js')),
@@ -1358,6 +1359,7 @@ async function loadIndexPage(animation = true, path = false, content = false, ke
 	mountRecommendationFeedbackControls();
 	restoreRecommendationFeedbackStates();
 	bindThumbnailRecovery();
+	scroll.check();
 	gamepad.updateBrowsableItems(path ? sha1(path) : 'library');
 	reading.discord.update();
 	scroll.event();
@@ -3907,6 +3909,30 @@ async function openComic(animation = true, path = true, mainPath = true, end = f
 	setCurrentPathScrollTop(path);
 
 	let now = Date.now();
+	const originalPath = path;
+
+	if (typeof mainPath !== 'string' || !mainPath)
+		mainPath = path;
+
+	if (!fileManager.isServer(originalPath)) {
+		try {
+			if (fs.existsSync(originalPath) && !fs.statSync(originalPath).isDirectory()) {
+				const originalRoot = p.parse(originalPath).root;
+
+				if (mainPath === originalPath || mainPath === originalRoot)
+					mainPath = p.dirname(originalPath);
+			}
+		}
+		catch (error) { }
+	}
+
+	if (!fileManager.isServer(mainPath)) {
+		try {
+			if (fs.existsSync(mainPath) && !fs.statSync(mainPath).isDirectory())
+				mainPath = p.dirname(mainPath);
+		}
+		catch (error) { }
+	}
 
 	let startImage = false;
 	let imagePath = path;
@@ -3928,7 +3954,24 @@ async function openComic(animation = true, path = true, mainPath = true, end = f
 	let files = [];
 
 	try {
-		files = await file.read({ filtered: false, sort: { extraKey: 'Reading' } });
+		const readConfig = { filtered: false, sort: { extraKey: 'Reading' } };
+		// When opening from next/prev while reading, force a full read to avoid
+		// using thumbnail-generated single-page caches.
+		if (fromNextAndPrev || fromGoBack) {
+			readConfig.forceFullRead = true;
+		}
+
+		if (readConfig.forceFullRead) {
+			try {
+				const cacheName = 'compressed-files-' + sha1(p.normalize(path)) + '.json';
+				cache.deleteJson(cacheName);
+				const serverCacheName = 'server-files-' + sha1(p.normalize(path)) + '.json';
+				cache.deleteJson(serverCacheName);
+			}
+			catch (e) {}
+		}
+
+		files = await file.read(readConfig);
 	}
 	catch (error) {
 		console.error(error);

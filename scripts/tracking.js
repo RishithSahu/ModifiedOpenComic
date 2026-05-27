@@ -1373,7 +1373,24 @@ async function scrapeFolderMetadata(path = false, force = false)
 		});
 		const best = ranked[0] || false;
 
-		if(!best || (best.score || 0) < METADATA_SCRAPE_MIN_CONFIDENCE)
+		if(!best)
+		{
+			metadataScrapeCooldown.set(cacheKey, now + METADATA_SCRAPE_RETRY_COOLDOWN);
+			metadataScrapeStats.unmatched++;
+			logMetadataScrape('unmatched:no-result', {
+				path: folderPath,
+				rejectedIds: rejectedIds,
+			});
+			return current || false;
+		}
+
+		// Fetch AniList metadata for the best candidate. If AniList explicitly
+		// provides a `seriesType` (via tags or country), accept the match even
+		// if the search confidence is below the usual threshold.
+		const metadata = await (sitesScripts.anilist.getComicMetadata ? sitesScripts.anilist.getComicMetadata(best.id) : {});
+		const hasSeriesType = !!(metadata && metadata.seriesType);
+
+		if((best.score || 0) < METADATA_SCRAPE_MIN_CONFIDENCE && !hasSeriesType)
 		{
 			metadataScrapeCooldown.set(cacheKey, now + METADATA_SCRAPE_RETRY_COOLDOWN);
 			metadataScrapeStats.unmatched++;
@@ -1386,8 +1403,6 @@ async function scrapeFolderMetadata(path = false, force = false)
 			});
 			return current || false;
 		}
-
-		const metadata = await (sitesScripts.anilist.getComicMetadata ? sitesScripts.anilist.getComicMetadata(best.id) : {});
 		const chapters = +(metadata?.chapters || 0);
 		const estimatedReadingMinutes = chapters > 0 ? Math.round(chapters * 7) : 0;
 		const genreClusters = Array.isArray(metadata?.genres) ? metadata.genres.map(function(genre) {
