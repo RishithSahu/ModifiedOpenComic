@@ -6,7 +6,10 @@ const METADATA_SCRAPE_TTL = 1000 * 60 * 60 * 24 * 30; // 30 days
 const METADATA_SCRAPE_RETRY_COOLDOWN = 1000 * 60 * 60 * 6; // 6 hours
 const METADATA_SCRAPE_QUEUE_DELAY = 2200;
 const METADATA_SCRAPE_QUEUE_BATCH_SIZE = 24;
+const METADATA_SCRAPE_QUEUE_DELAY_FAST = 500;
+const METADATA_SCRAPE_QUEUE_FAST_COUNT = 8;
 const METADATA_UI_REFRESH_THROTTLE = 1600;
+const METADATA_UI_REFRESH_ACTIVE_THROTTLE = 4000;
 const TRACKING_METADATA_DEBUG = false;
 
 var sitesScripts = {};
@@ -380,16 +383,18 @@ function queueMetadataUiRefresh()
 	if(typeof dom === 'undefined' || !dom || typeof dom.reload !== 'function')
 		return;
 
-	if(metadataScrapeQueueActive || metadataScrapeQueue.length)
+	const queueActive = metadataScrapeQueueActive || metadataScrapeQueue.length;
+	const throttle = queueActive ? METADATA_UI_REFRESH_ACTIVE_THROTTLE : METADATA_UI_REFRESH_THROTTLE;
+
+	if(metadataUiRefreshST)
 	{
 		metadataUiRefreshPending = true;
 		return;
 	}
 
 	const elapsed = Date.now() - metadataUiRefreshLast;
-	const wait = Math.max(0, METADATA_UI_REFRESH_THROTTLE - elapsed);
+	const wait = Math.max(0, throttle - elapsed);
 
-	clearTimeout(metadataUiRefreshST);
 	metadataUiRefreshST = setTimeout(function() {
 
 		metadataUiRefreshST = false;
@@ -398,7 +403,27 @@ function queueMetadataUiRefresh()
 		if(typeof onReading === 'undefined' || !onReading)
 			dom.reload(false, false);
 
+		if(metadataUiRefreshPending)
+		{
+			metadataUiRefreshPending = false;
+			queueMetadataUiRefresh();
+		}
+
 	}, wait);
+}
+
+function normalizeMetadataQueueOptions(forceOrOptions = false)
+{
+	if(forceOrOptions && typeof forceOrOptions === 'object')
+	{
+		return {
+			force: !!forceOrOptions.force,
+			priority: !!forceOrOptions.priority,
+			fast: !!forceOrOptions.fast,
+		};
+	}
+
+	return { force: !!forceOrOptions, priority: false, fast: false };
 }
 
 function needsMetadataScrape(path = false)
@@ -464,7 +489,9 @@ async function processMetadataScrapeQueue()
 
 			if(metadataScrapeQueue.length)
 			{
-				const delay = (processed % METADATA_SCRAPE_QUEUE_BATCH_SIZE === 0) ? (METADATA_SCRAPE_QUEUE_DELAY * 3) : METADATA_SCRAPE_QUEUE_DELAY;
+				const baseDelay = (processed % METADATA_SCRAPE_QUEUE_BATCH_SIZE === 0) ? (METADATA_SCRAPE_QUEUE_DELAY * 3) : METADATA_SCRAPE_QUEUE_DELAY;
+				const fastDelay = item.fast || processed <= METADATA_SCRAPE_QUEUE_FAST_COUNT;
+				const delay = fastDelay ? METADATA_SCRAPE_QUEUE_DELAY_FAST : baseDelay;
 				await app.sleep(delay);
 			}
 		}
@@ -487,7 +514,10 @@ function queueFolderMetadataScrape(path = false, force = false)
 	if(!folderPath)
 		return false;
 
-	if(!force && !needsMetadataScrape(folderPath))
+	const options = normalizeMetadataQueueOptions(force);
+	const shouldForce = !!options.force;
+
+	if(!shouldForce && !needsMetadataScrape(folderPath))
 		return false;
 
 	const cacheKey = metadataScrapeCacheKey(folderPath);
@@ -497,13 +527,15 @@ function queueFolderMetadataScrape(path = false, force = false)
 
 	if(metadataScrapeQueueSet.has(cacheKey))
 	{
-		if(force)
+		if(shouldForce || options.priority || options.fast)
 		{
 			for(let i = 0, len = metadataScrapeQueue.length; i < len; i++)
 			{
 				if(metadataScrapeCacheKey(metadataScrapeQueue[i].path) === cacheKey)
 				{
-					metadataScrapeQueue[i].force = true;
+					metadataScrapeQueue[i].force = metadataScrapeQueue[i].force || shouldForce;
+					metadataScrapeQueue[i].priority = metadataScrapeQueue[i].priority || options.priority;
+					metadataScrapeQueue[i].fast = metadataScrapeQueue[i].fast || options.fast || options.priority;
 					break;
 				}
 			}
@@ -513,15 +545,22 @@ function queueFolderMetadataScrape(path = false, force = false)
 	}
 
 	metadataScrapeQueueSet.add(cacheKey);
-	metadataScrapeQueue.push({
+	const entry = {
 		path: folderPath,
-		force: !!force,
-	});
+		force: shouldForce,
+		priority: !!options.priority,
+		fast: !!options.fast || !!options.priority,
+	};
+
+	if(options.priority)
+		metadataScrapeQueue.unshift(entry);
+	else
+		metadataScrapeQueue.push(entry);
 	metadataScrapeStats.queued++;
 	metadataScrapeStats.lastFolder = folderPath;
 	logMetadataScrape('queued', {
 		path: folderPath,
-		force: !!force,
+		force: shouldForce,
 		queueSize: metadataScrapeQueue.length,
 	});
 

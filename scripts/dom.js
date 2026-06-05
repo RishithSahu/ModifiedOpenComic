@@ -700,7 +700,7 @@ async function loadFilesIndexPage(files, file, animation, path, keepScroll, main
 	handlebarsContext.folderMetadataTop = getFolderMetadataTop(path, mainPath, trackingFolderMetadata);
 
 	if (tracking?.queueFolderMetadataScrapeMany && metadataQueuePaths.length)
-		tracking.queueFolderMetadataScrapeMany(metadataQueuePaths, false);
+		tracking.queueFolderMetadataScrapeMany(metadataQueuePaths, { priority: true, fast: true });
 
 	if (!pathFiles.length && fileManager.isServer(path) && serverClient.serverLastError()) {
 		handlebarsContext.serverLastError = serverClient.serverLastError();
@@ -1209,7 +1209,7 @@ async function loadIndexPage(animation = true, path = false, content = false, ke
 			}
 
 			if (tracking?.queueFolderMetadataScrapeMany && metadataQueuePaths.length)
-				tracking.queueFolderMetadataScrapeMany(metadataQueuePaths, false);
+				tracking.queueFolderMetadataScrapeMany(metadataQueuePaths, { priority: true, fast: true });
 		}
 
 		// Avoid continue if another loadIndexPage has been run

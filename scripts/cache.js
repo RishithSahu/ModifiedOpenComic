@@ -236,7 +236,7 @@ function returnThumbnailsImages(images, callback, file = false)
 
 	if(toGenerateThumbnails.length > 0 && file)
 	{
-		threads.job('cacheMakeAvailable', {useThreads: 0.01, delay: 50}, async function() {
+		threads.job('cacheMakeAvailable', {useThreads: 0.2, delay: 10}, async function() {
 
 			await file.makeAvailable(toGenerateThumbnails, function(image) {
 

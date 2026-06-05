@@ -210,7 +210,7 @@ function queueWarmup(visibleItems = false) {
 			return a.distance - b.distance;
 		});
 
-		const limit = 24;
+		const limit = 36;
 
 		for (let i = 0, len = Math.min(limit, pending.length); i < len; i++) {
 			addToQueue(pending[i].sha);
@@ -272,7 +272,7 @@ function addToQueue(sha) {
 	if (thumbnails || progress) {
 		setStatus(sha, { addToQueueProgress: true, lastQueueTry: Date.now() });
 
-		threads.job('folderThumbnails', { key: sha, useThreads: 0.1 }, async function () {
+		threads.job('folderThumbnails', { key: sha, useThreads: 0.2 }, async function () {
 			if (onReading)
 			{
 				setStatus(sha, { addToQueueProgress: false });

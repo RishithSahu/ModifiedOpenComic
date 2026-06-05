@@ -211,7 +211,6 @@ var file = function (path, _config = false) {
 			);
 
 			if (!this.config.fromThumbnailsGeneration && (compressedFile.config.fromThumbnailsGeneration || hasSyntheticSinglePage)) {
-				console.log('[openCompressed] clearing thumbnail/synthetic state', path, 'hasSyntheticSinglePage=', hasSyntheticSinglePage, 'compressedFile.fromThumbnailsGeneration=', !!compressedFile.config.fromThumbnailsGeneration);
 				compressedOpened[path].compressed.config.fromThumbnailsGeneration = false;
 				compressedOpened[path].compressed.config.width = compressedOpened[path].compressed._config.width;
 				compressedOpened[path].compressed.files = false;
@@ -259,7 +258,6 @@ var file = function (path, _config = false) {
 
 		if (this.config.forceFullRead) {
 			try {
-				console.log('[readCompressed] forceFullRead - deleting cache', compressed.cacheFile, this.path);
 				cache.deleteJson(compressed.cacheFile);
 			}
 			catch (e) { }
@@ -279,7 +277,6 @@ var file = function (path, _config = false) {
 		}
 
 		let json = cache.readJson(compressed.cacheFile);
-		console.log('[readCompressed] cacheRead=', !!json, 'forceFullRead=', !!this.config.forceFullRead, 'fromThumbnailsGeneration=', !!this.config.fromThumbnailsGeneration, 'path=', this.path);
 		let isBadPdfCache = false;
 
 		if (this.config.cache && !this.config.forceFullRead) {
@@ -299,7 +296,6 @@ var file = function (path, _config = false) {
 					if (!isBadPdfCache && !isBadSinglePageCache) {
 						// Extra sanity: avoid returning a single-file PDF cache that looks suspicious.
 						if (json.files.length === 1 && path.toLowerCase().endsWith('.pdf') && !this.config.fromThumbnailsGeneration) {
-							console.warn('[readCompressed] suspicious single-file PDF cache, forcing full read', compressed.cacheFile, path);
 							try { cache.deleteJson(compressed.cacheFile); } catch (e) {}
 						}
 						else {
@@ -342,9 +338,6 @@ var file = function (path, _config = false) {
 				try {
 					if (!forceFullReadInProgress[compressed.cacheFile]) {
 						cache.writeJson(compressed.cacheFile, { mtime: mtime, files: files, metadata: metadata });
-					}
-					else {
-						console.log('[readCompressed] skipping cache.writeJson due to forceFullReadInProgress', compressed.cacheFile, path);
 					}
 				}
 				catch (e) { }
@@ -2380,12 +2373,10 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 		// Return a synthetic page-1 entry with dummy dimensions — the actual rendering
 		// happens in extractPdf which will open the PDF only briefly for page 1.
 		if (this.config.fromThumbnailsGeneration) {
-			console.log('[readPdf] returning synthetic single-page for thumbnails generation', this.path);
 			let file = 'page-0001.jpg';
 			let size = { width: 800, height: 1200 };
 			files.push({ name: file, path: p.join(this.path, file), folder: false, compressed: false, size: size, page: 1 });
 			this.setFileStatus(file, { page: 1, extracted: false, size: size });
-			console.log('[readPdf] synthetic files count=', files.length, this.path);
 			return this.files = files;
 		}
 
@@ -2466,7 +2457,6 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 			this.setFileStatus(file, { page: i, extracted: false, size: size });
 		}
 
-		console.log('[readPdf] full pdf files count=', files.length, this.path);
 		return this.files = files;
 
 	}
@@ -2743,11 +2733,6 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 
 		if (status) {
 			this.log('renderBlobPdf');
-			try {
-				console.log('[renderBlobPdf] path=', this.path, 'file=', file, 'status=', status, 'fromThumbnailsGeneration=', !!this.config.fromThumbnailsGeneration);
-			}
-			catch (e) {}
-
 			let page;
 			let retries = 5;
 			while (retries > 0) {

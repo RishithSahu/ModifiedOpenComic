@@ -33,7 +33,6 @@ function upscale(src, imageSize, options = {})
 
 		if(fs.existsSync(path))
 		{
-				console.log('[ai.image] cache hit for', path);
 				fileManager.setTmpUsage(path);
 				return path;
 		}
@@ -181,12 +180,6 @@ function image(src, imageSize, options = {})
 		_pipeline.push({ model: modelKey });
 	}
 
-	// Debug: log pipeline and active flags to help diagnose missing AI steps
-	try {
-		console.log('[ai.image] pipeline built:', JSON.stringify(_pipeline));
-		console.log('[ai.image] config flags: artifactRemoval=', !!_config.readingAi.artifactRemoval.active, 'descreen=', !!_config.readingAi.descreen.active, 'upscale=', !!toUpscale);
-	} catch (e) {}
-
 	if(toUpscale)
 	{
 		_pipeline.push({
@@ -207,32 +200,23 @@ function image(src, imageSize, options = {})
 
 	if(fs.existsSync(path))
 	{
-		let cacheSize = 0;
-		try { cacheSize = fs.statSync(path).size; } catch(e) {}
-		console.log('[ai.image] cache hit for', path);
-		console.log('[ai.trace] ai:cache-hit', {src, path, cacheSize, pipeline: _pipeline});
 		fileManager.setTmpUsage(path);
 		return path;
 	}
 
 		if(!options.run)
 		{
-			console.log('[ai.image] options.run is false, not running pipeline for', path);
 			return;
 		}
 
 	if(options.start)
 		options.start(pipeline);
-	console.log('[ai.trace] ai:start-async', {src, outPath: path, run: !!options.run, pipeline: _pipeline});
 
 	(async function(){
 
 		for(const step of _pipeline)
 		{
 			const modelInfo = OpenComicAI.model(step.model);
-
-			// Debug: log model info
-			try { console.log('[ai.image] modelInfo for', step.model, modelInfo ? { path: modelInfo.path, files: modelInfo.files } : 'MISSING'); } catch (e) {}
 
 			for(const file of modelInfo.files)
 			{
@@ -241,13 +225,10 @@ function image(src, imageSize, options = {})
 		}
 
 		await threads.job('aiPipeline', {key: imageSha, useThreads: threads.SINGLE}, async function() {
-			console.log('[ai.trace] ai:job-begin', {src, outPath: path, key: imageSha});
-
 			if(fs.existsSync(path))
 			{
 				if(options.end)
 					options.end(path);
-				console.log('[ai.trace] ai:job-skip-existing', {outPath: path});
 
 				return;
 			}
@@ -264,13 +245,11 @@ function image(src, imageSize, options = {})
 			}
 
 			OpenComicAI.keepIccProfile(sharp, 'rgb16');
-			console.log('[ai.image] running pipeline for', path, 'pipeline=', JSON.stringify(_pipeline));
 			try {
 				await OpenComicAI.pipeline(image, path, _pipeline, options.progress || false, downloading);
 
 				if (fs.existsSync(path)) {
 					const st = fs.statSync(path);
-					console.log('[ai.image] pipeline output exists:', path, 'size=', st.size);
 					fileManager.setTmpUsage(path);
 				}
 				else {
@@ -286,8 +265,6 @@ function image(src, imageSize, options = {})
 
 			if(convertPath)
 				fs.rmSync(convertPath, {force: true});
-
-			console.log('[ai.trace] ai:job-end', {outPath: path, exists: fs.existsSync(path)});
 
 			return;
 		});

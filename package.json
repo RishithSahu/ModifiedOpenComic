@@ -1,7 +1,7 @@
 {
 	"name": "opencomic",
 	"productName": "OpenComic",
-	"version": "1.7.7",
+	"version": "1.8.0",
 	"main": ".dist/main.js",
 	"type": "commonjs",
 	"keywords": [

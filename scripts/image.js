@@ -95,8 +95,6 @@ async function _resize(fromImage, toImage, config = {}, deep = 0)
 async function resizeToBlob(fromImage, config = {})
 {
 	await loadSharp();
-	const traceAiResize = typeof fromImage === 'string' && /[\\\/]opencomic[\\\/]ai[\\\/]/.test(fromImage);
-
 	if(!inChildFork)
 	{
 		fromImage = app.shortWindowsPath(fromImage);
@@ -108,9 +106,6 @@ async function resizeToBlob(fromImage, config = {})
 		compressionLevel: 0,
 		...config,
 	};
-	if(traceAiResize)
-		console.log('[ai.trace] image:resizeToBlob:start', {fromImage, kernel: config.kernel, width: config.width, height: config.height, interpolator: config.interpolator || null});
-
 	if(config.width && config.width < 1) config.width = 1;
 	if(config.height && config.height < 1) config.height = 1;
 
@@ -162,8 +157,6 @@ async function resizeToBlob(fromImage, config = {})
 		if(config.toFile)
 		{
 			const info = await _sharp.png({compressionLevel: config.compressionLevel, force: true}).toFile(config.toFile);
-			if(traceAiResize)
-				console.log('[ai.trace] image:resizeToBlob:toFile', {fromImage, toFile: config.toFile, info});
 			return {data: [], info, size: 0};
 		}
 
@@ -174,15 +167,11 @@ async function resizeToBlob(fromImage, config = {})
 
 		const blob = new Blob([data], {type: 'image/png'});
 		const url = URL.createObjectURL(blob);
-		if(traceAiResize)
-			console.log('[ai.trace] image:resizeToBlob:done', {fromImage, info, size: blob.size});
 
 		return {blob: url, info, size: blob.size};
 	}
 	catch(error)
 	{
-		if(traceAiResize)
-			console.log('[ai.trace] image:resizeToBlob:error', {fromImage, message: error?.message || String(error)});
 		throw error;
 	}
 }

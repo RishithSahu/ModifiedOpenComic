@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ##### Bug Fixes
 
+
 - Fix AI-processed images not displaying in reader by implementing proper cache bypass logic: when AI output is available, skip cached PDF blob URLs that would overwrite the AI-processed result.
 - Fix AI image quality regression where AI-processed pages displayed blurry by applying CSS-based `imageRendering` scaling kernels to AI images immediately upon loading, ensuring proper interpolation (upscaling/downscaling) is applied consistent with normal rendering.
 - Fix page rendering control flow issue where AI images routed through `srcToImage()` would skip downstream CSS scaling code blocks, preventing interpolation kernels from being applied.
@@ -19,6 +20,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ##### Optimizations & Stability
 
 - Improve AI rendering pipeline robustness by consolidating AI image handling to ensure CSS-based scaling is applied uniformly across all imageRendering modes.
+- Add AI render diagnostics for scale and image dimensions to help trace blur and upscaling mismatches.
+
+##### Packaging
+
+- Build the Windows installer with the NSIS target for the v1.8.0 release.
 
 ## v1.7.7 (25-03-2026)
 

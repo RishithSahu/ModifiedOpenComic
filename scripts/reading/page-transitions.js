@@ -11,26 +11,8 @@ const roughPageTurn = require(p.join(appDir, '.dist/reading/page-transitions/rou
 	smoothPageTurn = require(p.join(appDir, '.dist/reading/page-transitions/smooth-page-turn.js'));
 
 var prevDirection = null, prevIndex = -1, waitTransition = false, waitTransitionResolver = false, lastTransitionRequestAt = 0;
-var pageTransitionsDebug = false;
 
-function transitionDebug(event, data = false)
-{
-	if(!pageTransitionsDebug)
-		return;
-
-	try
-	{
-		const payload = Object.assign({}, data || {});
-		const transitionQueue = queue.get('pageTransitions');
-
-		payload.ts = Date.now();
-		payload.waitTransition = !!waitTransition;
-		payload.queueSize = transitionQueue ? transitionQueue.length : 0;
-
-		console.log('[PAGE_TRANSITION_DEBUG]', event, payload);
-	}
-	catch(error) {}
-}
+function transitionDebug() {}
 
 async function goToIndex(index, animation)
 {
