@@ -16,6 +16,12 @@
 
 </div>
 
+> **This is a modified fork** of [ollm/OpenComic](https://github.com/ollm/OpenComic), maintained at
+> [RishithSahu/ModifiedOpenComic](https://github.com/RishithSahu/ModifiedOpenComic). It adds an AniList-backed
+> library — series metadata, automatic per-series reading modes, recommendations and a guided tutorial —
+> on top of upstream OpenComic. See [Fork additions](#fork-additions) for what differs, and the
+> [Changelog](/CHANGELOG.md) for the full history.
+
 ## Screenshot
 
 ![Screenshot](https://raw.githubusercontent.com/ollm/OpenComic/master/images/screenshots/main.png "Screenshot")
@@ -35,7 +41,6 @@ More [Screenshots 📸](/SCREENSHOTS.MD)
 - 🪟 Multi-window support
 - ❤️ Favorite labels
 - 🏷️ Custom labels
-- 🎓 Interactive in-app tutorial walkthrough
 - 🇯🇵 Manga read mode
 - 🇰🇷 Webtoon read mode
 - 📖 Double page view
@@ -48,14 +53,50 @@ More [Screenshots 📸](/SCREENSHOTS.MD)
 - 🔄 Tracking with sites (AniList and MyAnimeList)
 - 🎮 Gamepad navigation
 - ⌨️ Custom shortcuts and tap zones
-- 🔎 Advanced library search with saved searches
 - 🔢 Multiple interpolation methods: `lanczos3`, `lanczos2`, `mitchell`, `cubic`, `linear`, `nearest` and others
+
+<a id="fork-additions"></a>
+
+## Fork additions
+
+Everything above comes from upstream OpenComic. This fork adds:
+
+##### AniList-backed library
+
+- 📇 Automatic series metadata per folder: title, author, genres, demographic, serialization year, rating and description, scraped from AniList
+- 🧭 **Automatic reading mode per series** — a series detected as `manga` opens in double page with right-to-left (inverted) reading, while `manhwa` and `manhua` open in webtoon/scroll mode. A mode you set by hand always wins and is remembered for that series
+- 💾 Per-series reading configuration, so each title keeps its own layout instead of sharing one global setting
+- 🏷️ Genre filter menu in Library and Recents, driven by the tracked metadata
+
+##### Home sections
+
+- ▶️ **Continue reading**, **Recommended for you** and **Recently added** rows on the library home, with cover art and series metadata
+- 👍👎 Recommendation feedback that tunes future suggestions, with an optional internal ranking sidebar combining the AniList rating with your own likes and dislikes
+
+##### Quality of life
+
+- 🎓 Interactive in-app tutorial that walks through the real UI using the bundled Pepper & Carrot sample
+- ✏️ Rename titles from the right-click menu (changes the display name only; files on disk are untouched)
+- 💾 Saved searches, recallable in one click from the search overlay
+- 🔎 Power search syntax, for example `genre:action series:manhwa rating>75 -completed`:
+  - **Text fields** — `author:` (`artist:`, `creator:`), `genre:`, `tag:`, `label:`, `title:`, `name:`, `path:`, `status:`, `type:` (`kind:`), `source:`, `series:` (`seriestype:`), `demographic:` (`demo:`), `has:`
+  - **Numeric fields**, usable with `:` `=` `>` `<` `>=` `<=` — `rating:` (`score:`), `year:`, `progress:`, `confidence:`, `time:` (`readtime:`, `minutes:`)
+  - **Keywords** — `unread`, `reading`, `read`/`completed`, `favorite`, `tracked`/`untracked`, `folder`, `file`, `compressed`
+  - Combine values with `,` or `|`, quote phrases, and negate any term with `-` or `!`
+- 🖥️ Guides available offline from **Help ▸ Guides**
 
 You can see the changes between versions in the [Changelog 📝](/CHANGELOG.md)
 
 <a id="download"></a>
 
-## Download [`v1.7.7`](https://github.com/ollm/OpenComic/releases/tag/v1.7.7)
+## Download
+
+This fork (currently `v1.8.1`) has no prebuilt downloads — see [Build from source](#build-from-source)
+to produce an installer, or grab a release from
+[RishithSahu/ModifiedOpenComic](https://github.com/RishithSahu/ModifiedOpenComic/releases) if one is published.
+
+The links below are **upstream OpenComic [`v1.7.7`](https://github.com/ollm/OpenComic/releases/tag/v1.7.7)**
+and do *not* include any of the [fork additions](#fork-additions).
 
 ###### Stores
 
@@ -125,6 +166,8 @@ npm install
 npm start
 ```
 
+<a id="build-from-source"></a>
+
 ## Build from source
 
 ```shell
@@ -135,14 +178,32 @@ npm run build-<buildType>
 
 Available build types:
 
-- Windows: `nsis` , `portable`
+- Windows: `win` (all targets), `nsis`, `portable`, `folder-portable`, `appx`, `dir`
+- Windows Arm: `win-arm`
 - macOS: `mac-dmg`, `mac-pkg` (Both include `arm`)
 - Linux `deb`, `rpm`, `snap`, `flatpak`, `appimage`, `7z`
 - Linux Arm: `deb-arm`, `rpm-arm`, `snap-arm`, `flatpak-arm`, `appimage-arm`, `7z-arm`
 
 Now the build files are located in `dist` folder.
 
-If the build fails with error `Not exists` (Linux or macOS), you probably need to run a `npm install --force` inside the folder `./build/node-zstd-native-dependencies` and then run `npm install` again in the main folder.
+### Troubleshooting
+
+**`Not exists` during build (Linux or macOS)** — run `npm install --force` inside
+`./build/node-zstd-native-dependencies`, then `npm install` again in the main folder.
+
+**`Could not load the "sharp" module using the win32-x64 runtime` when starting a built app** —
+`npm` only installs the sharp binary for the machine's own CPU, and installing another
+architecture removes the previous one. A single `node_modules` is used to build both the x64 and
+arm64 installers, so one of them can end up shipping a binary it cannot load. Every Windows build
+script already runs this first, but if you invoke `electron-builder` directly, run it yourself:
+
+```shell
+npm run sharp-native
+```
+
+It installs every sharp architecture for the current OS, at the exact versions sharp itself
+declares. Note that a plain `npm install` afterwards will prune them again, since they are
+installed with `--no-save`.
 
 ## Translation
 

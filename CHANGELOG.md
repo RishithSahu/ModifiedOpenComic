@@ -54,6 +54,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add `npm run sharp-native` (`scripts/sharp-install-native.js`) and run it before every Windows build target. npm only ever installs the sharp binary matching the build machine's own CPU, and installing another architecture prunes the previous one — but a single `node_modules` is used to produce both the x64 and arm64 installers, so one of them silently shipped an unusable sharp. The script installs every architecture sharp declares for the current OS, reading the versions from sharp's own `optionalDependencies` so it cannot drift when sharp is upgraded (a mismatched version is its own failure, since the bundled libvips DLL is named after the libvips version).
 - Fix `templates/guides.html` being excluded from packaged builds, which broke Help > Guides in every installed build (the file is loaded from disk at runtime, unlike the other guide templates which are compiled into the template bundle).
 
+##### Documentation
+
+- Rewrite README.md for this fork: state that it is a fork of ollm/OpenComic, add a "Fork additions" section covering the AniList metadata and automatic per-series reading modes, home sections, recommendation feedback, tutorial, rename and the full power-search syntax, and move the tutorial/saved-search entries out of the upstream feature list where they did not belong.
+- Correct the Download section, which advertised upstream v1.7.7 binaries as if they were this fork's builds.
+- Document all Windows build targets and add a troubleshooting section for the sharp native binary and `npm run sharp-native`.
+
 ##### Bug Fixes
 
 
