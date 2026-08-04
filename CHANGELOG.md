@@ -4,7 +4,55 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v1.8.0 (20-05-2026)
+## v1.8.1 (04-08-2026)
+
+##### Bug Fixes
+
+- Fix AniList-driven reading modes never being applied for libraries organised into category folders. The lookup resolved against the library entry (e.g. "3. Reading"), but AniList metadata is stored per series folder, so it missed for every series. The series folder is now resolved by walking up from the file being read to the nearest ancestor that has metadata, which also handles deeper nesting such as `Series/Volume 1/Chapter 3`.
+- Fix every series inside a category folder sharing one per-series reading configuration, for the same reason: untracked series now also get their own config keyed by series folder instead of by the category folder.
+- Fix AniList-driven reading modes (double page + right-to-left for manga, webtoon/scroll for manhwa and manhua) only taking effect after restarting the app. The metadata scrape for a folder was started at the *end* of opening a file, so on the first open the series type was not known yet and nothing was applied. The scrape is now requested up front, and the mode is applied live as soon as the metadata arrives (deferred until the chapter finishes loading if it lands mid-open).
+- Fix the auto-applied reading mode being indistinguishable from a manual choice, which meant it was only ever applied once per folder and never corrected when the AniList series type changed. Auto-applied configs are now marked as such, and the marker is cleared the moment the reading mode is changed by hand so a manual choice always wins.
+- Fix opened files showing only their first page until their cache was cleared by hand. Generating a thumbnail stamped "thumbnail mode" onto the shared compressed-file object's *default* config (`config` and `_config` were the same object), so every later read of that file re-inherited it and kept returning the synthetic single-page list. Thumbnail-only page lists are now explicitly tagged and can never be persisted to the on-disk index, stored in the shared in-memory index, or handed to the reader; already-poisoned caches are detected and rebuilt automatically instead of needing a manual "clear file cache".
+- Fix file sizes and original filenames never being recorded for any archive whose thumbnail was generated first, because the synthetic single-page read consumed the one-shot in-memory index slot for that path.
+- Fix "Clear temporary files" wiping the entire library, tracking, reading progress, bookmarks, favorites, labels, master folders and servers during an automatic version migration; the interactive reset path is no longer triggered on startup.
+- Fix "Clear temporary files" running without confirmation and silently discarding all user-added data; it now asks for confirmation before performing a full reset, and uses an in-app notification instead of a blocking native alert.
+- Fix the whole UI going blank after clearing cache/temp files: clearing the template cache emptied the precompiled template registry (which nothing repopulates at runtime), so every subsequent screen rendered empty until a manual reload.
+- Fix looping/jumping back to the top during continuous scroll reading caused by treating a cleared internal scroll marker as position zero.
+- Fix EPUB pagination getting permanently stuck on the loading screen with no way to recover when a chapter failed to render or an internal pagination call stalled; a timeout and error recovery are now in place again.
+- Fix next/prev chapter navigation re-extracting and re-reading the whole archive on every single page turn, and single-image archives (e.g. one-page CBZ/CBR files) being needlessly re-extracted on every open.
+- Fix AI-upscaled PDF pages leaking memory (unreleased blob URLs) during long reading sessions.
+- Fix page prefetching direction being backwards in manga (right-to-left) reading mode.
+- Fix the changing custom cache/tmp folder location in Settings not taking effect for image resizing, poster generation, AI models and remote server downloads, which kept writing to the old location.
+- Fix the Pepper & Carrot sample reappearing in the library after every update even after being explicitly deleted, and "recommended for you" like/dislike counts resetting after every update.
+- Fix corrupted/unreadable thumbnails being retried forever, pinning a CPU core; recovery is now capped at a few attempts per item.
+- Fix "Recommended for you" impression counts climbing on every page reload/navigation instead of real views, which suppressed recommendations and reset user feedback too aggressively; also fix like/dislike state being lost on re-render.
+- Fix the library search overlay hanging indefinitely if any folder in the library could not be read.
+- Fix the library search freezing typing on large libraries by debouncing search instead of re-scanning the whole index on every keystroke.
+- Fix the first-time tutorial launching over a comic opened directly from the command line or an in-progress reading session, and getting stuck due to a leaked internal timer that kept firing after the tutorial was closed.
+- Fix `toOpenFile`, the About window and the Guides window breaking (or opening as an invisible/blank window) when the file path or template content contained backslashes or backticks.
+- Fix a startup crash window being capped to 512MB of memory, which could cause out-of-memory crashes when processing large PDFs, EPUBs or high-resolution scans.
+
+##### Optimizations & Stability
+
+- Stop rebuilding the whole library page every few seconds while AniList metadata is being scraped. Each refresh was a full `dom.reload()`, which also resets the thumbnail queue, so on a large library thumbnails restarted from scratch over and over and the page kept being torn down underneath the user. The refresh is now deferred until the scrape queue drains, then applied once.
+- Build the library box/recommendation candidate list once per render instead of four times (Continue reading, Recommended, Recently added and the ranking sidebar each rebuilt it independently), and cache the per-folder filesystem timestamps it needs. Measured on a 234-folder library this cut a library render from ~1,872 synchronous filesystem calls and ~82ms of blocking work down to 0 calls and ~8ms once warm.
+- Remove the periodic `webFrame.clearCache()` memory sweep. It dropped Chromium's entire resource cache — including every decoded page image — forcing the reader to re-read and re-decode whatever was still on screen, which showed up as a recurring stall. The remaining idle garbage collection now also skips running during an active reading session.
+- Fix PDF render thrashing: the reader queued 10 pages before and 10 after every turn while only keeping 3–4 rendered pages alive, so most of that expensive rasterisation was evicted before it could ever be shown and had to be redone on the next turn. The prefetch window and the blob budget are now sized consistently (3 before / 6 after, 12–16 kept).
+- Reduce per-page-turn work: image source priming was a symmetric 10-before/10-after window, i.e. up to 21 lookups and decodes on every turn, mostly for pages already behind the reader. It is now asymmetric and much smaller.
+- Reduce eager image decoding in webtoon/scroll mode from ~10 screens of lookahead to ~3, cutting both decode time and resident bitmap memory.
+- Stop the background thumbnail warm-up from competing with the reader: it now pauses entirely while reading, ticks less often, and uses smaller batches and a smaller share of the worker pool.
+- Avoid re-walking every `<img>` in the document once per evicted blob when trimming rendered page blobs.
+- Stop deleting the archive index and re-listing the whole file on every next/prev chapter change. This was a workaround for the single-page bug above; with the root cause fixed, chapter navigation reuses the cached index again.
+- Add opt-in window startup phase timings (`ready-to-show` / `dom-ready` / `did-finish-load`) to the startup log to make a slow, blank first paint diagnosable.
+- Reduce renderer console noise from startup timing, EPUB pagination and tracking metadata debug logging left enabled by default; these are now opt-in via environment variables.
+- Harden folder-thumbnail scrolling and warmup against running while the library view is mid-transition.
+- Harden the settings storage schema so recommendation feedback and sample-deletion state survive future updates.
+
+##### Packaging
+
+- Fix installed Windows x64 builds failing to start with `Could not load the "sharp" module using the win32-x64 runtime`, followed by a cascading `ReferenceError: shortcuts is not defined`. Only `@img/sharp-win32-arm64` was present in `node_modules`, so the x64 build shipped without a usable sharp binary; the second error was collateral, because the failed `require` aborts the renderer's global import chain and leaves every later global unassigned.
+- Add `npm run sharp-native` (`scripts/sharp-install-native.js`) and run it before every Windows build target. npm only ever installs the sharp binary matching the build machine's own CPU, and installing another architecture prunes the previous one — but a single `node_modules` is used to produce both the x64 and arm64 installers, so one of them silently shipped an unusable sharp. The script installs every architecture sharp declares for the current OS, reading the versions from sharp's own `optionalDependencies` so it cannot drift when sharp is upgraded (a mismatched version is its own failure, since the bundled libvips DLL is named after the libvips version).
+- Fix `templates/guides.html` being excluded from packaged builds, which broke Help > Guides in every installed build (the file is loaded from disk at runtime, unlike the other guide templates which are compiled into the template bundle).
 
 ##### Bug Fixes
 

@@ -12,6 +12,8 @@ var tutorial = {
 	_actionCleanup: null,
 	_actionTimer: null,
 	_actionPoll: null,
+	_targetPoll: null,
+	_showingStep: false,
 
 	steps: function() {
 		return []
@@ -1270,7 +1272,12 @@ var tutorial = {
 		tutorial._steps = tutorial.steps();
 		tutorial._stepIndex = 0;
 		tutorial._active = true;
-		tutorial._createOverlay();
+
+		if (!tutorial._createOverlay()) {
+			tutorial._active = false;
+			return;
+		}
+
 		tutorial._showStep();
 	},
 
@@ -1288,14 +1295,16 @@ var tutorial = {
 		// Remove any existing tutorial elements
 		tutorial._removeExisting();
 
+		var root = document.querySelector('.app');
+
+		if (!root) {
+			console.error('Tutorial cannot start: the .app container is not in the DOM yet.');
+			return false;
+		}
+
 		// Create overlay backdrop
 		var overlay = document.createElement('div');
 		overlay.className = 'tutorial-overlay';
-		overlay.addEventListener('click', function(e) {
-			if (e.target === overlay) {
-				// Click on backdrop does nothing - must use buttons
-			}
-		});
 
 		// Create highlight cutout element
 		var highlight = document.createElement('div');
@@ -1307,11 +1316,13 @@ var tutorial = {
 
 		overlay.appendChild(highlight);
 		overlay.appendChild(dialog);
-		document.querySelector('.app').appendChild(overlay);
+		root.appendChild(overlay);
 
 		tutorial._overlay = overlay;
 		tutorial._highlight = highlight;
 		tutorial._dialog = dialog;
+
+		return true;
 	},
 
 	_removeExisting: function() {
@@ -1328,13 +1339,30 @@ var tutorial = {
 		tutorial._highlight = null;
 	},
 
-	_showStep: function() {
+	_showStep: function(depth) {
+		depth = depth || 0;
+
+		// The routing below re-enters _showStep to jump between steps; cap it so a flapping
+		// "is the sample open?" check can never turn that into infinite recursion.
+		if (depth > 8) {
+			console.error('Tutorial step routing did not settle; stopping the tour.');
+			tutorial._cleanup();
+			return;
+		}
+
 		tutorial._clearStepAction();
 		var step = tutorial._steps[tutorial._stepIndex];
 		if (!step) {
 			tutorial._cleanup();
 			tutorial._markCompleted();
 			return;
+		}
+
+		if (!tutorial._dialog || !tutorial._highlight) {
+			if (!tutorial._createOverlay()) {
+				tutorial._cleanup();
+				return;
+			}
 		}
 
 		try {
@@ -1348,13 +1376,13 @@ var tutorial = {
 					readingIndex = tutorial._findStepIndexById('reading-next');
 				if (readingIndex !== -1) {
 					tutorial._stepIndex = readingIndex;
-					return tutorial._showStep();
+					return tutorial._showStep(depth + 1);
 				}
 			} else if (tutorial._isInSampleLibrary()) {
 				var episodeIndex = tutorial._findStepIndexById('open-episode-1');
 				if (episodeIndex !== -1) {
 					tutorial._stepIndex = episodeIndex;
-					return tutorial._showStep();
+					return tutorial._showStep(depth + 1);
 				}
 			}
 		}
@@ -1367,7 +1395,7 @@ var tutorial = {
 				nextIndex = tutorial._findStepIndexById('reading-next');
 			if (nextIndex !== -1) {
 				tutorial._stepIndex = nextIndex;
-				return tutorial._showStep();
+				return tutorial._showStep(depth + 1);
 			}
 		}
 
@@ -1375,7 +1403,7 @@ var tutorial = {
 			var fallbackIndex = tutorial._findStepIndexById('open-episode-1');
 			if (fallbackIndex !== -1) {
 				tutorial._stepIndex = fallbackIndex;
-				return tutorial._showStep();
+				return tutorial._showStep(depth + 1);
 			}
 		}
 
@@ -1446,22 +1474,24 @@ var tutorial = {
 			tutorial._positionDialogCorner(step.dialogCorner);
 		}
 
+		// Kept in its own slot: _bindStepAction() also owns _actionPoll, and reusing that field
+		// here orphaned this interval, which then kept calling scrollIntoView() forever.
 		if (!targetEl && (step.selector || step.getTarget) && !step.requireAction && !step.advanceOn) {
 			var retries = 0;
-			tutorial._actionPoll = setInterval(function() {
+			tutorial._targetPoll = setInterval(function() {
 				retries++;
 				var lateTarget = tutorial._resolveTarget(step);
 				if (lateTarget) {
 					tutorial._positionOnElement(lateTarget, step.position);
 					if (step.dialogCorner) tutorial._positionDialogCorner(step.dialogCorner);
-					clearInterval(tutorial._actionPoll);
-					tutorial._actionPoll = null;
+					clearInterval(tutorial._targetPoll);
+					tutorial._targetPoll = null;
 					return;
 				}
 
 				if (retries > 40) {
-					clearInterval(tutorial._actionPoll);
-					tutorial._actionPoll = null;
+					clearInterval(tutorial._targetPoll);
+					tutorial._targetPoll = null;
 				}
 			}, 250);
 		}
@@ -1591,7 +1621,10 @@ var tutorial = {
 		return !!style && style.display !== 'none' && style.visibility !== 'hidden';
 	},
 
-	_resolveTarget: function(step) {
+	// `scrollTo` is opt-out for the repeating polls: scrolling the target back into view every
+	// 250/500ms fights the user whenever they try to scroll the page themselves.
+	_resolveTarget: function(step, scrollTo) {
+		if (scrollTo === undefined) scrollTo = true;
 		var targetEl = null;
 		if (step.getTarget) {
 			targetEl = step.getTarget();
@@ -1607,7 +1640,7 @@ var tutorial = {
 				|| document.querySelector('.reading-header .bar-back')
 				|| document.querySelector('.reading-header .bar-title');
 		}
-		if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+		if (scrollTo && targetEl && typeof targetEl.scrollIntoView === 'function') {
 			targetEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'auto' });
 		}
 		if (targetEl) {
@@ -1620,7 +1653,10 @@ var tutorial = {
 
 	_clearStepAction: function() {
 		if (tutorial._actionCleanup) {
-			tutorial._actionCleanup();
+			try {
+				tutorial._actionCleanup();
+			}
+			catch (error) {}
 			tutorial._actionCleanup = null;
 		}
 		if (tutorial._actionTimer) {
@@ -1630,6 +1666,10 @@ var tutorial = {
 		if (tutorial._actionPoll) {
 			clearInterval(tutorial._actionPoll);
 			tutorial._actionPoll = null;
+		}
+		if (tutorial._targetPoll) {
+			clearInterval(tutorial._targetPoll);
+			tutorial._targetPoll = null;
 		}
 	},
 
@@ -1689,6 +1729,11 @@ var tutorial = {
 		}
 
 		tutorial._actionPoll = setInterval(function() {
+			if (!tutorial._active) {
+				tutorial._clearStepAction();
+				return;
+			}
+
 			if (step.id === 'open-sample' && tutorial._isInSampleLibrary()) {
 				tutorial.next();
 				return;
@@ -1699,13 +1744,15 @@ var tutorial = {
 				return;
 			}
 
-			var el = tutorial._resolveTarget(step);
+			var el = tutorial._resolveTarget(step, false);
 			if (!el) return;
 			tutorial._positionOnElement(el, step.position);
 		}, 500);
 	},
 
 	_positionOnElement: function(el, position) {
+		if (!el || !tutorial._highlight || !tutorial._dialog) return;
+
 		var rect = el.getBoundingClientRect();
 		var padding = 8;
 

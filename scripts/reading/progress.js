@@ -77,12 +77,6 @@ function save(path = false, mainPath = false) {
 
 	storage.updateVar('readingProgress', relative.path(mainPath), _progressData);
 
-	// Debug: log what we just saved so it's easy to inspect in DevTools
-	try {
-		console.debug('[reading.progress.save] saved', { key: relative.path(mainPath), data: _progressData });
-	}
-	catch (e) { /* ignore logging errors */ }
-
 	dom.history.updateLastComic(path);
 
 	return true;

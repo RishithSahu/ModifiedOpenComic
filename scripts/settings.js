@@ -1,11 +1,17 @@
-// Ensure tempFolder is always defined and up to date
-let tempFolder = null;
+// `tempFolder` is a renderer-wide global declared in opencomic.js and consumed by
+// file-manager.js, image.js, dom/poster.js, reading/render/ai.js and server-client.js.
+// Declaring a module-local copy here would shadow it, so changing the custom cache/tmp
+// folder would only update this file's view of it and leave every other module writing
+// to the old location. Always read/assign the global through this helper instead.
+function refreshTempFolder() {
+	tempFolder = getTmpFolder();
 
-// Initialize tempFolder immediately at startup
-tempFolder = getTmpFolder ? getTmpFolder() : null;
+	return tempFolder;
+}
+
 function start() {
-		// Also ensure tempFolder is initialized at app start
-		tempFolder = getTmpFolder();
+	refreshTempFolder();
+
 	const configInit = storage.get('configInit');
 
 	handlebarsContext.readingImageInterpolationMethodDownscaling = getInterpolationMethodName(config.readingImageInterpolationMethodDownscaling);
@@ -36,7 +42,7 @@ function startSecond() {
 
 async function getStorageSize() {
 	// Ensure tempFolder is always current before calculating sizes
-	tempFolder = getTmpFolder();
+	refreshTempFolder();
 
 	// Cache size
 	let cacheSize = await fileManager.dirSize(cache.folder);
@@ -103,83 +109,49 @@ function scheduleEnsureThemeCSSRetry() {
 	}, delay);
 }
 
-function ensureThemeCSS() {
-	var themeHref = '../themes/material-design/theme.css?v=20260325';
-    var found = false;
-    var links = document.querySelectorAll('link[rel="stylesheet"]');
-    for (var i = 0; i < links.length; i++) {
-		if (links[i].href && (links[i].href.indexOf('/themes/material-design/theme.css') !== -1)) {
-            found = true;
-            break;
-        }
-    }
-    if (!found) {
-        var link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        // Try to use absolute path if running in Electron
-        if (typeof require !== 'undefined' && typeof __dirname !== 'undefined') {
-            try {
-                const path = require('path');
-                const { remote } = require('electron');
-                const appPath = remote.app.getAppPath();
-				link.href = path.join(appPath, 'themes/material-design/theme.css') + '?v=20260325';
-            } catch (e) {
-                link.href = themeHref;
-            }
-        } else {
-            link.href = themeHref;
-        }
-        link.onerror = function() {
-            console.error('Theme CSS failed to load:', link.href);
-            // Fallback: fetch and inject as <style>
-            fetch(link.href).then(function(resp) {
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                return resp.text();
-            }).then(function(css) {
-                var style = document.createElement('style');
-                style.type = 'text/css';
-                style.innerHTML = css;
-                document.head.appendChild(style);
-                console.warn('Theme CSS injected as <style> fallback.');
-            }).catch(function(err) {
-                console.error('Theme CSS fallback fetch failed:', err);
-            });
-        };
-        document.head.appendChild(link);
-        setTimeout(function() {
-            logAllStylesheets();
-            // Fallback: log if still not present
-            var again = false;
-            var links2 = document.querySelectorAll('link[rel="stylesheet"]');
-            for (var j = 0; j < links2.length; j++) {
-				if (links2[j].href && (links2[j].href.indexOf('/themes/material-design/theme.css') !== -1)) {
-                    again = true;
-                    break;
-                }
-            }
-            if (!again) {
-                console.error('Theme CSS still missing after injection. Scheduling retry...');
-                scheduleEnsureThemeCSSRetry();
-            }
-			else {
-				clearEnsureThemeCSSRetry();
-            }
-        }, 500);
-    } else {
-		clearEnsureThemeCSSRetry();
-        logAllStylesheets();
-    }
+const themeStylesheetMarker = '/themes/material-design/theme.css';
+
+function findThemeStylesheet() {
+	const links = document.querySelectorAll('link[rel="stylesheet"]');
+
+	for (let i = 0, len = links.length; i < len; i++) {
+		if (links[i].href && links[i].href.indexOf(themeStylesheetMarker) !== -1)
+			return links[i];
+	}
+
+	return false;
 }
 
-function logAllStylesheets() {
-    var links = document.querySelectorAll('link[rel="stylesheet"]');
-    console.log('All <link rel="stylesheet"> elements:');
-    for (var i = 0; i < links.length; i++) {
-        console.log(i + ':', links[i].href, links[i].sheet ? 'LOADED' : 'NOT LOADED');
-    }
-    var styles = document.querySelectorAll('style');
-    console.log('All <style> elements:', styles.length);
+function ensureThemeCSS() {
+	if (findThemeStylesheet()) {
+		clearEnsureThemeCSSRetry();
+
+		return true;
+	}
+
+	const link = document.createElement('link');
+	link.rel = 'stylesheet';
+	link.type = 'text/css';
+
+	// `electron.remote` was removed in Electron 14; resolve the absolute path from appDir instead
+	// and only fall back to the document-relative path when that is unavailable.
+	try {
+		link.href = require('url').pathToFileURL(p.join(appDir, 'themes', 'material-design', 'theme.css')).href;
+	}
+	catch (error) {
+		link.href = '../themes/material-design/theme.css';
+	}
+
+	link.onerror = function () {
+		console.error('Theme CSS failed to load:', link.href);
+		scheduleEnsureThemeCSSRetry();
+	};
+
+	link.onload = clearEnsureThemeCSSRetry;
+
+	document.head.appendChild(link);
+
+	return true;
 }
 
 function clearTemporaryFolderContents(folder) {
@@ -247,9 +219,46 @@ function resetUserAddedData() {
 		template.flushTemplateCache();
 }
 
-function removeTemporaryFiles(onClose = false) {
+function notify(text) {
+	if (typeof events !== 'undefined' && typeof events.snackbar === 'function') {
+		events.snackbar({
+			key: 'removeTemporaryFiles',
+			text: text,
+			duration: 8,
+			update: true,
+		});
+
+		return;
+	}
+
+	console.log(text);
+}
+
+// The interactive action wipes the library, tracking, progress and every other user-added
+// entry, so never run it without an explicit confirmation.
+function removeTemporaryFiles(onClose = false, confirmed = false) {
+	if (!onClose && !confirmed) {
+		events.dialog({
+			header: language.settings.storage.removeTemporaryFiles,
+			width: 460,
+			content: language.settings.storage.temporaryFilesDescription,
+			buttons: [
+				{
+					text: language.buttons.cancel,
+					function: 'events.closeDialog();',
+				},
+				{
+					text: language.buttons.ok,
+					function: 'events.closeDialog(); settings.removeTemporaryFiles(false, true);',
+				},
+			],
+		});
+
+		return;
+	}
+
 	setTimeout(ensureThemeCSS, 100);
-	tempFolder = getTmpFolder();
+	refreshTempFolder();
 	let cleared = false;
 	let failedEntries = [];
 
@@ -310,30 +319,17 @@ function removeTemporaryFiles(onClose = false) {
 		}
 
 		getStorageSize();
-		if (typeof fileManager !== 'undefined' && fileManager && typeof fileManager.dirSize === 'function') {
-			fileManager.dirSize(tempFolder).then(function (size) {
-				console.log('Temporary files folder after cleanup:', tempFolder, 'size(bytes)=', size);
-			});
-		}
 
-		if (cleared && typeof dom !== 'undefined' && dom.showNotification) {
-			dom.showNotification(language.settings.storage.clearFileCacheSuccessfully || 'Temporary files cleared successfully.');
-		}
-		else if (cleared) {
-			alert('Temporary files cleared successfully.');
-		}
-		else if (typeof dom !== 'undefined' && dom.showNotification) {
-			dom.showNotification('Temporary files partially cleared. Some files are in use; close readers and try again.');
-		}
-		else {
-			alert('Temporary files partially cleared. Some files are in use; close readers and try again.');
-		}
+		notify(cleared
+			? 'Temporary files cleared successfully.'
+			: 'Temporary files partially cleared. Some files are in use; close readers and try again.');
 
-		// Full reload avoids transient "undefined" UI state after a data reset.
+		// Full reload avoids transient UI state after a data reset. Give the storage writes
+		// queued above time to reach disk first, otherwise the reload can race them.
 		setTimeout(function () {
 			if (typeof location !== 'undefined' && typeof location.reload === 'function')
 				location.reload();
-		}, 120);
+		}, 600);
 	}
 }
 
@@ -1575,15 +1571,11 @@ function changedCustomCacheAndTmpFolder(options = {}) {
 
 function getTabState() {
 	const contentRight = template._contentRight();
-	const activeTab = contentRight.querySelector('.tabs .active').dataset.name;
+	const active = contentRight ? contentRight.querySelector('.tabs .active') : false;
 
-	       const data = {
-		       // Always update tempFolder before clearing
-		       tempFolder: settings.getTmpFolder(),
-		       activeTab,
-	       };
-
-	return data;
+	return {
+		activeTab: active?.dataset?.name || 'general',
+	};
 }
 
 let activeTab = false;

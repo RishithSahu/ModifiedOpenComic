@@ -265,12 +265,18 @@ function internalRankingSidebar(comics = [])
 	return buildInternalRankingSidebar(comics, trackingFolderMetadata, recommendationFeedback);
 }
 
+// The library page re-renders on every navigation, reload and filter change. Counting each
+// of those as an impression drove `shown` (and therefore the exposure penalty) to its cap
+// within a handful of clicks, so impressions are collapsed into a cooldown window.
+const RECOMMENDATION_IMPRESSION_COOLDOWN_MS = 10 * 60 * 1000;
+
 function registerRecommendationsShown(comics = [])
 {
 	if(!comics.length)
 		return;
 
 	const feedback = storage.get('recommendationFeedback') || {};
+	const now = Date.now();
 	let changed = false;
 
 	for(let i = 0, len = comics.length; i < len; i++)
@@ -280,15 +286,23 @@ function registerRecommendationsShown(comics = [])
 		if(!path)
 			continue;
 
+		const previous = feedback[path] || feedback[comic.path] || {};
+
+		if(previous.updatedAt && (now - +previous.updatedAt) < RECOMMENDATION_IMPRESSION_COOLDOWN_MS)
+			continue;
+
 		const stats = getRecommendationStats(feedback, path);
-		const next = {
+
+		feedback[path] = {
 			shown: stats.shown + 1,
 			liked: stats.liked,
 			disliked: stats.disliked,
-			updatedAt: Date.now(),
+			// Must be carried over: dropping it wiped the user's thumbs up/down state every
+			// time the card was rendered again.
+			lastRating: +(previous.lastRating || previous.rating || 0),
+			updatedAt: now,
 		};
 
-		feedback[path] = next;
 		changed = true;
 	}
 
@@ -367,12 +381,6 @@ function continueReading(comics, single = false)
 	if(!readingCandidates.length)
 		readingCandidates = candidates;
 
-	// Debug: report how many candidates have reading progress
-	try {
-		console.debug('[dom.boxes.continueReading] readingCandidates.length =', readingCandidates.length, 'sample=', readingCandidates.slice(0,3));
-	}
-	catch (e) { }
-
 	// Show continue-reading even when there is only one candidate so the
 	// user sees the "Continue reading" card immediately after starting.
 	return box(readingCandidates, true, language.comics.continueReading, 'real-numeric', 'readingProgress', 'lastReading', 'continue');
@@ -427,7 +435,77 @@ function buildIndexedBoxCandidates(comics = [])
 	return filtered;
 }
 
+// `added` comes from the filesystem ctime, which effectively never changes for an existing
+// series. Caching it avoids a pair of synchronous existsSync/statSync calls per tracked folder
+// on every library render — with a few hundred tracked series that was the single most
+// expensive thing on the page-load path, and it blocks rendering because it is synchronous.
+const CANDIDATE_STAT_TTL = 2 * 60 * 1000;
+const candidateStatCache = new Map();
+
+function getCandidateStat(path = '')
+{
+	const now = Date.now();
+	const cached = candidateStatCache.get(path);
+
+	if(cached && (now - cached.checkedAt) < CANDIDATE_STAT_TTL)
+		return cached;
+
+	const stat = {checkedAt: now, exists: false, added: 0};
+
+	stat.exists = fileManager.simpleExists(path);
+
+	if(stat.exists)
+	{
+		let statsPath = path;
+
+		try
+		{
+			const firstCompressedFile = fileManager.firstCompressedFile(path, 0, false);
+			if(firstCompressedFile)
+				statsPath = firstCompressedFile;
+		}
+		catch(error){}
+
+		try
+		{
+			if(!fileManager.isServer(path))
+				stat.added = Math.round(fs.statSync(statsPath).ctimeMs / 1000);
+		}
+		catch(error){}
+	}
+
+	candidateStatCache.set(path, stat);
+
+	while(candidateStatCache.size > 2000)
+		candidateStatCache.delete(candidateStatCache.keys().next().value);
+
+	return stat;
+}
+
+// A single library render calls this four times (continue reading, recently added,
+// recommended, ranking sidebar) with the same inputs. Memoise per render instead of
+// recomputing the whole candidate list — and re-walking the metadata map — each time.
+var recommendationCandidatesCache = false;
+
 function buildRecommendationCandidates(comics = [], trackingFolderMetadata = {})
+{
+	if(recommendationCandidatesCache
+		&& recommendationCandidatesCache.comics === comics
+		&& recommendationCandidatesCache.metadata === trackingFolderMetadata)
+		return recommendationCandidatesCache.result;
+
+	const result = _buildRecommendationCandidates(comics, trackingFolderMetadata);
+
+	recommendationCandidatesCache = {
+		comics: comics,
+		metadata: trackingFolderMetadata,
+		result: result,
+	};
+
+	return result;
+}
+
+function _buildRecommendationCandidates(comics = [], trackingFolderMetadata = {})
 {
 	const candidates = [];
 	const indexedPaths = {};
@@ -458,30 +536,15 @@ function buildRecommendationCandidates(comics = [], trackingFolderMetadata = {})
 		if(indexedPaths[key])
 			continue;
 
-		if(!fileManager.simpleExists(path))
+		const stat = getCandidateStat(path);
+
+		if(!stat.exists)
 			continue;
 
 		indexedPaths[key] = true;
 
 		const metadata = trackingFolderMetadata[metadataPath] || {};
-		let statsPath = path;
-
-		try
-		{
-			const firstCompressedFile = fileManager.firstCompressedFile(path, 0, false);
-			if(firstCompressedFile)
-				statsPath = firstCompressedFile;
-		}
-		catch(error){}
-
-		let added = 0;
-
-		try
-		{
-			if(!fileManager.isServer(path))
-				added = Math.round(fs.statSync(statsPath).ctimeMs / 1000);
-		}
-		catch(error){}
+		let added = stat.added;
 
 		if(!added && metadata.updatedAt)
 			added = Math.round(+metadata.updatedAt / 1000);
@@ -590,6 +653,10 @@ async function recommended(comics, single = false)
 function reset()
 {
 	handlebarsContext.boxes = [];
+
+	// Called at the start of every library render, so this is where the per-render candidate
+	// memo is dropped (it also stops it holding the previous page's comic list alive).
+	recommendationCandidatesCache = false;
 }
 
 module.exports = {

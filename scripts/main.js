@@ -8,8 +8,16 @@ const crypto = require('crypto');
 const windowStateKeeper = require('electron-window-state');
 const folderPortable = require(path.join(__dirname, 'folder-portable.js'));
 
+// Startup tracing is opt-in (OPENCOMIC_STARTUP_LOG=1 or --startup-log); it appended to an
+// ever-growing file on every launch, including argv which can contain user file paths.
+const startupLogEnabled = process.env.OPENCOMIC_STARTUP_LOG === '1' || process.argv.includes('--startup-log');
+const startupLogMaxSize = 1024 * 1024;
+
 function writeStartupLog(message = '')
 {
+	if(!startupLogEnabled)
+		return;
+
 	try
 	{
 		const logsDir = path.join(app.getPath('userData'), 'logs');
@@ -17,6 +25,14 @@ function writeStartupLog(message = '')
 			fs.mkdirSync(logsDir, { recursive: true });
 
 		const logFile = path.join(logsDir, 'startup.log');
+
+		try
+		{
+			if(fs.statSync(logFile).size > startupLogMaxSize)
+				fs.rmSync(logFile, { force: true });
+		}
+		catch{}
+
 		const line = '['+new Date().toISOString()+'] '+String(message)+'\n';
 		fs.appendFileSync(logFile, line, 'utf8');
 	}
@@ -45,7 +61,10 @@ catch(error)
 require('@electron/remote/main').initialize();
 //remoteMain.enable(window.webContents);
 
-app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=512 --optimize-for-size');
+// Do NOT cap --max-old-space-size here: decoding large PDF/EPUB pages and multi-megapixel
+// scans routinely needs more than the default cap, and a low ceiling turns a slow render
+// into a renderer OOM crash. --optimize-for-size also measurably slows image processing.
+app.commandLine.appendSwitch('js-flags', '--expose-gc');
 app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
@@ -178,15 +197,33 @@ function createWindow(options = {}) {
 			win.show();
 			windowShowed = true;
 
+			if (showWindowTimeout) {
+				clearTimeout(showWindowTimeout);
+				showWindowTimeout = false;
+			}
+
 			if (message)
 				console.log(message);
 		}
 
 	}
-	win.once('ready-to-show', showWindow);
+	const windowCreatedAt = Date.now();
+	const markWindowPhase = function (phase) {
+		writeStartupLog(phase + ' at +' + (Date.now() - windowCreatedAt) + 'ms');
+	};
+
+	win.once('ready-to-show', function () {
+		markWindowPhase('ready-to-show');
+		showWindow();
+	});
 
 	// https://github.com/electron/electron/issues/42409
-	win.webContents.once('did-finish-load', () => showWindow('Warning: win.show() from did-finish-load and not from ready-to-show'));
+	win.webContents.once('did-finish-load', () => {
+		markWindowPhase('did-finish-load');
+		showWindow('Warning: win.show() from did-finish-load and not from ready-to-show');
+	});
+	win.webContents.once('dom-ready', () => markWindowPhase('dom-ready'));
+
 	showWindowTimeout = setTimeout(() => showWindow('Warning: win.show() from setTimeout and not from ready-to-show'), 5000);
 
 	// and load the index.html of the app.
@@ -204,19 +241,15 @@ function createWindow(options = {}) {
 	win.webContents.on('unresponsive', function () {
 		console.error('webContents unresponsive');
 	});
-	win.webContents.on('did-start-loading', function () {
-		console.log('webContents did-start-loading');
-	});
-	win.webContents.on('dom-ready', function () {
-		console.log('webContents dom-ready');
-	});
 
 	// Open the DevTools.
 	if (configInit.openDevTools)
 		win.webContents.openDevTools()
 
+	// JSON.stringify, not string concatenation: Windows paths are full of backslashes that
+	// a raw JS string literal would swallow (C:\Users\... -> C:Users...).
 	if (toOpenFile && !newWindow && win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed())
-		win.webContents.executeJavaScript('toOpenFile = "' + toOpenFile + '";', false);
+		win.webContents.executeJavaScript('toOpenFile = ' + JSON.stringify(String(toOpenFile)) + ';', false);
 
 	const initData = {};
 

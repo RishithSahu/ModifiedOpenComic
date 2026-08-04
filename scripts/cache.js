@@ -23,6 +23,9 @@ catch (error)
 
 var cacheFolder = settings.getCacheFolder();
 
+// Upper bound for the "copy the original instead of a thumbnail" fallback below.
+const COPY_FALLBACK_MAX_BYTES = 8 * 1024 * 1024;
+
 async function processTheImageQueue(img = false)
 {
 	let sha = img.sha;
@@ -57,23 +60,41 @@ async function processTheImageQueue(img = false)
 
 		}).catch(async function(error){
 
-			// Ensure cache path remains stable even when resize fails on malformed files.
-			try {
-				await fsp.copyFile(realPath, toImage);
+			// Keep the cache path stable when resize fails on malformed files, but only copy
+			// sources the renderer can actually display and that are small enough to be worth
+			// caching. Copying an oversized or already-corrupt file produced a cache entry that
+			// fails to decode, which the thumbnail-recovery retry loop then hammers forever.
+			let canCopy = false;
 
-				if(typeof data[sha] === 'undefined') data[sha] = {lastAccess: app.time()};
-				data[sha].size = img.size;
-
-				img.callback({cache: true, path: escapeBackSlash(addCacheVars(toImage, img.size, img.sha)), sha: sha}, img.vars);
-				storage.setThrottle('cache', data);
-			}
-			catch(copyError)
+			try
 			{
-				if(error)
-					console.warn('Warning: Thumbnail resize fallback copy failed | '+realPath, error);
-
-				img.callback({cache: true, path: escapeBackSlash(realPath), sha: sha}, img.vars);
+				canCopy = compatible.image(realPath) && !compatible.image.convert(realPath) && (await fsp.stat(realPath)).size <= COPY_FALLBACK_MAX_BYTES;
 			}
+			catch{}
+
+			if(canCopy)
+			{
+				try {
+					await fsp.copyFile(realPath, toImage);
+
+					if(typeof data[sha] === 'undefined') data[sha] = {lastAccess: app.time()};
+					data[sha].size = img.size;
+
+					img.callback({cache: true, path: escapeBackSlash(addCacheVars(toImage, img.size, img.sha)), sha: sha}, img.vars);
+					storage.setThrottle('cache', data);
+
+					return resolve();
+				}
+				catch(copyError)
+				{
+					console.warn('Warning: Thumbnail resize fallback copy failed | '+realPath, copyError);
+				}
+			}
+
+			if(error)
+				console.warn('Warning: Thumbnail resize failed | '+realPath, error);
+
+			img.callback({cache: true, path: escapeBackSlash(realPath), sha: sha}, img.vars);
 
 			resolve();
 
@@ -236,7 +257,9 @@ function returnThumbnailsImages(images, callback, file = false)
 
 	if(toGenerateThumbnails.length > 0 && file)
 	{
-		threads.job('cacheMakeAvailable', {useThreads: 0.2, delay: 10}, async function() {
+		// Thumbnail extraction is background work. At 0.2 threads with a 10ms delay it saturated
+		// the pool and starved the reader's own decode/extract jobs while browsing.
+		threads.job('cacheMakeAvailable', {useThreads: 0.08, delay: 30}, async function() {
 
 			await file.makeAvailable(toGenerateThumbnails, function(image) {
 

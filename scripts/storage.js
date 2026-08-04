@@ -1,7 +1,7 @@
 const safe = require(p.join(appDir, '.dist/storage/safe.js')),
 	syncInstances = require(p.join(appDir, '.dist/storage/sync-instances.js'));
 
-const changes = 146; // Update this if the storage schema is updated
+const changes = 147; // Update this if the storage schema is updated
 
 const readingPagesConfig = {
 	readingConfigName: '',
@@ -251,6 +251,10 @@ const storageDefault = {
 		useCustomCacheAndTmpFolder: false,
 		customCacheAndTmpFolder: '',
 		tutorialCompleted: false,
+		// Must live in the schema: updateStorageMD() drops any config key that is not declared
+		// here, so without it the "user deleted the sample" flag is lost on every schema bump
+		// and Pepper & Carrot silently reappears in the library after each update.
+		pepperCarrotDeleted: false,
 		cacheMaxSize: 256, // MB
 		cacheMaxOld: 60,
 		tmpMaxSize: 4, // GB
@@ -289,6 +293,10 @@ const storageDefault = {
 	readingPagesConfig: {
 		wildcard: {
 			configKey: false,
+			// Records which AniList series type auto-applied the reading mode for this folder,
+			// so the defaults can be refreshed when metadata arrives late while still letting a
+			// manual change by the user win (updateReadingPagesConfig clears it).
+			trackedSeriesType: '',
 			...readingPagesConfig,
 		}
 	},
@@ -454,7 +462,13 @@ const storageDefault = {
 	},
 	recommendationFeedback: {
 		wildcard: {
-			rating: 0, // -1 = bad recommendation, 1 = good recommendation
+			rating: 0, // Legacy: -1 = bad recommendation, 1 = good recommendation
+			// These must be declared here or updateStorageMD() strips them on the next schema
+			// bump, silently resetting every like/dislike the user has ever given.
+			shown: 0,
+			liked: 0,
+			disliked: 0,
+			lastRating: 0, // -1 = bad recommendation, 1 = good recommendation
 			updatedAt: 0,
 		},
 	},
@@ -632,7 +646,24 @@ function isPepperCarrotPath(path)
 	if(samplePath && normalizedPath === samplePath)
 		return true;
 
-	return /pepper\s*&\s*carrot/iu.test(p.basename(normalizedPath));
+	// Name fallback for stored paths written before the sample moved (asar unpack, portable
+	// builds...), but only when it sits next to the app: a user's own "Pepper & Carrot"
+	// folder elsewhere on disk must not be treated as the bundled sample.
+	if(!/pepper\s*&\s*carrot/iu.test(p.basename(normalizedPath)))
+		return false;
+
+	const roots = [normalizeComparePath(appDir)];
+
+	if(samplePath)
+		roots.push(p.dirname(samplePath));
+
+	for(const root of roots)
+	{
+		if(root && p.dirname(normalizedPath) === root)
+			return true;
+	}
+
+	return false;
 }
 
 function pepperCarrotEntry()

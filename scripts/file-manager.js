@@ -203,17 +203,13 @@ var file = function (path, _config = false) {
 			// When opening for reading (not thumbnails), clear the thumbnail flag and reset cached files
 			// so readPdf will do a full read with all pages
 			const compressedFile = compressedOpened[path].compressed;
-			const isPdf = /\.pdf$/i.test(path);
-			const cachedFirstFile = compressedFile.files?.[0] || {};
-			const hasSyntheticSinglePage = isPdf && compressedFile.files?.length === 1 && (
-				+cachedFirstFile.page === 1 ||
-				/^page-0*1\.(?:jpg|jpeg|png)$/i.test(cachedFirstFile.name || '')
-			);
+			const hasSyntheticSinglePage = compressedFile.partialRead === true || isPartialFileList(compressedFile.files);
 
 			if (!this.config.fromThumbnailsGeneration && (compressedFile.config.fromThumbnailsGeneration || hasSyntheticSinglePage)) {
 				compressedOpened[path].compressed.config.fromThumbnailsGeneration = false;
 				compressedOpened[path].compressed.config.width = compressedOpened[path].compressed._config.width;
 				compressedOpened[path].compressed.files = false;
+				compressedOpened[path].compressed.partialRead = false;
 				// Also reset the PDF object so it reopens without thumbnail restrictions
 				if (compressedOpened[path].compressed.pdf) {
 					compressedOpened[path].compressed.pdf.destroy();
@@ -255,13 +251,17 @@ var file = function (path, _config = false) {
 
 		let mtime = !_isServer ? fs.statSync(firstCompressedFile(path)).mtime.getTime() : 1;
 		let compressed = this.openCompressed(path, _realPath, mtime);
+		let ownsForceFullRead = false;
 
 		if (this.config.forceFullRead) {
 			try {
 				cache.deleteJson(compressed.cacheFile);
 			}
 			catch (e) { }
-			// mark guard to avoid other parts writing cache for this compressed file while we do a full read
+			// Guard so concurrent thumbnail reads cannot write a 1-page cache while the full
+			// read is in flight. The owner is tracked so this read can still persist its own
+			// (complete) result below — otherwise every chapter change re-extracted the archive.
+			ownsForceFullRead = !forceFullReadInProgress[compressed.cacheFile];
 			forceFullReadInProgress[compressed.cacheFile] = true;
 			this.config.fromThumbnailsGeneration = false;
 
@@ -276,36 +276,28 @@ var file = function (path, _config = false) {
 			catch (e) { }
 		}
 
+		try {
+
 		let json = cache.readJson(compressed.cacheFile);
 		let isBadPdfCache = false;
 
 		if (this.config.cache && !this.config.forceFullRead) {
 			if (json && json.files) {
 				if (json.mtime == mtime || _isServer) {
-					// Invalidate polluted 1-page caches for full reads (thumbnails previously wrote a 1-page cache)
-					let isPdf = path.toLowerCase().endsWith('.pdf');
-					const jsonFirstFile = json.files[0] || {};
-					isBadPdfCache = isPdf && !this.config.fromThumbnailsGeneration && json.files.length === 1 && (
-						+jsonFirstFile.page === 1 ||
-						/^page-0*1\.(?:jpg|jpeg|png)$/i.test(jsonFirstFile.name || '')
-					);
+					// Discard a cached thumbnail-only page list when the caller wants the real
+					// contents. `json.partial` covers indexes written by this version; the
+					// heuristic inside isPartialFileList() recovers ones written by earlier
+					// versions, so an already-poisoned cache self-heals instead of needing a
+					// manual "clear file cache".
+					isBadPdfCache = !this.config.fromThumbnailsGeneration && (json.partial === true || isPartialFileList(json.files));
 
-					// Also treat any single-file cache as suspect when opening for full read
-					const isBadSinglePageCache = (!this.config.fromThumbnailsGeneration && json.files.length === 1);
+					if (!isBadPdfCache) {
+						if (json.error && !this.config.fromThumbnailsGeneration && !this.config.subtask)
+							dom.compressedError({ message: json.error }, false, sha1(this.path), this.path);
 
-					if (!isBadPdfCache && !isBadSinglePageCache) {
-						// Extra sanity: avoid returning a single-file PDF cache that looks suspicious.
-						if (json.files.length === 1 && path.toLowerCase().endsWith('.pdf') && !this.config.fromThumbnailsGeneration) {
-							try { cache.deleteJson(compressed.cacheFile); } catch (e) {}
-						}
-						else {
-							if (json.error && !this.config.fromThumbnailsGeneration && !this.config.subtask)
-								dom.compressedError({ message: json.error }, false, sha1(this.path), this.path);
+						setFileData(path, json.files);
 
-							setFileData(path, json.files);
-
-							return json.files;
-						}
+						return json.files;
 					}
 				}
 
@@ -320,6 +312,25 @@ var file = function (path, _config = false) {
 		await this.extractIfInsideAnotherCompressed(path, _realPath);
 
 		let files = await compressed.read(this.config);
+
+		// Self-heal: a reader asked for the real contents but the shared compressed object was
+		// still in thumbnail mode (a concurrent thumbnail job can flip that flag mid-flight),
+		// so it handed back the synthetic single page. Redo the read with thumbnail mode
+		// explicitly off instead of letting the caller display a one-page file.
+		if (!this.config.fromThumbnailsGeneration && isPartialFileList(files)) {
+			compressed.config.fromThumbnailsGeneration = false;
+			compressed.files = false;
+			compressed.partialRead = false;
+
+			if (compressed.pdf) {
+				try { compressed.pdf.destroy(); } catch (e) { }
+				compressed.pdf = null;
+			}
+
+			files = await compressed.read({ ...this.config, forceFullRead: true });
+		}
+
+		const partial = isPartialFileList(files);
 		let metadata = {};
 
 		// Thumbnails mode should not parse full metadata (especially PDFs), because it
@@ -333,10 +344,11 @@ var file = function (path, _config = false) {
 			files = this.setPosterFromMetadata(files, metadata.poster);
 
 		if (!json || json.mtime != mtime || isBadPdfCache) {
-			// Do not persist cache when this read was performed for thumbnails generation
-			if (!this.config.fromThumbnailsGeneration) {
+			// Never persist a thumbnail-only page list: that is what left an opened file stuck
+			// on its first page until its cache was cleared manually.
+			if (!this.config.fromThumbnailsGeneration && !partial) {
 				try {
-					if (!forceFullReadInProgress[compressed.cacheFile]) {
+					if (ownsForceFullRead || !forceFullReadInProgress[compressed.cacheFile]) {
 						cache.writeJson(compressed.cacheFile, { mtime: mtime, files: files, metadata: metadata });
 					}
 				}
@@ -344,12 +356,17 @@ var file = function (path, _config = false) {
 			}
 		}
 
-		try {
+		// Same reasoning for the shared in-memory index consumed by the reader.
+		if (!partial)
 			setFileData(path, files);
-			return files;
+
+		return files;
+
 		}
 		finally {
-			if (this.config.forceFullRead)
+			// Also runs when the read above throws, so a failed forced read cannot leave the
+			// guard set and permanently disable caching for this archive.
+			if (ownsForceFullRead)
 				delete forceFullReadInProgress[compressed.cacheFile];
 		}
 
@@ -1020,7 +1037,14 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 	this.filesStatus = {};
 	this.metadata = false;
 
-	this.config = this._config = {
+	// `_config` holds the pristine per-object defaults that updateConfig() fills unspecified
+	// keys from; `config` is the live per-read config. They MUST NOT be the same object:
+	// openCompressed() stamps per-read intent (fromThumbnailsGeneration, width) onto `config`,
+	// and while these were aliased that stamp landed in the defaults too. updateConfig() then
+	// re-injected `fromThumbnailsGeneration: true` into every later read, so once a file had a
+	// thumbnail generated it stayed permanently in thumbnail mode and the reader only ever got
+	// the synthetic first page — until the object was destroyed or its cache cleared by hand.
+	this._config = {
 		// only: false,
 		cache: true,
 		//width: window.devicePixelRatio * (handlebarsContext.page.viewModuleSize || 150), // Vector width
@@ -1030,7 +1054,9 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 		log: true,
 	};
 
-	if (_config) this.config = this._config = { ...this.config, ..._config };
+	if (_config) this._config = { ...this._config, ..._config };
+
+	this.config = { ...this._config };
 
 	this._features = {
 		'7z': { // 7z incldues multiple formats, like zip, rar, tar, etc.
@@ -1196,16 +1222,12 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 		if (this.config.forceFullRead) {
 			this.config.fromThumbnailsGeneration = false;
 			this.files = false;
+			this.partialRead = false;
 		}
 		else if (this.config.cache && this.files) {
-			let isPdf = this.features.pdf;
-			const memoryFirstFile = this.files?.[0] || {};
-			let isBadPdfMemoryCache = isPdf && !this.config.fromThumbnailsGeneration && this.files.length === 1 && (
-				+memoryFirstFile.page === 1 ||
-				/^page-0*1\.(?:jpg|jpeg|png)$/i.test(memoryFirstFile.name || '')
-			);
-
-			if (!isBadPdfMemoryCache)
+			// Never serve the cached thumbnail-only page list to a caller that wants the real
+			// contents — that is how an opened file ended up showing a single page.
+			if (this.config.fromThumbnailsGeneration || !isPartialFileList(this.files))
 				return this.files;
 		}
 
@@ -2220,6 +2242,8 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 	// PDF
 	this.pdf = false;
 	this.pdfFastRead = false;
+	// True while `this.files` holds the synthetic thumbnail-only page list from readPdf().
+	this.partialRead = false;
 
 	this.openPdf = async function () {
 
@@ -2372,13 +2396,18 @@ var fileCompressed = function (path, _realPath = false, forceType = false, prefi
 		// For thumbnail generation, skip loading the entire PDF just for metadata.
 		// Return a synthetic page-1 entry with dummy dimensions — the actual rendering
 		// happens in extractPdf which will open the PDF only briefly for page 1.
+		// The entry is explicitly tagged so it can never be mistaken for a real one-page PDF,
+		// persisted to the on-disk index, or handed to the reader.
 		if (this.config.fromThumbnailsGeneration) {
 			let file = 'page-0001.jpg';
 			let size = { width: 800, height: 1200 };
-			files.push({ name: file, path: p.join(this.path, file), folder: false, compressed: false, size: size, page: 1 });
+			files.push({ name: file, path: p.join(this.path, file), folder: false, compressed: false, size: size, page: 1, partialRead: true });
 			this.setFileStatus(file, { page: 1, extracted: false, size: size });
+			this.partialRead = true;
 			return this.files = files;
 		}
+
+		this.partialRead = false;
 
 		let pdf = await this.openPdf();
 		let pages = pdf.numPages;
@@ -3294,6 +3323,25 @@ var downloadedCompressedFiles = {
 // Guard map to prevent cache writes while a forceFullRead is in progress for a compressed cache file
 var forceFullReadInProgress = {};
 
+// A "partial" file list is the synthetic single page that readPdf() returns when it is only
+// asked to produce a thumbnail. It must never be persisted to the on-disk index, kept in the
+// shared in-memory index, or handed to the reader — doing so is what made an opened file show
+// only its first page until its cache was cleared by hand.
+//
+// New lists carry an explicit `partialRead` marker; the name/page test is the fallback that
+// recognises lists already written to disk by earlier versions, which had no marker.
+function isPartialFileList(files) {
+	if (!Array.isArray(files) || files.length !== 1)
+		return false;
+
+	const first = files[0] || {};
+
+	if (first.partialRead === true)
+		return true;
+
+	return +first.page === 1 && /^page-0*1\.(?:jpg|jpeg|png)$/i.test(first.name || '');
+}
+
 function downloadedCompressedFile(path) {
 	let realPath = fileManager.realPath(path, -1);
 
@@ -3569,6 +3617,26 @@ function allCompressedFiles(path, index = 0) {
 	}
 
 	return files;
+}
+
+// `fileManager.file(path).getType()` is a cheap fs.existsSync + fs.statSync check, but the
+// `file` object it runs on allocates ~47 closures per construction (every `this.x = function`
+// in the constructor). Call sites that only want {folder, compressed} and discard the object
+// immediately — folder metadata lookups, reading-progress lookups, and every visible library
+// card while scrolling a large folder — do that allocation for nothing. This does the same
+// check with none of it.
+function getPathType(path) {
+	const result = { folder: false, compressed: false };
+
+	if (!path || !fs.existsSync(path))
+		return result;
+
+	if (compatible.compressed(path))
+		result.compressed = true;
+	else if (fs.statSync(path).isDirectory())
+		result.folder = true;
+
+	return result;
 }
 
 function containsCompressed(path, index = 0) {
@@ -4110,6 +4178,7 @@ module.exports = {
 	file: function (path, _config = false) {
 		return new file(path, _config);
 	},
+	getPathType: getPathType,
 	fileCompressed: function (path, realPath = false, forceType = false, prefixes = false, _config = false) { // This consider moving it to a separate file
 		if (!forceType && path && containsCompressed(path) && !compatible.compressed(path)) {
 			const compressedPath = lastCompressedFile(path);

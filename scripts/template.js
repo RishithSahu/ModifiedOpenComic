@@ -1,18 +1,38 @@
-// Flush template/theme cache
+// Templates are precompiled at build time into .dist/builded/templates.js and there is no
+// runtime compilation step that could repopulate them. Emptying `templates.templatesCache`
+// therefore makes every `template.load()` return undefined and blanks the whole UI, so this
+// only drops the per-render Handlebars context leftovers instead.
 function flushTemplateCache() {
-	if (typeof templates !== 'undefined') {
-		templates.templatesCache = {};
-		templates.templatesCacheTheme = {};
-	}
+	if (typeof handlebarsContext === 'undefined') return;
+
+	handlebarsContext.boxes = [];
+	handlebarsContext.comics = [];
+	handlebarsContext.comicsReadingProgress = false;
+	handlebarsContext.comicsReadingProgressCurrentPath = false;
+	handlebarsContext.folderMetadataTop = false;
+	handlebarsContext.internalRankingSidebar = false;
 }
+
 //Load template
 
 function loadTemplate(file)
 {
-	if(templates.templatesCacheTheme[config.theme] && templates.templatesCacheTheme[config.theme][file])
-		return templates.templatesCacheTheme[config.theme][file](handlebarsContext);
-	else if(templates.templatesCache[file])
-		return templates.templatesCache[file](handlebarsContext);
+	try
+	{
+		if(templates.templatesCacheTheme[config.theme] && templates.templatesCacheTheme[config.theme][file])
+			return templates.templatesCacheTheme[config.theme][file](handlebarsContext);
+		else if(templates.templatesCache[file])
+			return templates.templatesCache[file](handlebarsContext);
+
+		console.error('Template not found: '+file);
+	}
+	catch(error)
+	{
+		console.error('Template render failed: '+file, error);
+	}
+
+	// Never return undefined: callers assign the result to innerHTML and would print "undefined".
+	return '';
 }
 
 function loadTemplateQuery(querySelector, file)

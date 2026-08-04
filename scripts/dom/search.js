@@ -1004,6 +1004,9 @@ async function search(text) {
 
 		if (isAborted(index)) return;
 
+		if (!Array.isArray(group.files))
+			continue;
+
 		for (let i2 = 0, len2 = group.files.length; i2 < len2; i2++) {
 			let file = group.files[i2];
 			let matched = false;
@@ -1118,10 +1121,10 @@ async function search(text) {
 					click = 'dom.loadIndexPage(true, \'' + escapeQuotes(escapeBackSlash(file.path), 'simples') + '\', false, false, \'' + escapeQuotes(escapeBackSlash(file.mainPath), 'simples') + '\', false, true)';
 				}
 				else {
-					let thumbnail = thumbnails[file.sha];
+					let thumbnail = thumbnails[file.sha] || false;
 
 					image.sha = file.sha;
-					image.thumbnail = (thumbnail.cache) ? thumbnail.path : '';
+					image.thumbnail = (thumbnail && thumbnail.cache) ? thumbnail.path : '';
 
 					click = 'dom.openComic(true, \'' + escapeQuotes(escapeBackSlash(file.path), 'simples') + '\', \'' + escapeQuotes(escapeBackSlash(file.mainPath), 'simples') + '\')';
 				}
@@ -1179,7 +1182,11 @@ function keyup(event) {
 	const text = this.value;
 
 	if (event.keyCode != 37 && event.keyCode != 38 && event.keyCode != 39 && event.keyCode != 40 && event.keyCode != 13) {
-		search(text);
+		// Debounced: search() scans the whole index synchronously, so running it on every
+		// keystroke stalls typing on large libraries. The throttle bound keeps it responsive.
+		app.setThrottle('dom-search-input', function () {
+			search(text);
+		}, 120, 400);
 	}
 	else if (text && filterCurrentPage && (event.keyCode == 13 || event.keyCode == 40) && !fromFillInput) {
 		if (fileManager.isOpds(dom.history.path))
@@ -1372,14 +1379,18 @@ async function _indexFiles(file, mainPath, first = false) {
 						_files = await _file.read({ sha: false, sort: false });
 					}
 					catch (error) {
+						// Never rethrow from inside this async executor: the rejection would be
+						// swallowed, resolve() would never run and the whole search would hang
+						// on an unreadable folder.
 						console.error(error);
-
-						if (!macosMAS)
-							throw new Error(error);
 					}
-
-					_file.destroy();
+					finally {
+						_file.destroy();
+					}
 				}
+
+				if (!Array.isArray(_files))
+					_files = [];
 
 				let promises = [];
 
@@ -1492,7 +1503,7 @@ async function indexFilesDom() {
 
 	files = [{
 		path: 'dom',
-		path: 'dom',
+		mainPath: false,
 		files: _files,
 	}];
 }

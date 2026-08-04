@@ -245,26 +245,22 @@ function image(src, imageSize, options = {})
 			}
 
 			OpenComicAI.keepIccProfile(sharp, 'rgb16');
+
 			try {
 				await OpenComicAI.pipeline(image, path, _pipeline, options.progress || false, downloading);
 
-				if (fs.existsSync(path)) {
-					const st = fs.statSync(path);
+				if (fs.existsSync(path))
 					fileManager.setTmpUsage(path);
-				}
-				else {
+				else
 					console.error('[ai.image] pipeline completed but output missing for', path);
-				}
 			}
 			catch (err) {
 				console.error('[ai.image] pipeline error for', path, err && err.stack ? err.stack : err);
 			}
-
-			if(convertPath)
-				fs.rmSync(convertPath, {force: true});
-
-			if(convertPath)
-				fs.rmSync(convertPath, {force: true});
+			finally {
+				if (convertPath)
+					fs.rmSync(convertPath, {force: true});
+			}
 
 			return;
 		});

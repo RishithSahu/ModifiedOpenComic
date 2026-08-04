@@ -102,12 +102,8 @@ function middleClick(event, key, data)
 	const last = history[history.length - 1];
 	title = last.title ?? last.name ?? last.indexLabel.title ?? last.indexLabel.name ?? '';
 
-	console.log(title, history);
-
 	const materialIcon = event.currentTarget.querySelector('.material-icon');
 	const icon = materialIcon ? materialIcon.innerHTML : 'indeterminate_question_box';
-
-	console.log(event.currentTarget);
 
 	tabs.openTab(title, icon, history);
 
@@ -115,8 +111,6 @@ function middleClick(event, key, data)
 
 function pageData(page)
 {
-	console.log(page);
-
 	const titles = {
 		language: language.global.language,
 		theme: language.global.theme,

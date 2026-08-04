@@ -1,4 +1,5 @@
 var epubjs = false;
+const epubDebug = (typeof process !== 'undefined' && process.env.OPENCOMIC_EPUB_DEBUG === '1');
 const CONTAINER_PATH = 'META-INF/container.xml';
 const IBOOKS_DISPLAY_OPTIONS_PATH = p.join('META-INF', 'com.apple.ibooks.display-options.xml');
 const IBOOKS_DISPLAY_OPTIONS_XML = '<?xml version="1.0" encoding="UTF-8"?>\n<display_options>\n\t<platform name="*">\n\t\t<option name="specified-fonts">true</option>\n\t</platform>\n</display_options>\n';
@@ -21,7 +22,11 @@ var epub = function(path, config = {}) {
 	this.makeAvailableChain = Promise.resolve();
 	this.extractAllPromise = false;
 
+	// Opt-in tracing (OPENCOMIC_EPUB_DEBUG=1). This fired on every stage of every EPUB open,
+	// which flooded the console and serialised a payload object per call for nothing.
 	this.debug = function(stage = '', payload = {}) {
+		if(!epubDebug) return;
+
 		try {
 			console.log('[epub-debug][epub]['+stage+']', {
 				path: this.path,

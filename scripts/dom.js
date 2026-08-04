@@ -114,6 +114,16 @@ function getThumbnailCardInfo(image) {
 	};
 }
 
+// Recovery attempts are bounded per card: some sources simply cannot be decoded (truncated
+// scans, unsupported variants), and an unbounded retry loop pegs a CPU core regenerating a
+// thumbnail that will always fail to load.
+const THUMBNAIL_RECOVERY_MAX_ATTEMPTS = 3;
+const thumbnailRecoveryAttempts = new Map();
+
+function thumbnailRecoveryKey(info) {
+	return info.path + '|' + info.forceSize + '|' + (info.folder ? 'folder' : 'image');
+}
+
 function handleThumbnailLoad(event) {
 	const image = event?.currentTarget || event;
 
@@ -125,7 +135,12 @@ function handleThumbnailLoad(event) {
 
 	const info = getThumbnailCardInfo(image);
 
-	if (info?.folder && info.path)
+	if (!info?.path)
+		return;
+
+	thumbnailRecoveryAttempts.delete(thumbnailRecoveryKey(info));
+
+	if (info.folder)
 		scroll.clearRetryStateByPath(info.path);
 }
 
@@ -190,7 +205,18 @@ function handleThumbnailError(event) {
 	image.classList.remove('a', 'active', 'has-poster');
 	image.removeAttribute('src');
 
-	const throttleKey = 'thumbnail-recovery-' + sha1(info.path + '|' + info.forceSize + '|' + (info.folder ? 'folder' : 'image'));
+	const recoveryKey = thumbnailRecoveryKey(info);
+	const attempts = (thumbnailRecoveryAttempts.get(recoveryKey) || 0) + 1;
+
+	if (attempts > THUMBNAIL_RECOVERY_MAX_ATTEMPTS)
+		return;
+
+	thumbnailRecoveryAttempts.set(recoveryKey, attempts);
+
+	while (thumbnailRecoveryAttempts.size > 500)
+		thumbnailRecoveryAttempts.delete(thumbnailRecoveryAttempts.keys().next().value);
+
+	const throttleKey = 'thumbnail-recovery-' + sha1(recoveryKey);
 
 	app.setThrottle(throttleKey, async function () {
 		if (info.folder) {
@@ -1922,7 +1948,7 @@ async function getFolderThumbnails(path, forceSize = false, index = 0, start = 0
 
 		try {
 			if (getProgress) {
-				const type = fileManager.file(path).getType();
+				const type = fileManager.getPathType(path);
 				progress = type.folder ? await reading.progress.getFolderItemProgress(path, true, true) : await reading.progress.get(path, true, true);
 			}
 		}
@@ -2822,7 +2848,7 @@ async function comicContextMenu(path, mainPath, fromIndex = true, fromIndexNotMa
 		(async function () {
 
 			try {
-				const type = fileManager.file(path).getType();
+				const type = fileManager.getPathType(path);
 				const progress = type.folder ? await reading.progress.getFolderItemProgress(path, true, true) : await reading.progress.get(path, true, true);
 				reading.progress.updateProgress(path, progress);
 
@@ -3954,24 +3980,12 @@ async function openComic(animation = true, path = true, mainPath = true, end = f
 	let files = [];
 
 	try {
-		const readConfig = { filtered: false, sort: { extraKey: 'Reading' } };
-		// When opening from next/prev while reading, force a full read to avoid
-		// using thumbnail-generated single-page caches.
-		if (fromNextAndPrev || fromGoBack) {
-			readConfig.forceFullRead = true;
-		}
-
-		if (readConfig.forceFullRead) {
-			try {
-				const cacheName = 'compressed-files-' + sha1(p.normalize(path)) + '.json';
-				cache.deleteJson(cacheName);
-				const serverCacheName = 'server-files-' + sha1(p.normalize(path)) + '.json';
-				cache.deleteJson(serverCacheName);
-			}
-			catch (e) {}
-		}
-
-		files = await file.read(readConfig);
+		// No forceFullRead here anymore: thumbnail reads no longer persist their synthetic
+		// single-page result (file-manager.js only writes the cache when
+		// !fromThumbnailsGeneration), and readCompressed() still detects and discards legacy
+		// poisoned PDF caches. Deleting the index and re-listing the archive on every single
+		// chapter change made next/prev navigation re-read the whole file every time.
+		files = await file.read({ filtered: false, sort: { extraKey: 'Reading' } });
 	}
 	catch (error) {
 		console.error(error);

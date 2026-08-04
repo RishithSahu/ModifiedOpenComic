@@ -63,7 +63,14 @@ function restoreFolderPoster(folderSha) {
 }
 
 function hasFolderPosterSrc(folderSha) {
-	const image = template._contentRight().querySelector('img.sha-image-' + folderSha + '-0, img.sha-image-' + folderSha);
+	// _contentRight() is false between view swaps, and the async thumbnail jobs below can
+	// resolve right in that window.
+	const contentRight = template._contentRight();
+
+	if (!contentRight)
+		return false;
+
+	const image = contentRight.querySelector('img.sha-image-' + folderSha + '-0, img.sha-image-' + folderSha);
 
 	if (!image)
 		return false;
@@ -177,12 +184,22 @@ async function retryByPath(path = '', options = {}) {
 	return retried;
 }
 
+// Background warm-up for off-screen thumbnails. It re-schedules itself until everything is
+// warm, so on a large folder it is a sustained load: keep the tick slow and the batch small
+// so it fills idle time instead of competing with whatever the user is actually doing.
+const WARMUP_INTERVAL = 400;
+const WARMUP_BATCH = 12;
+
 function queueWarmup(visibleItems = false) {
-	if (warmupST)
+	if (warmupST || onReading)
 		return;
 
 	warmupST = setTimeout(function () {
 		warmupST = false;
+
+		// Reading started while this was pending; the reader needs the I/O more than the grid.
+		if (onReading)
+			return;
 
 		const pending = [];
 		const now = Date.now();
@@ -210,16 +227,14 @@ function queueWarmup(visibleItems = false) {
 			return a.distance - b.distance;
 		});
 
-		const limit = 36;
-
-		for (let i = 0, len = Math.min(limit, pending.length); i < len; i++) {
+		for (let i = 0, len = Math.min(WARMUP_BATCH, pending.length); i < len; i++) {
 			addToQueue(pending[i].sha);
 		}
 
-		if (pending.length > limit)
+		if (pending.length > WARMUP_BATCH)
 			queueWarmup(visibleItems);
 
-	}, 120);
+	}, WARMUP_INTERVAL);
 }
 
 function resized() {
@@ -229,7 +244,14 @@ function resized() {
 function scroll(event = false, throttle = true, force = false) {
 	const check = function () {
 
-		const scrollTop = event?.target?.scrollTop || template._contentRight().firstElementChild.scrollTop;
+		// The window resize handler can fire mid view swap, when _contentRight() is false.
+		const contentRight = template._contentRight();
+		const scrollElement = contentRight ? contentRight.firstElementChild : false;
+
+		if (!event?.target && !scrollElement)
+			return;
+
+		const scrollTop = event?.target?.scrollTop || scrollElement.scrollTop;
 		const visibleItems = dom.calculateVisibleItems(handlebarsContext.page.view, scrollTop);
 
 		if (force || prevScroll.start !== visibleItems.start || prevScroll.end !== visibleItems.end) {
@@ -238,10 +260,12 @@ function scroll(event = false, throttle = true, force = false) {
 				const index = _useTempIndex ? status.tempIndex : status.index;
 
 				if ((index >= visibleItems.start && index <= visibleItems.end) || status.forceSize) {
-					if (status.folderSha && !hasFolderPosterSrc(status.folderSha))
+					const missingPoster = status.folderSha ? !hasFolderPosterSrc(status.folderSha) : false;
+
+					if (missingPoster)
 						restoreFolderPoster(status.folderSha);
 
-					if (!status.thumbnails && !status.addToQueueProgress && status.folderSha && !hasFolderPosterSrc(status.folderSha)) {
+					if (missingPoster && !status.thumbnails && !status.addToQueueProgress && !hasFolderPosterSrc(status.folderSha)) {
 						setStatus(sha, { thumbnails: 2 });
 					}
 
@@ -272,7 +296,7 @@ function addToQueue(sha) {
 	if (thumbnails || progress) {
 		setStatus(sha, { addToQueueProgress: true, lastQueueTry: Date.now() });
 
-		threads.job('folderThumbnails', { key: sha, useThreads: 0.2 }, async function () {
+		threads.job('folderThumbnails', { key: sha, useThreads: 0.12 }, async function () {
 			if (onReading)
 			{
 				setStatus(sha, { addToQueueProgress: false });
@@ -356,7 +380,7 @@ function addToQueue(sha) {
 
 			if (progress) {
 				try {
-					const type = fileManager.file(path).getType();
+					const type = fileManager.getPathType(path);
 					const _progress = type.folder ? await reading.progress.getFolderItemProgress(path, true, true) : await reading.progress.get(path, true, true);
 					dom.addProgressToDom(folderSha, _progress, (progress === 1));
 					loadedProgress = true;
@@ -384,7 +408,11 @@ function addToQueue(sha) {
 }
 
 async function event() {
-	const scrollTarget = template._contentRight().firstElementChild;
+	const contentRight = template._contentRight();
+	const scrollTarget = contentRight ? contentRight.firstElementChild : false;
+
+	if (!scrollTarget)
+		return;
 
 	if (eventsBound.scrollTarget && eventsBound.scrollTarget !== scrollTarget)
 		app.eventOff(eventsBound.scrollTarget, 'scroll', scroll);

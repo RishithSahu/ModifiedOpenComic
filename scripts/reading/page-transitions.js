@@ -31,6 +31,8 @@ async function goToIndex(index, animation)
 	}
 	else
 	{
+		// Coalesce rapid page turns: keep only the newest pending request so a burst of clicks
+		// does not replay every intermediate page. (This used to be done twice in a row.)
 		transitionDebug('queue-clear-before-enqueue', {
 			index: index,
 		});
@@ -42,15 +44,6 @@ async function goToIndex(index, animation)
 	const requestGap = now - lastTransitionRequestAt;
 	lastTransitionRequestAt = now;
 	const rapidRequest = animation && requestGap > 0 && requestGap < 220;
-
-	if(animation)
-	{
-		const pendingTransitions = queue.get('pageTransitions');
-
-		// Keep only the latest pending turn request while an animation is already running.
-		if(pendingTransitions && pendingTransitions.length > 0)
-			queue.set('pageTransitions', []);
-	}
 
 	const readingDirection = reading.realReadingDirection();
 

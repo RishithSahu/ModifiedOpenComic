@@ -1167,10 +1167,13 @@ function getSmoothReadingScrollReference(content) {
 	if (smoothReadingScroll.element === content)
 		return smoothReadingScroll.to;
 
-	const queued = +content.dataset.scrollTop;
+	// dataset.scrollTop is cleared by writing '' and `+'' === 0`, so a plain isNaN() check
+	// would report "queued at the very top" after every completed/cancelled scroll and make
+	// the next page turn jump back to the start of the chapter.
+	const queued = content.dataset.scrollTop;
 
-	if (!isNaN(queued))
-		return queued;
+	if (queued !== '' && queued !== undefined && queued !== null && !isNaN(+queued))
+		return +queued;
 
 	return content.scrollTop;
 }
@@ -3431,6 +3434,11 @@ function updateReadingPagesConfig(key, value) {
 		readingPagesConfig.configKey = false;
 		readingPagesConfig[key] = value;
 
+		// The user picked a reading mode by hand, so drop the auto-applied marker and stop
+		// overriding it from AniList metadata for this folder.
+		if (trackedSeriesModeKeys.includes(key))
+			readingPagesConfig.trackedSeriesType = '';
+
 		storage.updateVar('readingPagesConfig', readingPagesConfigPath, readingPagesConfig);
 	}
 	else if (currentReadingConfigKey > 0) {
@@ -3796,23 +3804,91 @@ function getReadingMainPath(fallbackPath = false) {
 	return '';
 }
 
+// Resolves the folder that represents the *series* being read.
+//
+// dom.history.mainPath is the library entry, which is only the series folder when the series
+// itself was added to the library. A typical library is organised in category folders
+// ("3. Reading", "1. Completed Series"), so mainPath is the category and the series folder is
+// somewhere below it. AniList metadata is keyed by series folder — that mismatch meant the
+// reading-mode lookup missed for every series, and it also made every series inside a category
+// share one per-series reading config.
+//
+// So walk up from the file actually being read towards mainPath and take the first ancestor
+// that has tracking metadata. That handles any nesting depth ("Series/Volume 1/Chapter 3") and
+// only ever resolves to folders that already have metadata.
+function resolveTrackedSeriesFolder(fallbackPath = false) {
+	const mainPath = getReadingMainPath(fallbackPath);
+	const startPath = (typeof readingCurrentPath === 'string' && readingCurrentPath)
+		? readingCurrentPath
+		: (typeof dom.history.path === 'string' && dom.history.path ? dom.history.path : fallbackPath || mainPath);
+
+	if (!startPath)
+		return { series: '', fallback: mainPath || '' };
+
+	const normalizedMainPath = mainPath ? p.normalize(mainPath) : '';
+
+	// Read the resolved metadata map directly instead of going through
+	// tracking.getFolderMetadata(): that calls getFolderMetadataPath(), which stats the path on
+	// every call. This runs per ancestor, several times per open, so keep it a pure map lookup.
+	let trackingFolderMetadata = {};
+
+	try {
+		trackingFolderMetadata = relative.get('trackingFolderMetadata') || {};
+	}
+	catch (error) {
+		trackingFolderMetadata = {};
+	}
+
+	let current = p.normalize(startPath);
+	// The natural series folder when nothing is tracked yet: the directory the chapter sits in.
+	let naturalParent = '';
+
+	for (let depth = 0; depth < 24; depth++) {
+		const parent = p.dirname(current);
+
+		if (!parent || parent === current)
+			break;
+
+		if (!naturalParent)
+			naturalParent = parent;
+
+		const metadata = trackingFolderMetadata[parent];
+
+		if (metadata && (metadata.seriesType || metadata.anilistId || metadata.source === 'anilist'))
+			return { series: parent, fallback: naturalParent };
+
+		// Never walk above the library entry.
+		if (normalizedMainPath && parent === normalizedMainPath)
+			break;
+
+		current = parent;
+	}
+
+	return { series: '', fallback: naturalParent || normalizedMainPath };
+}
+
 function getReadingPagesConfigPath(fallbackPath = false) {
 	const mainPath = getReadingMainPath(fallbackPath);
+	const resolved = resolveTrackedSeriesFolder(fallbackPath);
 
-	if (!mainPath)
-		return '';
+	if (resolved.series)
+		return resolved.series;
 
-	if (typeof tracking === 'undefined' || !tracking || typeof tracking.getFolderMetadataPath !== 'function' || typeof tracking.getFolderMetadata !== 'function')
-		return mainPath;
+	// Keep the previous behaviour when the library entry itself is the tracked series.
+	if (typeof tracking !== 'undefined' && tracking && typeof tracking.getFolderMetadataPath === 'function' && typeof tracking.getFolderMetadata === 'function' && mainPath) {
+		const metadataPath = tracking.getFolderMetadataPath(mainPath);
+		const metadata = metadataPath ? tracking.getFolderMetadata(metadataPath) : false;
 
-	const metadataPath = tracking.getFolderMetadataPath(mainPath);
-	const metadata = metadataPath ? tracking.getFolderMetadata(metadataPath) : false;
+		if (metadata && (metadata.seriesType || metadata.anilistId || metadata.source === 'anilist'))
+			return p.normalize(metadataPath);
+	}
 
-	if (metadata && (metadata.seriesType || metadata.anilistId || metadata.source === 'anilist'))
-		return p.normalize(metadataPath);
-
-	return mainPath;
+	// Untracked series still get their own reading config per series folder rather than one
+	// shared config for the whole category folder.
+	return resolved.fallback || mainPath || '';
 }
+
+const trackedSeriesModeKeys = ['readingView', 'readingManga', 'readingWebtoon', 'readingDoublePage'];
 
 function hasCustomTrackedSeriesMode(storedReadingPagesConfig = false) {
 	if (!storedReadingPagesConfig || typeof storedReadingPagesConfig !== 'object')
@@ -3821,10 +3897,14 @@ function hasCustomTrackedSeriesMode(storedReadingPagesConfig = false) {
 	if (+storedReadingPagesConfig.configKey > 0)
 		return true;
 
-	const modeKeys = ['readingView', 'readingManga', 'readingWebtoon', 'readingDoublePage'];
+	// A config this feature wrote itself is not a user customization, so the defaults can still
+	// be refreshed when the AniList metadata only arrives after the file was opened. The marker
+	// is cleared by updateReadingPagesConfig() as soon as the user changes a mode by hand.
+	if (storedReadingPagesConfig.trackedSeriesType)
+		return false;
 
-	for (let i = 0, len = modeKeys.length; i < len; i++) {
-		const key = modeKeys[i];
+	for (let i = 0, len = trackedSeriesModeKeys.length; i < len; i++) {
+		const key = trackedSeriesModeKeys[i];
 
 		if (typeof storedReadingPagesConfig[key] !== 'undefined' && storedReadingPagesConfig[key] !== config[key])
 			return true;
@@ -3838,10 +3918,7 @@ function applyTrackedSeriesReadingDefaults(readingPagesConfigPath = '', storedRe
 		return false;
 
 	if (hasCustomTrackedSeriesMode(storedReadingPagesConfig))
-	{
-		try { console.log('[applyTrackedSeriesReadingDefaults] skipping - customTrackedSeriesMode', storedReadingPagesConfig, 'path=', readingPagesConfigPath); } catch (e) {}
 		return false;
-	}
 
 	if (typeof tracking === 'undefined' || !tracking || typeof tracking.getFolderMetadata !== 'function')
 		return false;
@@ -3891,12 +3968,6 @@ function applyTrackedSeriesReadingDefaults(readingPagesConfigPath = '', storedRe
 	if (!seriesType)
 		return false;
 
-	// Debug: log resolved metadata and inferred seriesType to help diagnose misses
-	try {
-		console.log('[applyTrackedSeriesReadingDefaults] metadata=', metadata, 'inferredSeriesType=', seriesType, 'path=', readingPagesConfigPath);
-	}
-	catch (e) {}
-
 	const readingPagesConfig = copy(_config);
 	delete readingPagesConfig.key;
 
@@ -3920,12 +3991,90 @@ function applyTrackedSeriesReadingDefaults(readingPagesConfigPath = '', storedRe
 		return false;
 	}
 
-	storage.updateVar('readingPagesConfig', readingPagesConfigPath, readingPagesConfig);
+	// Marks the config as auto-applied rather than user-chosen (see hasCustomTrackedSeriesMode).
+	readingPagesConfig.trackedSeriesType = seriesType;
 
-	try { console.log('[applyTrackedSeriesReadingDefaults] applied defaults', readingPagesConfig, 'path=', readingPagesConfigPath); } catch(e) {}
+	// Nothing to do if the active config already matches; re-writing storage and reloading the
+	// reader on every open would be pure churn.
+	const alreadyApplied = storedReadingPagesConfig
+		&& storedReadingPagesConfig.trackedSeriesType === seriesType
+		&& trackedSeriesModeKeys.every(function (key) {
+			return _config[key] === readingPagesConfig[key];
+		});
+
+	if (alreadyApplied)
+		return false;
+
+	storage.updateVar('readingPagesConfig', readingPagesConfigPath, readingPagesConfig);
 
 	currentReadingConfigKey = false;
 	_config = { ...readingPagesConfig, key: false };
+
+	return true;
+}
+
+// Applying the defaults at open time is not enough: the AniList scrape for a folder is kicked
+// off by tracking.autoPrompt() at the *end* of read(), so on the very first open of a series the
+// metadata does not exist yet and nothing is applied — which is why it only took effect after
+// restarting the app. tracking calls this once the metadata lands so the mode is applied live.
+var pendingTrackedSeriesFolder = false;
+
+function applyTrackedSeriesReadingDefaultsForFolder(folderPath = '') {
+	if (!onReading || !folderPath || currentReadingConfigKey !== false)
+		return false;
+
+	const readingPagesConfigPath = getReadingPagesConfigPath();
+
+	if (!readingPagesConfigPath || p.normalize(readingPagesConfigPath) !== p.normalize(folderPath))
+		return false;
+
+	// Metadata can land while the chapter is still opening. Re-rendering then races the
+	// in-flight read() — which already read its config before this was stored — so defer to
+	// isLoad() instead and apply once the reader has settled.
+	if (!isLoaded) {
+		pendingTrackedSeriesFolder = readingPagesConfigPath;
+
+		return false;
+	}
+
+	const storedReadingPagesConfig = storage.getKey('readingPagesConfig', readingPagesConfigPath) || false;
+	const previous = {};
+
+	for (let i = 0, len = trackedSeriesModeKeys.length; i < len; i++)
+		previous[trackedSeriesModeKeys[i]] = _config[trackedSeriesModeKeys[i]];
+
+	if (!applyTrackedSeriesReadingDefaults(readingPagesConfigPath, storedReadingPagesConfig))
+		return false;
+
+	const changed = trackedSeriesModeKeys.some(function (key) {
+		return previous[key] !== _config[key];
+	});
+
+	if (!changed)
+		return false;
+
+	_config = copy(_config);
+	handlebarsContext._config = _config;
+
+	// Re-render with the new layout, the same way the reading-pages menu does. changePagesView(0)
+	// reads the active reading-pages tab, so fall back to a plain reload when that menu has not
+	// been rendered yet (it is built lazily, and this can fire before the user ever opens it).
+	try {
+		if (document.querySelector('#reading-pages .tabs > div > div.active')) {
+			changePagesView(0);
+		}
+		else {
+			const imageIndex = reloadIndex();
+
+			if (readingIsEbook) handlebarsContext.loading = true;
+
+			template.loadContentRight('reading.content.right.html', true);
+			reading.reload(false, imageIndex);
+		}
+	}
+	catch (error) {
+		console.error('Failed to apply tracked series reading defaults:', error);
+	}
 
 	return true;
 }
@@ -4785,6 +4934,16 @@ async function isLoad() {
 
 	onLoadPromise = false;
 	isLoaded = true;
+
+	// AniList metadata that arrived while this chapter was still opening.
+	if (pendingTrackedSeriesFolder) {
+		const folderPath = pendingTrackedSeriesFolder;
+		pendingTrackedSeriesFolder = false;
+
+		setTimeout(function () {
+			applyTrackedSeriesReadingDefaultsForFolder(folderPath);
+		}, 0);
+	}
 }
 
 function onLoad(callback) {
@@ -4913,12 +5072,19 @@ async function fastUpdateEbookPages(readingEbook = false, resize = false) {
 
 var hasGenerateEbookPages = false;
 
+// Opt-in EPUB pagination tracing (OPENCOMIC_EPUB_DEBUG=1); it used to log on every render.
+const epubRenderDebug = (typeof process !== 'undefined' && process.env.OPENCOMIC_EPUB_DEBUG === '1');
+
 function logEpubRenderDebug(stage = '', payload = {}) {
+	if (!epubRenderDebug) return;
+
 	try {
 		console.log('[epub-debug][reading]['+stage+']', payload);
 	}
 	catch (error) {}
 }
+
+const GENERATE_EBOOK_PAGES_TIMEOUT = 60000;
 
 async function generateEbookPages(end = false, reset = false, fast = false, imagePath = false, first = false) {
 	const startedAt = Date.now();
@@ -4959,11 +5125,24 @@ async function generateEbookPages(end = false, reset = false, fast = false, imag
 
 	let ebookConfig = await getEbookConfig();
 	let ebookPages = false;
+	let ebookPagesTimeoutST = false;
 
 	try
 	{
 		logEpubRenderDebug('generate:ebookPages:request', {mainPath: dom.history.mainPath || ''});
-		ebookPages = await readingFileC.ebookPages(ebookConfig);
+
+		// Keep the timeout: without it a stalled pagination leaves hasGenerateEbookPages stuck
+		// at true and the reader spins on the loading state forever with no way to recover.
+		const timeoutPromise = new Promise(function (resolve, reject) {
+
+			ebookPagesTimeoutST = setTimeout(function () {
+				reject(new Error('generateEbookPagesTimeout: ' + (dom.history.mainPath || '')));
+			}, GENERATE_EBOOK_PAGES_TIMEOUT);
+
+		});
+
+		ebookPages = await Promise.race([readingFileC.ebookPages(ebookConfig), timeoutPromise]);
+
 		logEpubRenderDebug('generate:ebookPages:response', {
 			mainPath: dom.history.mainPath || '',
 			pages: ebookPages?.pages?.length || 0,
@@ -4978,6 +5157,10 @@ async function generateEbookPages(end = false, reset = false, fast = false, imag
 			error: String(error?.message || error),
 		});
 		ebookPages = { pages: [], toc: [], landmarks: false };
+	}
+	finally
+	{
+		if (ebookPagesTimeoutST) clearTimeout(ebookPagesTimeoutST);
 	}
 
 	if(!ebookPages || !ebookPages.pages || !ebookPages.pages.length)
@@ -5021,6 +5204,7 @@ async function generateEbookPages(end = false, reset = false, fast = false, imag
 		generateEbookPages(end, reset, fast);
 	}
 	else if (!generateEbookPagesCancel && onReading) {
+		try {
 		images = {}, imagesData = {}, imagesDataClip = {}, imagesPath = {}, imagesNum = 0, contentNum = 0, pageRangeHistory = [];
 
 		let comics = [];
@@ -5108,6 +5292,39 @@ async function generateEbookPages(end = false, reset = false, fast = false, imag
 			toc: ebookPages.toc?.length || 0,
 			durationMs: Date.now() - startedAt,
 		});
+		}
+		catch (error) {
+			// Without this the busy flag below is never reached and every later pagination
+			// request short-circuits, leaving the ebook reader stuck on the loading state.
+			console.error(error);
+
+			logEpubRenderDebug('generate:render-error', {
+				mainPath: dom.history.mainPath || '',
+				error: String(error?.message || error),
+			});
+
+			const contentRight = template._contentRight();
+
+			if (contentRight) {
+				dom.this(contentRight).find('.loading').remove();
+				dom.this(contentRight).find('.reading-body').css({opacity: 1});
+			}
+
+			events.snackbar({
+				key: 'ebookPagesEmpty',
+				text: 'Unable to render this EPUB content.',
+				duration: 8,
+				update: true,
+				buttons: [
+					{
+						text: language.buttons.dismiss,
+						function: 'events.closeSnackbar();',
+					},
+				],
+			});
+
+			reading.isLoad();
+		}
 	}
 
 	hasGenerateEbookPages = false;
@@ -5532,14 +5749,35 @@ async function read(path, index = 1, end = false, isCanvas = false, isEbook = fa
 	isLoaded = false;
 	magnifyingGlassPosition.mode = false;
 
+	// Must be set before loadReadingConfig(): getReadingMainPath() falls back to it when
+	// dom.history.mainPath is not populated yet, and without it the per-series reading config
+	// (and the AniList reading-mode defaults) resolve against an empty path.
+	readingCurrentPath = path;
+
+	// Request the series' AniList metadata now rather than waiting for autoPrompt() at the end
+	// of this function. On the first open of a series the series type decides the reading mode,
+	// so the sooner it lands the less chance of briefly showing the wrong layout.
+	// Must use the resolved series folder, never mainPath: mainPath is usually a category
+	// folder ("3. Reading"), and scraping that would store one bogus entry for the category.
+	try {
+		if (typeof tracking !== 'undefined' && tracking && typeof tracking.queueFolderMetadataScrape === 'function') {
+			const seriesFolder = resolveTrackedSeriesFolder(path);
+			const scrapePath = seriesFolder.series || seriesFolder.fallback;
+
+			if (scrapePath)
+				tracking.queueFolderMetadataScrape(scrapePath, { priority: true, fast: true });
+		}
+	}
+	catch (error) {
+		console.error(error);
+	}
+
 	loadReadingConfig(currentReadingConfigKey);
 
 	if (!fromSkip)
 		progress.activeSave(false);
 
 	fromSkip = false;
-
-	readingCurrentPath = path;
 
 	filters.setImagesPath(false);
 
@@ -6266,6 +6504,7 @@ module.exports = {
 	currentReadingConfigKey: function () { return currentReadingConfigKey },
 	purgeGlobalReadingPagesConfig: purgeGlobalReadingPagesConfig,
 	updateConfigLabels: updateConfigLabels,
+	applyTrackedSeriesReadingDefaultsForFolder: applyTrackedSeriesReadingDefaultsForFolder,
 	onReading: function () { return onReading },
 	calculateImagesDistribution: calculateImagesDistribution,
 	imagesDistribution: function () { return imagesDistribution },

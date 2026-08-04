@@ -44,7 +44,9 @@ function clearCacheAndTemporaryFiles()
 	console.time('Migration: clearCacheAndTemporaryFiles');
 
 	settings.clearCache();
-	settings.removeTemporaryFiles();
+	// Must run in "onClose" mode: the interactive mode resets user data and reloads the window,
+	// which would destroy the library and interrupt the migration that is still in progress.
+	settings.removeTemporaryFiles(true);
 
 	console.timeEnd('Migration: clearCacheAndTemporaryFiles');
 }

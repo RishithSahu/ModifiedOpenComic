@@ -194,10 +194,13 @@ function isPdfCanvasMode()
 
 function getQueueLimits()
 {
+	// PDF pages are rasterised one by one and are by far the most expensive thing to produce.
+	// Queueing 10 before + 10 after every turn cost far more than it bought, especially since
+	// renderedBlobLimit() only keeps a handful of PDF blobs alive: most of that work was
+	// evicted before it could ever be shown, so the reader spent its time re-rendering pages
+	// it had already rendered. Keep the window smaller than the blob budget instead.
 	if(isPdfCanvasMode())
-	{
-		return { prev: 10, next: 10 };
-	}
+		return { prev: 3, next: 6 };
 
 	if(reading.readingViewIs('scroll'))
 		return { prev: Math.max(maxPrev, 10), next: Math.max(maxNext, 10) };
@@ -481,8 +484,14 @@ async function focusIndex(index, _doublePage = false)
 		rendering = {};
 	}
 
-	const immediateSourceWindow = isScrollView ? 10 : (_doublePage ? 6 : 5);
-	primeImmediateSourceWindow(immediateSourceWindow, immediateSourceWindow);
+	// Priming is asymmetric on purpose: pages ahead are what the reader is about to need.
+	// The old symmetric 10/10 window meant up to 21 querySelector + decode() calls on every
+	// single page turn, most of them for pages behind the reader that were already decoded.
+	if(isScrollView)
+		primeImmediateSourceWindow(4, 8);
+	else
+		primeImmediateSourceWindow(_doublePage ? 2 : 1, _doublePage ? 5 : 4);
+
 	pruneRenderedObjectURL();
 
 	const immediateQueue = isScrollView ? getVisbleImages(_doublePage) : {
@@ -518,6 +527,12 @@ function revokeAllObjectURL()
 	renderedObjectsURLCache = {};
 }
 
+// Grace period before a blob may be evicted. It only has to outlast a page transition plus
+// the decode that follows it; the "is it still in an <img>" check below is the real guard.
+// The previous 30s value meant nothing could ever be evicted during fast scrolling, so the
+// blob list grew without bound even though renderedBlobLimit() is as low as 3 for PDFs.
+const RENDERED_BLOB_MIN_AGE_MS = 4000;
+
 function revokeObjectURL(key, force = false)
 {
 	const index = renderedObjectsURL.findIndex(o => o.key === key);
@@ -529,7 +544,7 @@ function revokeObjectURL(key, force = false)
 
 		if(!force)
 		{
-			if(entry?.createdAt && (Date.now() - entry.createdAt) < 30000)
+			if(entry?.createdAt && (Date.now() - entry.createdAt) < RENDERED_BLOB_MIN_AGE_MS)
 				return false;
 
 			const images = document.querySelectorAll('img');
@@ -560,8 +575,12 @@ function renderedBlobLimit()
 	try
 	{
 		const features = file.getFeatures();
+
+		// Must stay comfortably above getQueueLimits() for PDFs (3 + 6 + the current page),
+		// otherwise freshly rendered pages are evicted before they are displayed and the
+		// reader thrashes, re-rendering the same pages on every turn.
 		if(features && features.pdf)
-			return file?.pdfFastRead ? 3 : 4;
+			return file?.pdfFastRead ? 12 : 16;
 	}
 	catch(e){}
 
@@ -620,14 +639,32 @@ function pruneRenderedObjectURL()
 	const limit = renderedBlobLimit();
 	if(renderedObjectsURL.length <= limit) return;
 
-	// Sort by creation time, evict oldest entries beyond the limit
+	// Oldest first (renderedObjectsURL is already append-ordered), skipping anything still
+	// inside the grace period, so nothing that is on screen can be pulled out from under it.
+	const now = Date.now();
 	const toEvict = renderedObjectsURL
-		.filter(o => !o.pinned && o.createdAt && (Date.now() - o.createdAt) > 30000)
+		.filter(o => !o.pinned && o.createdAt && (now - o.createdAt) > RENDERED_BLOB_MIN_AGE_MS)
 		.slice(0, renderedObjectsURL.length - limit);
+
+	if(!toEvict.length) return;
+
+	// Collect the blobs currently attached to an <img> once instead of re-walking every
+	// <img> in the document for each eviction candidate.
+	const inUse = new Set();
+	const images = document.querySelectorAll('img');
+
+	for(let i = 0, len = images.length; i < len; i++)
+	{
+		const src = images[i].src;
+
+		if(src && src.startsWith('blob:'))
+			inUse.add(src);
+	}
 
 	for(let i = 0; i < toEvict.length; i++)
 	{
-		revokeObjectURL(toEvict[i].key, false);
+		if(!inUse.has(toEvict[i]?.data?.blob))
+			revokeObjectURL(toEvict[i].key, true);
 	}
 }
 
@@ -664,14 +701,14 @@ async function setRenderQueue(prev = 1, next = 1, scale = false, magnifyingGlass
 	let _rendered = magnifyingGlass ? renderedMagnifyingGlass : rendered;
 	let _renderedQuality = magnifyingGlass ? renderedMagnifyingGlassQuality : renderedQuality;
 	const prioritizeForward = prioritizeNext ? Math.max(0, prioritizeNext) : 0;
-	const forwardIsReverse = reading.readingManga ? reading.readingManga() : false;
 
+	// Note: manga (right-to-left) mode only flips the visual layout — goNext() still increments
+	// currentIndex — so "forward" here is always currentIndex + distance regardless of it.
 	for(let i = 0, len = Math.max(next, prev + prioritizeForward); i < len; i++)
 	{
-		const forwardDistance = i;
 		const backwardDistance = i - prioritizeForward;
-		const forwardI = forwardIsReverse ? currentIndex - forwardDistance : currentIndex + forwardDistance;
-		const backwardI = forwardIsReverse ? currentIndex + backwardDistance : currentIndex - backwardDistance;
+		const forwardI = currentIndex + i;
+		const backwardI = currentIndex - backwardDistance;
 
 		// Forward pages in the active reading direction
 		if(i < next && shouldQueueRender(forwardI, _rendered, _renderedQuality, scale, magnifyingGlass) && imagesData[forwardI] && !isRendering(forwardI, magnifyingGlass))
@@ -944,9 +981,16 @@ async function render(index, _scale = false, magnifyingGlass = false, queueIndex
 											}
 
 											try {
-												let data = await image.resizeToBlob(src, aiResizeConfig);
+												const aiData = await image.resizeToBlob(src, aiResizeConfig);
 
-												img.src = data.blob;
+												// Register the blob so revokeObjectURL()/revokeAllObjectURL() can
+												// free it later; unregistered blobs leaked for every AI page.
+												renderedObjectsURL.push({data: aiData, img: img, key: 'ai|'+src+'|'+aiResizeConfig.width, src, index, createdAt: Date.now()});
+												pruneRenderedObjectURL();
+
+												if(queueIndex !== queue.index('readingRender')) return; // Return if the queue is different
+
+												img.src = aiData.blob;
 												img.classList.add('blobRendered', 'blobRender');
 												img.style.imageRendering = '';
 												renderQuality = 'processed';
@@ -1170,7 +1214,10 @@ function createObserver()
 
 	}, {
 		root: template._contentRight().firstElementChild,
-		rootMargin: isPdfCanvasMode() ? '1200px' : (reading.readingViewIs('scroll') ? '9000px' : '4000px'),
+		// 9000px of lookahead in webtoon/scroll mode eagerly decoded roughly ten screens of
+		// full-width pages at once, which is a large synchronous cost and a lot of resident
+		// bitmap memory. 3000px still stays comfortably ahead of normal scrolling.
+		rootMargin: isPdfCanvasMode() ? '1200px' : (reading.readingViewIs('scroll') ? '3000px' : '2500px'),
 		threshold: 0,
 	});
 }

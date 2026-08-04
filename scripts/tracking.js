@@ -384,7 +384,19 @@ function queueMetadataUiRefresh()
 		return;
 
 	const queueActive = metadataScrapeQueueActive || metadataScrapeQueue.length;
-	const throttle = queueActive ? METADATA_UI_REFRESH_ACTIVE_THROTTLE : METADATA_UI_REFRESH_THROTTLE;
+
+	// While the scrape queue is running, do not reload at all. dom.reload() rebuilds the whole
+	// library page and resets the thumbnail queue with it, so refreshing every few seconds
+	// during a long scrape meant thumbnails restarted from scratch over and over and the page
+	// kept being torn down under the user. processMetadataScrapeQueue() calls back here once
+	// the queue drains, which is when a single refresh actually shows everything at once.
+	if(queueActive)
+	{
+		metadataUiRefreshPending = true;
+		return;
+	}
+
+	const throttle = METADATA_UI_REFRESH_THROTTLE;
 
 	if(metadataUiRefreshST)
 	{
@@ -832,7 +844,6 @@ function activeAndDeactivateTrackingSite(site = '', active = false)
 // Current dialog
 async function currentTrackingDialog(site)
 {
-	console.log('currentTrackingDialog called for site:', site);
 	const siteData = trackingSites.site(site, true);
 	if(!siteData) return;
 
@@ -909,7 +920,6 @@ async function getRedirectResult(site, url)
 		],
 	});
 
-	console.log('getRedirectResult', url);
 	electron.shell.openExternal(url);
 
 	return new Promise(function(resolve){
@@ -1033,9 +1043,6 @@ async function searchComic(site, title = false, _return = false)
 			return result;
 	});
 
-	// debug: log results so we can see what data arrived
-	console.log('searchComic results for', site, title, results);
-
 	if(_return)
 		return results;
 
@@ -1062,8 +1069,6 @@ function searchInput(site)
 
 function setTrackingId(site, siteId)
 {
-    console.log('tracking.setTrackingId called', site, siteId);
-
     const _tracking = storage.getKey('tracking', dom.history.mainPath) || {};
 
     _tracking[site] = {
@@ -1214,7 +1219,7 @@ function getFolderMetadataPath(path = false)
 	path = path || dom.history.mainPath || reading.readingCurrentPath();
 	if(!path) return '';
 
-	const type = fileManager.file(path).getType();
+	const type = fileManager.getPathType(path);
 
 	if(type.folder)
 		return p.normalize(path);
@@ -1259,6 +1264,22 @@ function setFolderMetadata(path = false, metadata = {})
 
 	if(sanitized.anilistId > 0)
 		allowMetadataId(metadataScrapeCacheKey(folderPath), sanitized.anilistId);
+
+	// The scrape for a folder is started at the end of reading.read(), so on the first open of a
+	// series the reading-mode defaults could not be resolved yet. Apply them now that the series
+	// type is known instead of waiting for the next app start.
+	if(sanitized.seriesType && previous?.seriesType !== sanitized.seriesType)
+	{
+		try
+		{
+			if(typeof reading !== 'undefined' && reading && typeof reading.applyTrackedSeriesReadingDefaultsForFolder === 'function')
+				reading.applyTrackedSeriesReadingDefaultsForFolder(folderPath);
+		}
+		catch(error)
+		{
+			console.error('Failed to apply reading defaults after metadata scrape:', error);
+		}
+	}
 
 	if(shouldRefreshMetadataUi(folderPath, previous, sanitized))
 		queueMetadataUiRefresh();
@@ -2015,7 +2036,6 @@ function openTrackingPage(e, site, id)
 	if(e && e.stopPropagation)
 		e.stopPropagation();
 
-	console.log('tracking.openTrackingPage called', site, id);
 	const siteData = trackingSites.site(site);
 	if(!siteData) return;
 	const url = siteData.pageUrl.replace('{{siteId}}', id);

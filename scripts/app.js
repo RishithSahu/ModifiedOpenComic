@@ -482,26 +482,30 @@ function text(string) {
 
 }
 
-const { webFrame } = require('electron');
-
+// Deliberately no webFrame.clearCache() here. It drops Chromium's whole resource cache,
+// including every decoded page image, so the reader has to re-read and re-decode everything
+// that is still on screen — a periodic multi-hundred-millisecond stall that read as general
+// lag. Blob lifetimes are already bounded by reading/render.js, which is the memory that
+// actually needs managing.
 function clearMemory() {
+	// Never interrupt an active reading session; a forced GC there is a visible hitch.
+	if (typeof onReading !== 'undefined' && onReading)
+		return;
+
 	try {
-		if (typeof requestIdleCallback === 'function') {
-			requestIdleCallback(function() {
-				if (webFrame) webFrame.clearCache();
-				if (global.gc) global.gc();
-			}, { timeout: 5000 });
-		} else {
-			if (webFrame) webFrame.clearCache();
-			if (global.gc) global.gc();
-		}
+		if (!global.gc)
+			return;
+
+		if (typeof requestIdleCallback === 'function')
+			requestIdleCallback(function() { global.gc(); }, { timeout: 10000 });
+		else
+			global.gc();
 	} catch (e) {
 		console.log('Error clearing memory: ', e);
 	}
 }
 
-// Run memory cleanup every 5 minutes globally
-setInterval(clearMemory, 5 * 60 * 1000);
+setInterval(clearMemory, 10 * 60 * 1000);
 
 module.exports = {
 	event: event,

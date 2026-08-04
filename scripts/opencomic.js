@@ -283,6 +283,9 @@ var appBaseLoaded = new Promise(function (resolve) {
 
 });
 
+// Startup timings stay measurable via `startupPerf` in DevTools but are not logged on every
+// launch; set OPENCOMIC_STARTUP_LOG=1 to print them.
+const startupPerfLog = process.env.OPENCOMIC_STARTUP_LOG === '1';
 const startupPerf = {
 	t0: (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(),
 };
@@ -291,7 +294,9 @@ function startupMark(label) {
 	const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
 	const elapsed = Math.round(now - startupPerf.t0);
 	startupPerf[label] = elapsed;
-	console.log('[startup]', label + ':', elapsed + 'ms');
+
+	if (startupPerfLog)
+		console.log('[startup]', label + ':', elapsed + 'ms');
 }
 
 function deferStartupTask(task, delay = 1200) {
@@ -303,23 +308,20 @@ function deferStartupTask(task, delay = 1200) {
 
 function ensureRendererThemeStylesheetLink() {
 	try {
+		// index.html already ships the <link>; only add one when it is genuinely missing.
+		// Reassigning an existing href forces a stylesheet reload and a visible flash.
+		if (document.querySelector('link[rel="stylesheet"][href*="theme.css"]'))
+			return;
+
 		const { pathToFileURL } = require('url');
-		const themePath = p.join(appDir, 'themes', 'material-design', 'theme.css');
-		const themeUrl = pathToFileURL(themePath).href + '?v=20260325';
+		const link = document.createElement('link');
 
-		let link = document.querySelector('link[rel="stylesheet"][href*="theme.css"]');
-
-		if (!link) {
-			link = document.createElement('link');
-			link.rel = 'stylesheet';
-			link.type = 'text/css';
-			document.head.appendChild(link);
-		}
-
-		if (link.href !== themeUrl)
-			link.href = themeUrl;
-
+		link.rel = 'stylesheet';
+		link.type = 'text/css';
+		link.href = pathToFileURL(p.join(appDir, 'themes', 'material-design', 'theme.css')).href;
 		link.setAttribute('data-opencomic-theme', '1');
+
+		document.head.appendChild(link);
 	}
 	catch (error) {
 		console.error('Failed to ensure theme stylesheet link:', error);
@@ -394,10 +396,18 @@ async function startApp() {
 	dom.loadIndexContentLeft(false);
 	startupMark('first-paint-ready');
 
-	// Launch first-time tutorial after the initial UI is ready
+	// Launch first-time tutorial after the initial UI is ready. Never steal the screen when the
+	// app was launched to open a specific file or is restoring a reading session, and never let
+	// a tutorial failure take the whole startup down with it.
 	setTimeout(function() {
-		if (tutorial.shouldShow()) {
+		try {
+			if (toOpenFile || reading.onReading() || !tutorial.shouldShow())
+				return;
+
 			tutorial.start();
+		}
+		catch (error) {
+			console.error('Failed to start the tutorial:', error);
 		}
 	}, 800);
 
@@ -991,8 +1001,13 @@ function showGuidesWindow() {
 	}));
 
 	guides.once('ready-to-show', function () {
-		guides.webContents.executeJavaScript('document.querySelector(\'body\').innerHTML = `' + template.load('guides.body.html') + '`;', false).then(function () {
-			guides.show();
+		// JSON.stringify instead of a template literal: a backtick or ${ in the template would
+		// otherwise produce invalid JS and leave an invisible modal window behind.
+		guides.webContents.executeJavaScript('document.querySelector(\'body\').innerHTML = ' + JSON.stringify(template.load('guides.body.html')) + ';', false).catch(function (error) {
+			console.error('Failed to render guides window:', error);
+		}).finally(function () {
+			if (!guides.isDestroyed())
+				guides.show();
 		});
 	});
 }
@@ -1060,9 +1075,14 @@ function showAboutWindow() {
 
 	about.once('ready-to-show', function () {
 
-		about.webContents.executeJavaScript('document.querySelector(\'body\').innerHTML = `' + template.load('about.body.html') + '`;', false).then(function () {
+		about.webContents.executeJavaScript('document.querySelector(\'body\').innerHTML = ' + JSON.stringify(template.load('about.body.html')) + ';', false).catch(function (error) {
 
-			about.show();
+			console.error('Failed to render about window:', error);
+
+		}).finally(function () {
+
+			if (!about.isDestroyed())
+				about.show();
 
 		});
 

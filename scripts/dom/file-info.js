@@ -114,7 +114,7 @@ function getTrackingFolderMetadata(path = '')
 	if(!path) return false;
 
 	const normalizedPath = p.normalize(path);
-	const fileType = fileManager.file(normalizedPath).getType();
+	const fileType = fileManager.getPathType(normalizedPath);
 	const folderPath = p.normalize(fileType.folder ? normalizedPath : p.dirname(normalizedPath));
 
 	const all = relative.get('trackingFolderMetadata') || {};
