@@ -96,63 +96,6 @@ This fork (currently `v1.8.1`) has a prebuilt download — see [RishithSahu/Modi
 The links below are **upstream OpenComic [`v1.7.7`](https://github.com/ollm/OpenComic/releases/tag/v1.7.7)**
 and do *not* include any of the [fork additions](#fork-additions).
 
-###### Stores
-
-<a href="https://apps.microsoft.com/detail/9PDCMVNFZ2KK"><img height="50" alt="Get it from Microsoft" title="Get it from Microsoft" src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/store/microsoft-store.svg" /></a>
-&nbsp;&nbsp;&nbsp;<a href="https://apps.apple.com/app/opencomic/id6464329463"><img height="50" alt="Download on the Mac App Store" title="Download on the Mac App Store" src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/store/mac-app-store.svg" /></a>
-&nbsp;&nbsp;&nbsp;<a href="https://snapcraft.io/opencomic"><img height="50" alt="Get it from the Snap Store" title="Get it from the Snap Store" src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/store/snap-store.svg" /></a>
-&nbsp;&nbsp;&nbsp;<a href="https://flathub.org/apps/app.opencomic.OpenComic"><img height="50" alt="Get it on Flathub" title="Get it on Flathub" src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/store/flathub-store.svg" /></a>
-
-###### Windows
-
-- [.exe](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic.Setup.1.7.7.exe)
-- [portable.exe](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic.Portable.1.7.7.exe)
-- [folder.portable.exe](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic.Folder.Portable.1.7.7.exe)
-- [folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-Folder-Portable-1.7.7.7z)
-
-###### Windows Arm64
-
-- [arm64.exe](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic.Setup.1.7.7.arm64.exe)
-
-###### macOS
-
-- [.dmg](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7.dmg)
-- [.pkg](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7.pkg)
-- [.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-mac.7z)
-
-###### macOS Arm64
-
-- [arm64.dmg](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-arm64.dmg)
-- [arm64.pkg](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-arm64.pkg)
-- [arm64.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-arm64-mac.7z)
-
-###### Linux
-
-- [.deb](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic_1.7.7_amd64.deb)
-- [.rpm](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7.x86_64.rpm)
-- [.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7.7z)
-- [.tar.gz](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7.tar.gz)
-- [.snap](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic_1.7.7_amd64.snap)
-- [.flatpak](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-x86_64.flatpak)
-- [.AppImage](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7.AppImage)
-- [AUR](https://aur.archlinux.org/packages/opencomic-bin/) by [@z00rat](https://github.com/z00rat)
-- [folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-folder-portable-linux-1.7.7.7z)
-
-###### Linux Arm64
-
-- [arm64.deb](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic_1.7.7_arm64.deb)
-- [arm64.rpm](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7.aarch64.rpm)
-- [arm64.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7-arm64.7z)
-- [arm64.tar.gz](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-1.7.7-arm64.tar.gz)
-- [arm64.flatpak](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-aarch64.flatpak)
-- [arm64.AppImage](https://github.com/ollm/OpenComic/releases/download/v1.7.7/OpenComic-1.7.7-arm64.AppImage)
-- [arm64.folder.portable.7z](https://github.com/ollm/OpenComic/releases/download/v1.7.7/opencomic-folder-portable-linux-1.7.7-arm64.7z)
-
-## Website
-
-- [Website](https://opencomic.app)
-- [Website Repository](https://github.com/ollm/OpenComic-Website)
-
 ## Installation and Starting for development
 
 **Requirements**: Git, Node and NPM
