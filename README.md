@@ -12,7 +12,7 @@
 
 <div align="center">
 
-[Guides](https://opencomic.app/docs/category/guides) | [Screenshots](/SCREENSHOTS.MD) | [Features](#features) | [Changelog](/CHANGELOG.md) | [Download](#download)
+[Guides](https://opencomic.app/docs/category/guides) | [Screenshots](/SCREENSHOTS.MD) 
 
 </div>
 
