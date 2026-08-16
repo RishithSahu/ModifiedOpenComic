@@ -91,9 +91,7 @@ You can see the changes between versions in the [Changelog 📝](/CHANGELOG.md)
 
 ## Download
 
-This fork (currently `v1.8.1`) has no prebuilt downloads — see [Build from source](#build-from-source)
-to produce an installer, or grab a release from
-[RishithSahu/ModifiedOpenComic](https://github.com/RishithSahu/ModifiedOpenComic/releases) if one is published.
+This fork (currently `v1.8.1`) has a prebuilt download — see [RishithSahu/ModifiedOpenComic](https://github.com/RishithSahu/ModifiedOpenComic/releases).
 
 The links below are **upstream OpenComic [`v1.7.7`](https://github.com/ollm/OpenComic/releases/tag/v1.7.7)**
 and do *not* include any of the [fork additions](#fork-additions).
