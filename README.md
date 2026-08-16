@@ -146,14 +146,6 @@ It installs every sharp architecture for the current OS, at the exact versions s
 declares. Note that a plain `npm install` afterwards will prune them again, since they are
 installed with `--no-save`.
 
-## Translation
-
-If you want to see OpenComic in your language, please help us to [Translate](/TRANSLATE.md).
-
-<a href="/TRANSLATE.md">
-	<img src="https://raw.githubusercontent.com/ollm/OpenComic/master/images/translated.svg" />
-</a>
-
 ## Contributors
 
 <a href="https://github.com/ollm/OpenComic/graphs/contributors">
